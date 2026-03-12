@@ -183,6 +183,11 @@ class ReportGenerator:
         .direction-filter .btn { border-radius: 0; }
         .direction-filter .btn:first-child { border-radius: 5px 0 0 5px; }
         .direction-filter .btn:last-child { border-radius: 0 5px 5px 0; }
+        .coming-soon { text-align: center; padding: 100px 20px; color: #6c757d; }
+        .coming-soon h2 { font-size: 3em; margin-bottom: 20px; }
+        .coming-soon p { font-size: 1.2em; }
+        .nav-tabs .nav-link { color: #667eea; font-weight: 500; }
+        .nav-tabs .nav-link.active { background-color: #667eea; color: white; }
     </style>
 </head>
 <body>
@@ -198,6 +203,30 @@ class ReportGenerator:
                 Refresh Report
             </button>
         </div>
+
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-tabs" id="reportTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="commute-tab" data-bs-toggle="tab" data-bs-target="#commute" type="button" role="tab">
+                    🚴 Commute Routes
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="forecast-tab" data-bs-toggle="tab" data-bs-target="#forecast" type="button" role="tab">
+                    🌤️ Commute Forecast
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="longrides-tab" data-bs-toggle="tab" data-bs-target="#longrides" type="button" role="tab">
+                    🚵 Long Rides
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="reportTabContent">
+            <!-- Commute Routes Tab -->
+            <div class="tab-pane fade show active" id="commute" role="tabpanel">
 
         <div class="card">
             <div class="card-header"><h3>🏆 Recommended Optimal Route</h3></div>
@@ -446,7 +475,11 @@ class ReportGenerator:
             const allRouteRows = document.querySelectorAll('.route-row');
             
             directionButtons.forEach(button => {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function(e) {
+                    // Prevent default scroll behavior
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
                     // Update active button
                     directionButtons.forEach(btn => btn.classList.remove('active'));
                     this.classList.add('active');
@@ -457,13 +490,21 @@ class ReportGenerator:
                     // Filter routes in table
                     filterRoutesInTable();
                     
-                    // Filter routes in map (if window.filterRoutes exists)
-                    if (typeof window.filterRoutes === 'function') {
-                        window.filterRoutes(currentDirection);
+                    // Filter routes in map iframe
+                    try {
+                        const mapIframe = document.querySelector('iframe');
+                        if (mapIframe && mapIframe.contentWindow && typeof mapIframe.contentWindow.filterRoutes === 'function') {
+                            mapIframe.contentWindow.filterRoutes(currentDirection);
+                        }
+                    } catch (err) {
+                        console.error('Error calling map filterRoutes:', err);
                     }
                     
-                    // Reset pagination to page 1
+                    // Reset pagination to page 1 (without scrolling)
                     window.paginationController.resetToFirstPage();
+                    
+                    // Return false to prevent any default behavior
+                    return false;
                 });
             });
             
@@ -507,7 +548,7 @@ class ReportGenerator:
                 );
             }
             
-            function showPage(page) {
+            function showPage(page, shouldScroll = false) {
                 const visibleRoutes = getVisibleRoutes();
                 const totalRoutes = visibleRoutes.length;
                 const totalPages = Math.ceil(totalRoutes / ROUTES_PER_PAGE);
@@ -534,8 +575,10 @@ class ReportGenerator:
                 totalPagesSpan.textContent = totalPages || 1;
                 showingCount.textContent = totalRoutes > 0 ? `${startIndex + 1}-${endIndex}` : '0';
                 
-                // Scroll to top of table
-                document.getElementById('routesTable').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                // Only scroll if explicitly requested (e.g., pagination button clicks)
+                if (shouldScroll) {
+                    document.getElementById('routesTable').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
             }
             
             function updateCounts() {
@@ -549,7 +592,7 @@ class ReportGenerator:
             // Event listeners
             prevButton.addEventListener('click', () => {
                 if (currentPage > 1) {
-                    showPage(currentPage - 1);
+                    showPage(currentPage - 1, true);  // Scroll when using pagination buttons
                 }
             });
             
@@ -557,7 +600,7 @@ class ReportGenerator:
                 const visibleRoutes = getVisibleRoutes();
                 const totalPages = Math.ceil(visibleRoutes.length / ROUTES_PER_PAGE);
                 if (currentPage < totalPages) {
-                    showPage(currentPage + 1);
+                    showPage(currentPage + 1, true);  // Scroll when using pagination buttons
                 }
             });
             
@@ -759,6 +802,35 @@ class ReportGenerator:
             }
         }
     </script>
+
+    </div><!-- End Commute Routes Tab -->
+
+    <!-- Commute Forecast Tab -->
+    <div class="tab-pane fade" id="forecast" role="tabpanel">
+        <div class="coming-soon">
+            <h2>🌤️</h2>
+            <h3>7-Day Commute Forecast</h3>
+            <p>Coming Soon!</p>
+            <p class="text-muted">This feature will show weather forecasts for your morning and evening commutes,<br>
+            with optimal route recommendations based on wind conditions.</p>
+        </div>
+    </div>
+
+    <!-- Long Rides Tab -->
+    <div class="tab-pane fade" id="longrides" role="tabpanel">
+        <div class="coming-soon">
+            <h2>🚵</h2>
+            <h3>Long Rides Analysis</h3>
+            <p>Coming Soon!</p>
+            <p class="text-muted">This feature will analyze your recreational rides,<br>
+            showing statistics, distance distributions, and route recommendations.</p>
+        </div>
+    </div>
+
+    </div><!-- End Tab Content -->
+    </div><!-- End Container -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>'''
 

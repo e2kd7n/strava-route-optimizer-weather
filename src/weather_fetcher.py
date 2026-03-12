@@ -12,6 +12,8 @@ from datetime import datetime, timedelta
 import numpy as np
 from geopy.distance import geodesic
 import calendar
+import json
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -19,19 +21,85 @@ logger = logging.getLogger(__name__)
 class WeatherFetcher:
     """Fetches weather data from Open-Meteo API (free, no API key needed)."""
     
-    def __init__(self, cache_radius_km: float = 2.0, cache_duration_hours: float = 1.0):
+    def __init__(self, cache_radius_km: float = 2.0, cache_duration_hours: float = 1.5,
+                 cache_file: Optional[str] = None):
         """
         Initialize weather fetcher.
         
         Args:
             cache_radius_km: Radius in km to consider locations as "same" for caching (default 2.0)
-            cache_duration_hours: How long to cache weather data in hours (default 1.0)
+            cache_duration_hours: How long to cache weather data in hours (default 1.5 = 90 minutes)
+            cache_file: Path to cache file (default: cache/weather_cache.json)
         """
         self.base_url = "https://api.open-meteo.com/v1/forecast"
         self.session = requests.Session()
-        self.cache = {}  # Cache weather data by location: {(lat, lon): {'data': {...}, 'timestamp': datetime}}
         self.cache_radius_km = cache_radius_km
         self.cache_duration_hours = cache_duration_hours
+        
+        # Set up cache file path
+        if cache_file is None:
+            cache_dir = Path("cache")
+            cache_dir.mkdir(exist_ok=True)
+            self.cache_file = cache_dir / "weather_cache.json"
+        else:
+            self.cache_file = Path(cache_file)
+            self.cache_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Load cache from file
+        self.cache = self._load_cache()
+        logger.info(f"Loaded {len(self.cache)} weather cache entries from {self.cache_file}")
+    
+    def _load_cache(self) -> Dict:
+        """
+        Load weather cache from JSON file.
+        
+        Returns:
+            Dictionary with cached weather data
+        """
+        if not self.cache_file.exists():
+            logger.debug(f"No cache file found at {self.cache_file}")
+            return {}
+        
+        try:
+            with open(self.cache_file, 'r') as f:
+                cache_data = json.load(f)
+            
+            # Convert string keys back to tuples and string timestamps back to datetime
+            cache = {}
+            for key_str, entry in cache_data.items():
+                # Parse key: "lat,lon"
+                lat, lon = map(float, key_str.split(','))
+                cache[(lat, lon)] = {
+                    'data': entry['data'],
+                    'timestamp': datetime.fromisoformat(entry['timestamp'])
+                }
+            
+            logger.debug(f"Loaded {len(cache)} entries from cache file")
+            return cache
+            
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            logger.warning(f"Error loading cache file: {e}. Starting with empty cache.")
+            return {}
+    
+    def _save_cache(self):
+        """Save weather cache to JSON file."""
+        try:
+            # Convert tuple keys to strings and datetime to ISO format
+            cache_data = {}
+            for (lat, lon), entry in self.cache.items():
+                key_str = f"{lat},{lon}"
+                cache_data[key_str] = {
+                    'data': entry['data'],
+                    'timestamp': entry['timestamp'].isoformat()
+                }
+            
+            with open(self.cache_file, 'w') as f:
+                json.dump(cache_data, f, indent=2)
+            
+            logger.debug(f"Saved {len(cache_data)} entries to cache file")
+            
+        except Exception as e:
+            logger.error(f"Error saving cache file: {e}")
         
     def _find_cached_weather(self, lat: float, lon: float) -> Optional[Dict]:
         """
@@ -126,6 +194,9 @@ class WeatherFetcher:
                 'timestamp': datetime.now()
             }
             
+            # Save cache to file
+            self._save_cache()
+            
             return conditions
             
         except requests.exceptions.RequestException as e:
@@ -182,6 +253,59 @@ class WeatherFetcher:
             
         except requests.exceptions.RequestException as e:
             logger.error(f"Error fetching hourly forecast: {e}")
+            return None
+    
+    def get_daily_forecast(self, lat: float, lon: float, days: int = 7) -> Optional[List[Dict]]:
+        """
+        Get daily weather forecast for up to 7 days.
+        
+        Args:
+            lat: Latitude
+            lon: Longitude
+            days: Number of days to forecast (default 7, max 7)
+            
+        Returns:
+            List of daily forecasts or None if unavailable
+        """
+        try:
+            params = {
+                'latitude': lat,
+                'longitude': lon,
+                'daily': 'temperature_2m_max,temperature_2m_min,precipitation_sum,'
+                        'precipitation_probability_max,wind_speed_10m_max,wind_direction_10m_dominant',
+                'wind_speed_unit': 'kmh',
+                'timezone': 'auto',
+                'forecast_days': min(days, 7)
+            }
+            
+            response = self.session.get(self.base_url, params=params, timeout=10)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if 'daily' not in data:
+                return None
+            
+            daily = data['daily']
+            forecasts = []
+            
+            for i in range(min(days, len(daily['time']))):
+                forecast = {
+                    'date': daily['time'][i],
+                    'temp_max_c': daily['temperature_2m_max'][i],
+                    'temp_min_c': daily['temperature_2m_min'][i],
+                    'precipitation_sum_mm': daily['precipitation_sum'][i],
+                    'precipitation_prob_max': daily['precipitation_probability_max'][i],
+                    'wind_speed_max_kph': daily['wind_speed_10m_max'][i],
+                    'wind_direction_dominant_deg': daily['wind_direction_10m_dominant'][i]
+                }
+                forecasts.append(forecast)
+            
+            logger.info(f"Fetched {len(forecasts)}-day forecast for ({lat:.4f}, {lon:.4f})")
+            return forecasts
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching daily forecast: {e}")
             return None
     
     def get_route_weather(self, coordinates: List[Tuple[float, float]]) -> Dict:

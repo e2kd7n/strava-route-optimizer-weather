@@ -580,29 +580,38 @@ class RouteVisualizer:
         
         // Expose filterRoutes globally so report buttons can call it
         window.filterRoutes = function(filter) {{
+            console.log('filterRoutes called with:', filter);
             currentFilter = filter;
             selectedRoute = null;
             
-            // Filter routes
-            var routeLines = document.querySelectorAll('.route-line');
+            // Filter routes - need to find SVG path elements
+            var routeLines = document.querySelectorAll('path.route-line');
+            console.log('Found', routeLines.length, 'route lines');
+            
+            var visibleCount = 0;
             routeLines.forEach(function(line) {{
-                var classes = line.className.baseVal || line.className;
+                // For SVG elements, use getAttribute to get class
+                var classes = line.getAttribute('class') || '';
                 
                 if (filter === 'all') {{
                     line.style.display = '';
                     line.style.opacity = '';
                     line.style.strokeWidth = '';
+                    visibleCount++;
                 }} else {{
                     var directionClass = 'direction-' + filter;
                     if (classes.indexOf(directionClass) !== -1) {{
                         line.style.display = '';
                         line.style.opacity = '';
                         line.style.strokeWidth = '';
+                        visibleCount++;
                     }} else {{
                         line.style.display = 'none';
                     }}
                 }}
             }});
+            
+            console.log('Visible routes after filter:', visibleCount);
             
             // Auto-zoom to fit visible routes
             if (filter !== 'all') {{
@@ -683,9 +692,10 @@ class RouteVisualizer:
         }}
         
         function resetRouteStyles() {{
-            var routeLines = document.querySelectorAll('.route-line');
+            var routeLines = document.querySelectorAll('path.route-line');
             routeLines.forEach(function(line) {{
-                var classes = line.className.baseVal || line.className;
+                // For SVG elements, use getAttribute to get class
+                var classes = line.getAttribute('class') || '';
                 
                 // Only reset if route is visible based on current filter
                 if (currentFilter === 'all') {{
