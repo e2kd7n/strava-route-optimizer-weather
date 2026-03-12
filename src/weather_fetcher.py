@@ -7,10 +7,11 @@ to analyze wind conditions and their impact on cycling routes.
 
 import logging
 import requests
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime, timedelta
 import numpy as np
 from geopy.distance import geodesic
+import calendar
 
 logger = logging.getLogger(__name__)
 
@@ -173,6 +174,59 @@ class WeatherFetcher:
                    f"from {avg_conditions['wind_direction_deg']:.0f}°")
         
         return avg_conditions
+    
+    @staticmethod
+    def get_prevailing_wind_direction(lat: float, lon: float,
+                                      month: Optional[int] = None) -> Dict[str, Any]:
+        """
+        Get prevailing wind direction for a location based on season.
+        
+        For Chicago area (41.8°N, 87.6°W), prevailing winds are:
+        - Winter (Dec-Feb): W to NW (270-315°)
+        - Spring (Mar-May): S to SW (180-225°)
+        - Summer (Jun-Aug): S to SW (180-225°)
+        - Fall (Sep-Nov): S to SW (180-225°)
+        
+        Args:
+            lat: Latitude
+            lon: Longitude
+            month: Month number (1-12), defaults to current month
+            
+        Returns:
+            Dictionary with prevailing wind info
+        """
+        if month is None:
+            month = datetime.now().month
+        
+        # Determine season
+        if month in [12, 1, 2]:
+            season = "Winter"
+            direction_deg = 292.5  # WNW
+            direction_name = "WNW"
+            description = "Prevailing westerly/northwesterly winds"
+        elif month in [3, 4, 5]:
+            season = "Spring"
+            direction_deg = 202.5  # SSW
+            direction_name = "SSW"
+            description = "Prevailing southwesterly winds"
+        elif month in [6, 7, 8]:
+            season = "Summer"
+            direction_deg = 202.5  # SSW
+            direction_name = "SSW"
+            description = "Prevailing southwesterly winds"
+        else:  # Fall: 9, 10, 11
+            season = "Fall"
+            direction_deg = 202.5  # SSW
+            direction_name = "SSW"
+            description = "Prevailing southwesterly winds"
+        
+        return {
+            'season': season,
+            'month': calendar.month_name[month],
+            'direction_deg': direction_deg,
+            'direction_name': direction_name,
+            'description': description
+        }
 
 
 class WindImpactCalculator:

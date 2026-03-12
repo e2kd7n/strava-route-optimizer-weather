@@ -66,7 +66,7 @@ class ReportGenerator:
         visualizer = self.results.get('visualizer')
         route_names = visualizer.get_route_names() if visualizer else {}
         
-        # Prepare ranked routes with metrics, names, and Strava links
+        # Prepare ranked routes with metrics, names, Strava links, and prevailing wind
         ranked_routes = []
         for group, score, breakdown in self.results.get('ranked_routes', []):
             metrics = self.results.get('optimizer').metrics.get(group.id)
@@ -79,13 +79,24 @@ class ReportGenerator:
                 sorted_routes = sorted(group.routes, key=lambda r: r.timestamp, reverse=True)
                 most_recent_activity_id = sorted_routes[0].activity_id
             
+            # Get prevailing wind direction for this route
+            from .weather_fetcher import WeatherFetcher
+            if group.representative_route and group.representative_route.coordinates:
+                # Use midpoint of route for location
+                mid_idx = len(group.representative_route.coordinates) // 2
+                mid_lat, mid_lon = group.representative_route.coordinates[mid_idx]
+                prevailing_wind = WeatherFetcher.get_prevailing_wind_direction(mid_lat, mid_lon)
+            else:
+                prevailing_wind = None
+            
             ranked_routes.append({
                 'group': group,
                 'score': score,
                 'breakdown': breakdown,
                 'metrics': metrics,
                 'name': route_name,
-                'strava_url': f"https://www.strava.com/activities/{most_recent_activity_id}" if most_recent_activity_id else None
+                'strava_url': f"https://www.strava.com/activities/{most_recent_activity_id}" if most_recent_activity_id else None,
+                'prevailing_wind': prevailing_wind
             })
         
         # Calculate statistics
@@ -326,7 +337,7 @@ class ReportGenerator:
                                     <td>
                                         {% if route.breakdown.get('weather_details') %}
                                             {% set wd = route.breakdown.weather_details %}
-                                            <span title="Headwind: {{ '%.1f'|format(wd.avg_headwind_kph) }} km/h, Crosswind: {{ '%.1f'|format(wd.avg_crosswind_kph) }} km/h">
+                                            <div title="Current: Headwind {{ '%.1f'|format(wd.avg_headwind_kph) }} km/h, Crosswind {{ '%.1f'|format(wd.avg_crosswind_kph) }} km/h">
                                                 {% if wd.wind_favorability == 'favorable' %}
                                                     <span style="color: green;">✅ {{ "%.0f"|format(route.breakdown.weather) }}</span>
                                                 {% elif wd.wind_favorability == 'unfavorable' %}
@@ -334,9 +345,19 @@ class ReportGenerator:
                                                 {% else %}
                                                     <span style="color: gray;">➖ {{ "%.0f"|format(route.breakdown.weather) }}</span>
                                                 {% endif %}
-                                            </span>
+                                            </div>
+                                            {% if route.prevailing_wind %}
+                                                <small class="text-muted" title="{{ route.prevailing_wind.description }}">
+                                                    {{ route.prevailing_wind.month }}: {{ route.prevailing_wind.direction_name }}
+                                                </small>
+                                            {% endif %}
                                         {% else %}
                                             <span class="text-muted" title="No weather data">-</span>
+                                            {% if route.prevailing_wind %}
+                                                <br><small class="text-muted" title="{{ route.prevailing_wind.description }}">
+                                                    {{ route.prevailing_wind.month }}: {{ route.prevailing_wind.direction_name }}
+                                                </small>
+                                            {% endif %}
                                         {% endif %}
                                     </td>
                                     <td>
