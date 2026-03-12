@@ -447,15 +447,20 @@ class ReportGenerator:
                     // Get selected direction
                     currentDirection = this.getAttribute('data-direction');
                     
-                    // Filter routes
-                    filterRoutes();
+                    // Filter routes in table
+                    filterRoutesInTable();
+                    
+                    // Filter routes in map (if window.filterRoutes exists)
+                    if (typeof window.filterRoutes === 'function') {
+                        window.filterRoutes(currentDirection);
+                    }
                     
                     // Reset pagination to page 1
                     window.paginationController.resetToFirstPage();
                 });
             });
             
-            function filterRoutes() {
+            function filterRoutesInTable() {
                 allRouteRows.forEach(row => {
                     const rowDirection = row.getAttribute('data-direction');
                     
@@ -473,7 +478,7 @@ class ReportGenerator:
             // Expose filter function globally
             window.directionFilter = {
                 getCurrentDirection: () => currentDirection,
-                filterRoutes: filterRoutes
+                filterRoutes: filterRoutesInTable
             };
         })();
         

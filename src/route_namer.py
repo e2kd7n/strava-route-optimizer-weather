@@ -44,6 +44,12 @@ class RouteNamer:
         Returns:
             Human-readable route name
         """
+        # Check if geocoding is disabled in config
+        if self.config and not self.config.get('route_analysis.enable_geocoding', True):
+            direction_label = "to Work" if direction == "home_to_work" else "to Home"
+            route_num = route_id.split('_')[-1]
+            return f"Route {route_num} {direction_label}"
+        
         try:
             # Get first street (near start of route)
             first_street = self._get_first_street(coordinates)

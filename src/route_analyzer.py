@@ -180,13 +180,14 @@ class RouteAnalyzer:
         # Use maximum distance
         max_dist = max(dist_forward, dist_backward)
         
-        # Normalize by average route length
-        avg_length = (route1.distance + route2.distance) / 2
-        normalized_dist = max_dist * 111000  # Convert degrees to meters (approximate)
+        # Convert degrees to meters (approximate)
+        normalized_dist = max_dist * 111000
         
         # Convert to similarity score (0-1)
-        # Routes within 200m are considered very similar
-        similarity = 1 / (1 + normalized_dist / 200)
+        # Use configurable distance threshold
+        # With threshold=0.65, routes within ~500m get similarity >= 0.65
+        distance_threshold = 500  # meters - routes within this distance are considered similar
+        similarity = 1 / (1 + normalized_dist / distance_threshold)
         
         return similarity
     

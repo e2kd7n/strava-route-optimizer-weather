@@ -14,6 +14,7 @@ from geopy.distance import geodesic
 from .route_analyzer import RouteGroup
 from .location_finder import Location
 from .route_namer import RouteNamer
+from .units import UnitConverter
 
 logger = logging.getLogger(__name__)
 
@@ -41,55 +42,12 @@ class RouteVisualizer:
         self.map = None
         self.route_namer = RouteNamer(config)
         self.route_names = {}  # Map route_id to human-readable name
-        self.trim_distance_km = 0.8  # Trim 0.5 miles (0.8 km) from each end
         self.long_rides = long_rides or []
         self.long_ride_analyzer = long_ride_analyzer
-    
-    def _trim_route_ends(self, coordinates: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
-        """
-        Trim the first and last half mile from route coordinates for privacy.
         
-        Args:
-            coordinates: List of (lat, lon) tuples
-            
-        Returns:
-            Trimmed list of coordinates
-        """
-        if len(coordinates) < 3:
-            return coordinates
-        
-        trimmed = []
-        cumulative_distance = 0.0
-        start_idx = 0
-        
-        # Find start index (skip first 0.8 km)
-        for i in range(len(coordinates) - 1):
-            distance = geodesic(coordinates[i], coordinates[i + 1]).km
-            cumulative_distance += distance
-            if cumulative_distance >= self.trim_distance_km:
-                start_idx = i + 1
-                break
-        
-        # Find end index (skip last 0.8 km)
-        cumulative_distance = 0.0
-        end_idx = len(coordinates)
-        for i in range(len(coordinates) - 1, 0, -1):
-            distance = geodesic(coordinates[i], coordinates[i - 1]).km
-            cumulative_distance += distance
-            if cumulative_distance >= self.trim_distance_km:
-                end_idx = i
-                break
-        
-        # Return trimmed coordinates
-        if start_idx < end_idx:
-            trimmed = coordinates[start_idx:end_idx]
-            logger.debug(f"Trimmed route from {len(coordinates)} to {len(trimmed)} points")
-            return trimmed
-        else:
-            # Route too short to trim, return middle portion
-            mid = len(coordinates) // 2
-            quarter = len(coordinates) // 4
-            return coordinates[mid-quarter:mid+quarter] if quarter > 0 else coordinates
+        # Initialize unit converter
+        unit_system = config.get('units.system', 'metric')
+        self.units = UnitConverter(unit_system)
         
     def create_base_map(self) -> folium.Map:
         """
@@ -106,11 +64,12 @@ class RouteVisualizer:
         zoom_level = self.config.get('visualization.map.zoom_level', 13)
         tile_layer = self.config.get('visualization.map.tile_layer', 'OpenStreetMap')
         
-        # Create map
+        # Create map with larger height for better visibility
         m = folium.Map(
             location=[center_lat, center_lon],
             zoom_start=zoom_level,
-            tiles=tile_layer
+            tiles=tile_layer,
+            height='800px'  # Increased from default 600px
         )
         
         logger.info(f"Created base map centered at ({center_lat:.4f}, {center_lon:.4f})")
@@ -136,11 +95,8 @@ class RouteVisualizer:
         # Get representative route coordinates
         coords = route_group.representative_route.coordinates
         
-        # Trim route ends for privacy (hide first and last 0.5 miles)
-        trimmed_coords = self._trim_route_ends(coords)
-        
-        if not trimmed_coords:
-            logger.warning(f"Route {route_group.id} too short to display after trimming")
+        if not coords:
+            logger.warning(f"Route {route_group.id} has no coordinates")
             return
         
         # Use provided name or generate one
@@ -158,18 +114,26 @@ class RouteVisualizer:
         # Determine opacity
         opacity = 0.9 if is_optimal else 0.6
         
-        # Add polyline with custom class for JavaScript interaction
+        # Store route bounds for zoom functionality
+        route_bounds = [[coord[0], coord[1]] for coord in coords]
+        
+        # Determine direction class for filtering
+        direction_class = f"direction-{route_group.direction}"
+        
+        # Add polyline with custom class and data attributes for JavaScript interaction
         folium.PolyLine(
-            trimmed_coords,
+            coords,
             color=color,
             weight=weight,
             opacity=opacity,
             popup=folium.Popup(popup_html, max_width=300),
             tooltip=f"{route_name} ({route_group.frequency} uses)",
-            className=f"route-line route-{route_group.id}"
+            className=f"route-line route-{route_group.id} {direction_class}",
+            # Store bounds as data attribute for JavaScript access
+            name=f"route-{route_group.id}"
         ).add_to(self.map)
         
-        logger.debug(f"Added route layer: {route_name} ({color}, trimmed for privacy)")
+        logger.debug(f"Added route layer: {route_name} ({color})")
     
     def add_location_markers(self) -> None:
         """Add markers for home and work locations."""
@@ -199,15 +163,13 @@ class RouteVisualizer:
         if self.map is None:
             raise ValueError("Map not initialized. Call create_base_map() first.")
         
-        # Collect all coordinates from all routes (trimmed for privacy)
+        # Collect all coordinates from all routes
         heat_data = []
         
         for group in self.route_groups:
             for route in group.routes:
-                # Trim route ends for privacy
-                trimmed_coords = self._trim_route_ends(route.coordinates)
-                # Add trimmed coordinates
-                for coord in trimmed_coords:
+                # Add all coordinates
+                for coord in route.coordinates:
                     heat_data.append([coord[0], coord[1]])
         
         if heat_data:
@@ -240,7 +202,10 @@ class RouteVisualizer:
         
         import numpy as np
         avg_duration = np.mean(durations) / 60  # Convert to minutes
-        avg_distance = np.mean(distances) / 1000  # Convert to km
+        avg_distance_m = np.mean(distances)  # meters
+        
+        # Format distance using unit converter
+        distance_str = self.units.distance(avg_distance_m)
         
         html = f"""
         <div style="font-family: Arial, sans-serif;">
@@ -260,7 +225,7 @@ class RouteVisualizer:
                 </tr>
                 <tr>
                     <td><b>Avg Distance:</b></td>
-                    <td>{avg_distance:.2f} km</td>
+                    <td>{distance_str}</td>
                 </tr>
             </table>
         </div>
@@ -328,6 +293,9 @@ class RouteVisualizer:
             self.map.save(output_path)
             logger.info(f"Map saved to {output_path}")
         
+        # Add JavaScript for route interaction (zoom and fade)
+        self._add_route_interaction_javascript()
+        
         # Add JavaScript for long rides click handler if long rides are available
         self._add_long_rides_javascript()
         
@@ -348,10 +316,14 @@ class RouteVisualizer:
                 mid_idx = len(ride.coordinates) // 2 if ride.coordinates else 0
                 midpoint = ride.coordinates[mid_idx] if ride.coordinates else ride.start_location
                 
+                # Convert distance to appropriate unit
+                distance_m = ride.distance_km * 1000
+                distance_value = self.units.distance_value(distance_m)
+                
                 long_rides_data.append({
                     'id': ride.activity_id,
                     'name': ride.name,
-                    'distance_km': round(ride.distance_km, 1),
+                    'distance': round(distance_value, 1),  # In target unit
                     'duration_hours': round(ride.duration_hours, 2),
                     'is_loop': ride.is_loop,
                     'midpoint': [midpoint[0], midpoint[1]],
@@ -361,6 +333,9 @@ class RouteVisualizer:
         
         long_rides_json = json.dumps(long_rides_data)
         
+        # Get unit labels for JavaScript
+        distance_unit = self.units.distance_unit()
+        
         # JavaScript code for click handling with embedded data
         js_code = f"""
         <script>
@@ -369,6 +344,7 @@ class RouteVisualizer:
         var longRidesEnabled = true;
         var clickMarker = null;
         var recommendationLayers = [];
+        var distanceUnit = '{distance_unit}';
         
         // Calculate distance between two points (Haversine formula)
         function calculateDistance(lat1, lon1, lat2, lon2) {{
@@ -481,7 +457,7 @@ class RouteVisualizer:
                     html += '<div style="background: ' + bgColor + '; padding: 8px; border-radius: 4px; margin: 5px 0; border-left: 3px solid ' + borderColor + ';">' +
                             '<div style="font-size: 12px; font-weight: bold; margin-bottom: 3px;">' + (index + 1) + '. ' + ride.name + '</div>' +
                             '<div style="font-size: 11px; color: #666;">' +
-                            '<span>📏 ' + ride.distance_km + ' km</span> | ' +
+                            '<span>📏 ' + ride.distance + ' ' + distanceUnit + '</span> | ' +
                             '<span>⏱️ ' + ride.duration_hours.toFixed(1) + ' hrs</span> | ' +
                             '<span>📍 ' + item.distance.toFixed(1) + ' km away</span>' +
                             (ride.is_loop ? ' | <span style="color: #4caf50;">🔄 Loop</span>' : '') +
@@ -511,6 +487,216 @@ class RouteVisualizer:
         self.map.get_root().html.add_child(Element(js_code))
         
         logger.info(f"Added long rides JavaScript with {len(long_rides_data)} rides embedded")
+    
+    def _add_route_interaction_javascript(self) -> None:
+        """Add JavaScript for route click interactions (zoom and fade) and filter buttons."""
+        if self.map is None:
+            return
+        
+        # Collect route bounds for each route group
+        import json
+        route_data = {}
+        for group in self.route_groups:
+            coords = group.representative_route.coordinates
+            if coords:
+                route_data[f"route-{group.id}"] = {
+                    'bounds': [[coord[0], coord[1]] for coord in coords],
+                    'name': self.route_names.get(group.id, group.id),
+                    'direction': group.direction
+                }
+        
+        route_data_json = json.dumps(route_data)
+        
+        js_code = f"""
+        <script>
+        // Route interaction data
+        var routeData = {route_data_json};
+        var selectedRoute = null;
+        var currentFilter = 'all';
+        
+        // Wait for map to be ready
+        document.addEventListener('DOMContentLoaded', function() {{
+            setTimeout(function() {{
+                // Find all route polylines
+                var routeLines = document.querySelectorAll('.route-line');
+                
+                routeLines.forEach(function(routeLine) {{
+                    routeLine.addEventListener('click', function(e) {{
+                        // Get route ID from class name
+                        var classes = this.className.baseVal || this.className;
+                        var routeMatch = classes.match(/route-([\\w_]+)/);
+                        if (!routeMatch) return;
+                        
+                        var routeId = 'route-' + routeMatch[1];
+                        var data = routeData[routeId];
+                        if (!data) return;
+                        
+                        // Toggle selection
+                        if (selectedRoute === routeId) {{
+                            // Deselect - restore all routes
+                            resetRouteStyles();
+                            selectedRoute = null;
+                        }} else {{
+                            // Select this route
+                            selectedRoute = routeId;
+                            
+                            // Fade all other routes
+                            routeLines.forEach(function(line) {{
+                                var lineClasses = line.className.baseVal || line.className;
+                                if (lineClasses.indexOf(routeId) === -1) {{
+                                    // Not the selected route - fade it
+                                    line.style.opacity = '0.15';
+                                    line.style.strokeWidth = '2';
+                                }} else {{
+                                    // Selected route - highlight it
+                                    line.style.opacity = '1.0';
+                                    line.style.strokeWidth = '6';
+                                }}
+                            }});
+                            
+                            // Zoom to route bounds
+                            zoomToRoute(data.bounds);
+                        }}
+                        
+                        // Stop event propagation
+                        e.stopPropagation();
+                    }});
+                }});
+                
+                // Click on map background to reset
+                var mapElement = document.querySelector('.folium-map');
+                if (mapElement && mapElement._leaflet_id) {{
+                    var map = window[mapElement._leaflet_id];
+                    map.on('click', function(e) {{
+                        // Only reset if not clicking on a route
+                        if (selectedRoute && !e.originalEvent.target.classList.contains('route-line')) {{
+                            resetRouteStyles();
+                            selectedRoute = null;
+                        }}
+                    }});
+                }}
+            }}, 500); // Wait for map to fully initialize
+        }});
+        
+        // Expose filterRoutes globally so report buttons can call it
+        window.filterRoutes = function(filter) {{
+            currentFilter = filter;
+            selectedRoute = null;
+            
+            // Filter routes
+            var routeLines = document.querySelectorAll('.route-line');
+            routeLines.forEach(function(line) {{
+                var classes = line.className.baseVal || line.className;
+                
+                if (filter === 'all') {{
+                    line.style.display = '';
+                    line.style.opacity = '';
+                    line.style.strokeWidth = '';
+                }} else {{
+                    var directionClass = 'direction-' + filter;
+                    if (classes.indexOf(directionClass) !== -1) {{
+                        line.style.display = '';
+                        line.style.opacity = '';
+                        line.style.strokeWidth = '';
+                    }} else {{
+                        line.style.display = 'none';
+                    }}
+                }}
+            }});
+            
+            // Auto-zoom to fit visible routes
+            if (filter !== 'all') {{
+                zoomToFilteredRoutes(filter);
+            }} else {{
+                resetMapView();
+            }}
+        }};  // Close window.filterRoutes
+        
+        function zoomToRoute(bounds) {{
+            try {{
+                var mapElement = document.querySelector('.folium-map');
+                if (mapElement && mapElement._leaflet_id) {{
+                    var map = window[mapElement._leaflet_id];
+                    var latLngBounds = L.latLngBounds(bounds);
+                    map.fitBounds(latLngBounds, {{padding: [50, 50]}});
+                }}
+            }} catch (err) {{
+                console.error('Error zooming to route:', err);
+            }}
+        }}
+        
+        function zoomToFilteredRoutes(filter) {{
+            try {{
+                var mapElement = document.querySelector('.folium-map');
+                if (!mapElement || !mapElement._leaflet_id) return;
+                
+                var map = window[mapElement._leaflet_id];
+                var allBounds = [];
+                
+                // Collect bounds from all visible routes
+                for (var routeId in routeData) {{
+                    var data = routeData[routeId];
+                    if (data.direction === filter) {{
+                        allBounds = allBounds.concat(data.bounds);
+                    }}
+                }}
+                
+                if (allBounds.length > 0) {{
+                    var latLngBounds = L.latLngBounds(allBounds);
+                    map.fitBounds(latLngBounds, {{padding: [50, 50]}});
+                }}
+            }} catch (err) {{
+                console.error('Error zooming to filtered routes:', err);
+            }}
+        }}
+        
+        function resetMapView() {{
+            try {{
+                var mapElement = document.querySelector('.folium-map');
+                if (!mapElement || !mapElement._leaflet_id) return;
+                
+                var map = window[mapElement._leaflet_id];
+                var allBounds = [];
+                
+                // Collect bounds from all routes
+                for (var routeId in routeData) {{
+                    allBounds = allBounds.concat(routeData[routeId].bounds);
+                }}
+                
+                if (allBounds.length > 0) {{
+                    var latLngBounds = L.latLngBounds(allBounds);
+                    map.fitBounds(latLngBounds, {{padding: [50, 50]}});
+                }}
+            }} catch (err) {{
+                console.error('Error resetting map view:', err);
+            }}
+        }}
+        
+        function resetRouteStyles() {{
+            var routeLines = document.querySelectorAll('.route-line');
+            routeLines.forEach(function(line) {{
+                var classes = line.className.baseVal || line.className;
+                
+                // Only reset if route is visible based on current filter
+                if (currentFilter === 'all') {{
+                    line.style.opacity = '';
+                    line.style.strokeWidth = '';
+                }} else {{
+                    var directionClass = 'direction-' + currentFilter;
+                    if (classes.indexOf(directionClass) !== -1) {{
+                        line.style.opacity = '';
+                        line.style.strokeWidth = '';
+                    }}
+                }}
+            }});
+        }}
+        </script>
+        """
+        
+        from folium import Element
+        self.map.get_root().html.add_child(Element(js_code))
+        
+        logger.info("Added route interaction JavaScript with filter buttons for zoom and fade effects")
     
     def get_route_names(self) -> Dict[str, str]:
         """

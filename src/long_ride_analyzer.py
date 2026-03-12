@@ -81,7 +81,7 @@ class LongRideAnalyzer:
         self.activities = activities
         self.config = config
         self.route_namer = RouteNamer(config)
-        self.weather_fetcher = WeatherFetcher(config)
+        self.weather_fetcher = WeatherFetcher()  # WeatherFetcher doesn't take config parameter
         
     def classify_activities(self, commute_activities: List[Activity]) -> Tuple[List[Activity], List[Activity]]:
         """

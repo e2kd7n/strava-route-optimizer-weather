@@ -19,14 +19,41 @@ logger = logging.getLogger(__name__)
 class WeatherFetcher:
     """Fetches weather data from Open-Meteo API (free, no API key needed)."""
     
-    def __init__(self):
-        """Initialize weather fetcher."""
+    def __init__(self, cache_radius_km: float = 2.0):
+        """
+        Initialize weather fetcher.
+        
+        Args:
+            cache_radius_km: Radius in km to consider locations as "same" for caching (default 2.0)
+        """
         self.base_url = "https://api.open-meteo.com/v1/forecast"
         self.session = requests.Session()
+        self.cache = {}  # Cache weather data by location
+        self.cache_radius_km = cache_radius_km
         
+    def _find_cached_weather(self, lat: float, lon: float) -> Optional[Dict]:
+        """
+        Find cached weather data for a nearby location.
+        
+        Args:
+            lat: Latitude
+            lon: Longitude
+            
+        Returns:
+            Cached weather data or None
+        """
+        for cache_key, cached_data in self.cache.items():
+            cache_lat, cache_lon = cache_key
+            distance_km = geodesic((lat, lon), (cache_lat, cache_lon)).km
+            if distance_km <= self.cache_radius_km:
+                logger.debug(f"Using cached weather from ({cache_lat:.4f}, {cache_lon:.4f}) "
+                           f"for ({lat:.4f}, {lon:.4f}) - {distance_km:.2f}km away")
+                return cached_data
+        return None
+    
     def get_current_conditions(self, lat: float, lon: float) -> Optional[Dict]:
         """
-        Get current weather conditions for a location.
+        Get current weather conditions for a location (with caching).
         
         Args:
             lat: Latitude
@@ -35,6 +62,11 @@ class WeatherFetcher:
         Returns:
             Dictionary with current conditions or None if unavailable
         """
+        # Check cache first
+        cached = self._find_cached_weather(lat, lon)
+        if cached:
+            return cached
+        
         try:
             params = {
                 'latitude': lat,
@@ -69,6 +101,9 @@ class WeatherFetcher:
             
             logger.info(f"Fetched weather for ({lat:.4f}, {lon:.4f}): "
                        f"Wind {conditions['wind_speed_kph']:.1f} km/h from {conditions['wind_direction_deg']}°")
+            
+            # Cache the result
+            self.cache[(lat, lon)] = conditions
             
             return conditions
             

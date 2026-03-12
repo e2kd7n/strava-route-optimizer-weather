@@ -4,7 +4,7 @@ strava:
 
 data_fetching:
   cache_enabled: true
-  cache_duration_days: 7
+  cache_duration_days: 365  # Extended to 1 year - historical data doesn't change
   max_activities: 500
 
 location_detection:
@@ -26,8 +26,9 @@ route_filtering:
   exclude_virtual: true
 
 route_analysis:
-  similarity_threshold: 0.75  # Lower = more aggressive deduplication (routes must be more different to be separate)
+  similarity_threshold: 0.50  # Lower = more aggressive grouping (0.50 = routes within ~1km are grouped together)
   min_route_frequency: 2
+  enable_geocoding: false  # Disable geocoding for faster analysis (use generic route names)
 
 optimization:
   weights:
@@ -59,5 +60,10 @@ output:
   report_directory: "output/reports"
   map_filename: "route_map.html"
   report_filename: "commute_analysis.html"
+
+units:
+  system: "imperial"  # Options: "metric" or "imperial"
+  # metric: km, km/h, m/s (wind), °C
+  # imperial: mi, mph, mph (wind), °F
 
 # Made with Bob
