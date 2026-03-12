@@ -10,6 +10,8 @@ from collections import Counter
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import time
+import json
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +29,33 @@ class RouteNamer:
         self.config = config
         # Initialize with 10-second timeout to handle slow Nominatim responses
         self.geolocator = Nominatim(user_agent="strava_commute_analyzer", timeout=10)
-        self.cache = {}  # Cache geocoding results
+        
+        # Set up persistent cache
+        self.cache_dir = "cache"
+        self.cache_file = os.path.join(self.cache_dir, "geocoding_cache.json")
+        os.makedirs(self.cache_dir, exist_ok=True)
+        
+        # Load cache from disk
+        self.cache = self._load_cache()
+        logger.info(f"Loaded {len(self.cache)} geocoding entries from cache")
+    
+    def _load_cache(self) -> Dict:
+        """Load geocoding cache from disk."""
+        if os.path.exists(self.cache_file):
+            try:
+                with open(self.cache_file, 'r') as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.warning(f"Failed to load geocoding cache: {e}")
+        return {}
+    
+    def _save_cache(self):
+        """Save geocoding cache to disk."""
+        try:
+            with open(self.cache_file, 'w') as f:
+                json.dump(self.cache, f, indent=2)
+        except Exception as e:
+            logger.warning(f"Failed to save geocoding cache: {e}")
         
     def name_route(self, coordinates: List[Tuple[float, float]],
                    route_id: str, direction: str) -> str:
@@ -205,8 +233,9 @@ class RouteNamer:
                               address.get('quarter') or
                               address.get('district'))
                 
-                # Cache result
+                # Cache result and save to disk
                 self.cache[cache_key] = neighborhood
+                self._save_cache()
                 return neighborhood
             
         except (GeocoderTimedOut, GeocoderServiceError) as e:
