@@ -31,9 +31,11 @@ route_analysis:
 
 optimization:
   weights:
-    time: 0.4
-    distance: 0.3
-    safety: 0.3
+    time: 0.35      # Speed and duration
+    distance: 0.25  # Route length
+    safety: 0.25    # Familiarity and road conditions
+    weather: 0.15   # Wind impact on cycling efficiency
+  weather_enabled: true  # Enable real-time weather analysis
 
 visualization:
   map:
