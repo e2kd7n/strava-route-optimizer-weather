@@ -1,0 +1,54 @@
+strava:
+  client_id: ${STRAVA_CLIENT_ID}
+  client_secret: ${STRAVA_CLIENT_SECRET}
+
+data_fetching:
+  cache_enabled: true
+  cache_duration_days: 7
+  max_activities: 500
+
+location_detection:
+  clustering:
+    eps: 0.002  # ~200 meters
+    min_samples: 5
+  time_windows:
+    morning_start: "06:00"
+    morning_end: "10:00"
+    evening_start: "16:00"
+    evening_end: "20:00"
+
+route_filtering:
+  min_distance_km: 2
+  max_distance_km: 30
+  activity_types:
+    - Ride
+    - EBikeRide
+  exclude_virtual: true
+
+route_analysis:
+  similarity_threshold: 0.75  # Lower = more aggressive deduplication (routes must be more different to be separate)
+  min_route_frequency: 2
+
+optimization:
+  weights:
+    time: 0.4
+    distance: 0.3
+    safety: 0.3
+
+visualization:
+  map:
+    zoom_level: 13
+    tile_layer: "OpenStreetMap"
+  colors:
+    optimal: "#FF0000"
+    alternative: ["#00FF00", "#0000FF", "#FFA500", "#800080"]
+  route_weight:
+    optimal: 5
+    alternative: 3
+
+output:
+  report_directory: "output/reports"
+  map_filename: "route_map.html"
+  report_filename: "commute_analysis.html"
+
+# Made with Bob
