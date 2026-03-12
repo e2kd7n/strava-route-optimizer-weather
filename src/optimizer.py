@@ -1,42 +1,58 @@
 """
 Route optimization module.
 
-Scores and ranks routes based on multiple criteria.
+Scores and ranks routes based on multiple criteria including weather conditions.
 """
 
 import logging
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Optional
 
 import numpy as np
 
 from .route_analyzer import RouteGroup, RouteMetrics, RouteAnalyzer
+from .weather_fetcher import WeatherFetcher, WindImpactCalculator
 
 logger = logging.getLogger(__name__)
 
 
 class RouteOptimizer:
-    """Optimizes route selection using multi-criteria scoring."""
+    """Optimizes route selection using multi-criteria scoring including weather."""
     
-    def __init__(self, route_groups: List[RouteGroup], config):
+    def __init__(self, route_groups: List[RouteGroup], config,
+                 enable_weather: bool = True):
         """
         Initialize route optimizer.
         
         Args:
             route_groups: List of RouteGroup objects
             config: Configuration object
+            enable_weather: Whether to include weather analysis (default True)
         """
         self.route_groups = route_groups
         self.config = config
+        self.enable_weather = enable_weather
+        
+        # Get weights from config
         self.weights = {
-            'time': config.get('optimization.weights.time', 0.4),
-            'distance': config.get('optimization.weights.distance', 0.3),
-            'safety': config.get('optimization.weights.safety', 0.3)
+            'time': config.get('optimization.weights.time', 0.35),
+            'distance': config.get('optimization.weights.distance', 0.25),
+            'safety': config.get('optimization.weights.safety', 0.25),
+            'weather': config.get('optimization.weights.weather', 0.15)
         }
+        
+        # Initialize weather components
+        self.weather_fetcher = WeatherFetcher() if enable_weather else None
+        self.wind_calculator = WindImpactCalculator() if enable_weather else None
+        self.weather_data = {}
         
         # Calculate metrics for all groups
         self.analyzer = None  # Will be set if needed
         self.metrics = {}
         self._calculate_all_metrics()
+        
+        # Fetch weather data if enabled
+        if self.enable_weather:
+            self._fetch_weather_data()
         
         # Find min/max values for normalization
         self._find_normalization_bounds()
@@ -92,6 +108,82 @@ class RouteOptimizer:
         self.max_distance = max(distances)
         self.max_frequency = max(frequencies)
         self.max_elevation = max(elevations) if max(elevations) > 0 else 1
+    
+    def _fetch_weather_data(self):
+        """Fetch current weather data for all routes."""
+        if not self.weather_fetcher:
+            return
+        
+        logger.info("Fetching weather data for routes...")
+        
+        for group in self.route_groups:
+            try:
+                # Get weather for representative route
+                coordinates = group.representative_route.coordinates
+                weather = self.weather_fetcher.get_route_weather(coordinates)
+                
+                if weather and 'wind_speed_kph' in weather and 'wind_direction_deg' in weather:
+                    # Calculate wind impact
+                    wind_impact = self.wind_calculator.analyze_route_wind_impact(
+                        coordinates,
+                        weather['wind_speed_kph'],
+                        weather['wind_direction_deg']
+                    )
+                    
+                    # Store combined weather data
+                    self.weather_data[group.id] = {
+                        **weather,
+                        **wind_impact
+                    }
+                    
+                    logger.info(f"Route {group.id}: {wind_impact['wind_favorability']} wind "
+                               f"({wind_impact['avg_headwind_kph']:.1f} km/h headwind)")
+                else:
+                    logger.warning(f"Incomplete weather data for route {group.id}")
+                    
+            except Exception as e:
+                logger.error(f"Error fetching weather for route {group.id}: {e}")
+        
+        logger.info(f"Weather data fetched for {len(self.weather_data)}/{len(self.route_groups)} routes")
+    
+    def calculate_weather_score(self, route_group: RouteGroup) -> float:
+        """
+        Calculate weather score for a route based on wind conditions.
+        
+        Args:
+            route_group: RouteGroup object
+            
+        Returns:
+            Weather score (0-100)
+        """
+        if not self.enable_weather or route_group.id not in self.weather_data:
+            return 50  # Neutral score if no weather data
+        
+        weather = self.weather_data[route_group.id]
+        
+        # Base score starts at 50 (neutral)
+        score = 50
+        
+        # Headwind/tailwind component (±40 points)
+        # Tailwind (negative headwind) is good, headwind is bad
+        avg_headwind = weather.get('avg_headwind_kph', 0)
+        if avg_headwind < 0:  # Tailwind
+            # Tailwind bonus: up to +40 points for 20+ km/h tailwind
+            score += min(40, abs(avg_headwind) * 2)
+        else:  # Headwind
+            # Headwind penalty: up to -40 points for 20+ km/h headwind
+            score -= min(40, avg_headwind * 2)
+        
+        # Crosswind component (±10 points)
+        # Strong crosswinds are always bad
+        avg_crosswind = weather.get('avg_crosswind_kph', 0)
+        crosswind_penalty = min(10, avg_crosswind * 0.5)
+        score -= crosswind_penalty
+        
+        # Ensure score is in valid range
+        score = max(0, min(100, score))
+        
+        return score
     
     def calculate_time_score(self, metrics: RouteMetrics) -> float:
         """
@@ -174,7 +266,7 @@ class RouteOptimizer:
     
     def calculate_composite_score(self, route_group: RouteGroup) -> float:
         """
-        Calculate composite score for a route.
+        Calculate composite score for a route including weather.
         
         Args:
             route_group: RouteGroup object
@@ -187,22 +279,24 @@ class RouteOptimizer:
         time_score = self.calculate_time_score(metrics)
         distance_score = self.calculate_distance_score(metrics)
         safety_score = self.calculate_safety_score(route_group)
+        weather_score = self.calculate_weather_score(route_group)
         
         composite = (
             time_score * self.weights['time'] +
             distance_score * self.weights['distance'] +
-            safety_score * self.weights['safety']
+            safety_score * self.weights['safety'] +
+            weather_score * self.weights['weather']
         )
         
         logger.debug(f"Route {route_group.id}: time={time_score:.1f}, "
                     f"distance={distance_score:.1f}, safety={safety_score:.1f}, "
-                    f"composite={composite:.1f}")
+                    f"weather={weather_score:.1f}, composite={composite:.1f}")
         
         return composite
     
     def rank_routes(self) -> List[Tuple[RouteGroup, float, Dict[str, float]]]:
         """
-        Rank all routes by composite score.
+        Rank all routes by composite score including weather.
         
         Returns:
             List of tuples (RouteGroup, composite_score, score_breakdown)
@@ -215,14 +309,20 @@ class RouteOptimizer:
             time_score = self.calculate_time_score(metrics)
             distance_score = self.calculate_distance_score(metrics)
             safety_score = self.calculate_safety_score(group)
+            weather_score = self.calculate_weather_score(group)
             composite_score = self.calculate_composite_score(group)
             
             score_breakdown = {
                 'time': time_score,
                 'distance': distance_score,
                 'safety': safety_score,
+                'weather': weather_score,
                 'composite': composite_score
             }
+            
+            # Add weather details if available
+            if group.id in self.weather_data:
+                score_breakdown['weather_details'] = self.weather_data[group.id]
             
             ranked.append((group, composite_score, score_breakdown))
         
@@ -230,8 +330,12 @@ class RouteOptimizer:
         ranked.sort(key=lambda x: x[1], reverse=True)
         
         logger.info(f"Ranked {len(ranked)} route groups")
-        for i, (group, score, _) in enumerate(ranked[:3]):
-            logger.info(f"  {i+1}. {group.id}: {score:.2f} points ({group.frequency} uses)")
+        for i, (group, score, breakdown) in enumerate(ranked[:3]):
+            weather_info = ""
+            if 'weather_details' in breakdown:
+                wd = breakdown['weather_details']
+                weather_info = f", wind: {wd.get('wind_favorability', 'unknown')}"
+            logger.info(f"  {i+1}. {group.id}: {score:.2f} points ({group.frequency} uses{weather_info})")
         
         return ranked
     
@@ -307,7 +411,7 @@ class RouteOptimizer:
     
     def _generate_recommendation_reason(self, breakdown: Dict[str, float]) -> str:
         """
-        Generate human-readable reason for recommendation.
+        Generate human-readable reason for recommendation including weather.
         
         Args:
             breakdown: Score breakdown dictionary
@@ -323,6 +427,15 @@ class RouteOptimizer:
             reasons.append("shortest distance")
         if breakdown['safety'] > 80:
             reasons.append("most familiar and safe")
+        if breakdown.get('weather', 50) > 70:
+            reasons.append("favorable wind conditions")
+        
+        # Add weather warning if unfavorable
+        if breakdown.get('weather', 50) < 30:
+            if reasons:
+                reasons.append("but note: strong headwinds expected")
+            else:
+                reasons.append("best option despite headwinds")
         
         if not reasons:
             reasons.append("best overall balance")

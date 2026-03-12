@@ -5,11 +5,12 @@ A Python application that analyzes your Strava cycling activities to determine t
 ## Features
 
 - 🔍 **Automatic Location Detection**: Identifies your home and work locations from activity patterns
-- 📊 **Multi-Criteria Analysis**: Evaluates routes based on time, distance, and safety
+- 📊 **Multi-Criteria Analysis**: Evaluates routes based on time, distance, safety, and weather
+- 🌤️ **Real-Time Weather Analysis**: Considers wind speed and direction for optimal route selection
 - 🗺️ **Interactive Maps**: Generates beautiful HTML reports with interactive route visualizations
 - 📈 **Detailed Statistics**: Provides comprehensive metrics for each route variant
 - ⚡ **Smart Caching**: Minimizes API calls by caching activity data locally
-- 🎯 **Personalized Recommendations**: Suggests optimal routes based on your preferences
+- 🎯 **Personalized Recommendations**: Suggests optimal routes based on your preferences and current conditions
 
 ## How It Works
 
@@ -61,8 +62,8 @@ pip install -r requirements.txt
 Create a `.env` file in the project root:
 
 ```bash
-STRAVA_CLIENT_ID=210778
-STRAVA_CLIENT_SECRET=6ca357f46999a4ed14715c3de7fa2cfbbd0fee3e
+STRAVA_CLIENT_ID=your_client_id
+STRAVA_CLIENT_SECRET=your_client_secret
 ```
 
 ## Quick Start
@@ -131,10 +132,14 @@ Adjust how routes are scored:
 ```yaml
 optimization:
   weights:
-    time: 0.4      # 40% weight on speed
-    distance: 0.3  # 30% weight on distance
-    safety: 0.3    # 30% weight on safety factors
+    time: 0.35      # 35% weight on speed
+    distance: 0.25  # 25% weight on distance
+    safety: 0.25    # 25% weight on safety
+    weather: 0.15   # 15% weight on wind conditions
+  weather_enabled: true  # Enable real-time weather analysis
 ```
+
+**Weather Analysis**: The system fetches real-time wind data and calculates the impact on each route. Headwinds slow you down, tailwinds speed you up, and crosswinds affect stability. See [WEATHER_GUIDE.md](WEATHER_GUIDE.md) for details.
 
 ### Location Detection
 
