@@ -9,6 +9,7 @@ import argparse
 import logging
 import sys
 from pathlib import Path
+from datetime import datetime
 
 from src.config import load_config
 from src.auth import StravaAuthenticator, get_authenticated_client
@@ -154,12 +155,15 @@ def analyze_routes(config, output_dir):
             ranked_routes=ranked_routes
         )
         
-        # Generate report
+        # Generate report with timestamp
         logger.info("Generating HTML report...")
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
         
-        report_path = output_path / 'commute_analysis.html'
+        # Create timestamped filename
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        report_filename = f'commute_analysis_{timestamp}.html'
+        report_path = output_path / report_filename
         
         analysis_results = {
             'optimal_route': optimal_route,
