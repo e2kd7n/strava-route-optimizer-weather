@@ -28,7 +28,7 @@ route_filtering:
 route_analysis:
   similarity_threshold: 0.70  # Routes must be within 200m at any point to be grouped (0.70 ≈ 200m max deviation)
   min_route_frequency: 2
-  enable_geocoding: false  # Disable geocoding for faster analysis (use generic route names)
+  enable_geocoding: true  # Enabled with proper rate limiting (1 req/sec) and persistent caching
 
 optimization:
   weights:
