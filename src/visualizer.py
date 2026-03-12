@@ -5,10 +5,11 @@ Generates interactive maps using Folium.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 import folium
 from folium import plugins
+from geopy.distance import geodesic
 
 from .route_analyzer import RouteGroup
 from .location_finder import Location
@@ -38,6 +39,53 @@ class RouteVisualizer:
         self.map = None
         self.route_namer = RouteNamer(config)
         self.route_names = {}  # Map route_id to human-readable name
+        self.trim_distance_km = 0.8  # Trim 0.5 miles (0.8 km) from each end
+    
+    def _trim_route_ends(self, coordinates: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+        """
+        Trim the first and last half mile from route coordinates for privacy.
+        
+        Args:
+            coordinates: List of (lat, lon) tuples
+            
+        Returns:
+            Trimmed list of coordinates
+        """
+        if len(coordinates) < 3:
+            return coordinates
+        
+        trimmed = []
+        cumulative_distance = 0.0
+        start_idx = 0
+        
+        # Find start index (skip first 0.8 km)
+        for i in range(len(coordinates) - 1):
+            distance = geodesic(coordinates[i], coordinates[i + 1]).km
+            cumulative_distance += distance
+            if cumulative_distance >= self.trim_distance_km:
+                start_idx = i + 1
+                break
+        
+        # Find end index (skip last 0.8 km)
+        cumulative_distance = 0.0
+        end_idx = len(coordinates)
+        for i in range(len(coordinates) - 1, 0, -1):
+            distance = geodesic(coordinates[i], coordinates[i - 1]).km
+            cumulative_distance += distance
+            if cumulative_distance >= self.trim_distance_km:
+                end_idx = i
+                break
+        
+        # Return trimmed coordinates
+        if start_idx < end_idx:
+            trimmed = coordinates[start_idx:end_idx]
+            logger.debug(f"Trimmed route from {len(coordinates)} to {len(trimmed)} points")
+            return trimmed
+        else:
+            # Route too short to trim, return middle portion
+            mid = len(coordinates) // 2
+            quarter = len(coordinates) // 4
+            return coordinates[mid-quarter:mid+quarter] if quarter > 0 else coordinates
         
     def create_base_map(self) -> folium.Map:
         """
@@ -84,6 +132,13 @@ class RouteVisualizer:
         # Get representative route coordinates
         coords = route_group.representative_route.coordinates
         
+        # Trim route ends for privacy (hide first and last 0.5 miles)
+        trimmed_coords = self._trim_route_ends(coords)
+        
+        if not trimmed_coords:
+            logger.warning(f"Route {route_group.id} too short to display after trimming")
+            return
+        
         # Use provided name or generate one
         if route_name is None:
             route_name = self.route_namer.generate_simple_name(
@@ -101,7 +156,7 @@ class RouteVisualizer:
         
         # Add polyline with custom class for JavaScript interaction
         folium.PolyLine(
-            coords,
+            trimmed_coords,
             color=color,
             weight=weight,
             opacity=opacity,
@@ -110,7 +165,7 @@ class RouteVisualizer:
             className=f"route-line route-{route_group.id}"
         ).add_to(self.map)
         
-        logger.debug(f"Added route layer: {route_name} ({color})")
+        logger.debug(f"Added route layer: {route_name} ({color}, trimmed for privacy)")
     
     def add_location_markers(self) -> None:
         """Add markers for home and work locations."""
@@ -140,13 +195,15 @@ class RouteVisualizer:
         if self.map is None:
             raise ValueError("Map not initialized. Call create_base_map() first.")
         
-        # Collect all coordinates from all routes
+        # Collect all coordinates from all routes (trimmed for privacy)
         heat_data = []
         
         for group in self.route_groups:
             for route in group.routes:
-                # Add coordinates with weight based on frequency
-                for coord in route.coordinates:
+                # Trim route ends for privacy
+                trimmed_coords = self._trim_route_ends(route.coordinates)
+                # Add trimmed coordinates
+                for coord in trimmed_coords:
                     heat_data.append([coord[0], coord[1]])
         
         if heat_data:
@@ -159,7 +216,7 @@ class RouteVisualizer:
                 gradient={0.4: 'blue', 0.6: 'lime', 0.8: 'yellow', 1.0: 'red'}
             ).add_to(self.map)
             
-            logger.info(f"Added heatmap with {len(heat_data)} points")
+            logger.info(f"Added heatmap with {len(heat_data)} points (trimmed for privacy)")
     
     def _create_popup_html(self, route_group: RouteGroup, route_name: str) -> str:
         """
