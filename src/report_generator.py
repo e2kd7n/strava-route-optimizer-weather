@@ -190,6 +190,13 @@ class ReportGenerator:
         <div class="header">
             <h1>🚴 Strava Commute Analysis</h1>
             <p>Generated on {{ timestamp }}</p>
+            <button onclick="refreshReport()" class="btn btn-light" style="margin-top: 10px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom;">
+                    <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+                </svg>
+                Refresh Report
+            </button>
         </div>
 
         <div class="card">
@@ -727,6 +734,30 @@ class ReportGenerator:
                 }
             }, 1000);
         })();
+        
+        // Refresh report functionality
+        function refreshReport() {
+            const projectPath = window.location.pathname.includes('/commute/') ?
+                window.location.pathname.split('/commute/')[0] + '/commute' :
+                '/Users/erik/commute';
+            
+            const message = `To refresh the report with latest data:\\n\\n` +
+                `1. Open Terminal\\n` +
+                `2. Run: cd ${projectPath} && python3 main.py --analyze\\n` +
+                `3. The new report will open automatically\\n\\n` +
+                `Or press Ctrl+C in the running terminal and it will regenerate.`;
+            
+            if (confirm(message + '\\n\\nCopy command to clipboard?')) {
+                // Copy command to clipboard
+                const command = `cd ${projectPath} && python3 main.py --analyze`;
+                navigator.clipboard.writeText(command).then(() => {
+                    alert('Command copied to clipboard! Paste it in your terminal.');
+                }).catch(() => {
+                    // Fallback if clipboard API not available
+                    prompt('Copy this command:', command);
+                });
+            }
+        }
     </script>
 </body>
 </html>'''
