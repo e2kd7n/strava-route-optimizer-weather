@@ -173,9 +173,13 @@ def analyze_routes(config, output_dir):
         logger.info(f"  Score: {optimal_score:.2f}")
         logger.info(f"  Time: {optimal_breakdown['time']:.1f}, Distance: {optimal_breakdown['distance']:.1f}, Safety: {optimal_breakdown['safety']:.1f}")
         
-        # Generate map
+        # Generate map with long rides support
         logger.info("Generating interactive map...")
-        visualizer = RouteVisualizer(route_groups, home, work, config)
+        visualizer = RouteVisualizer(
+            route_groups, home, work, config,
+            long_rides=long_rides,
+            long_ride_analyzer=long_ride_analyzer
+        )
         map_html = visualizer.generate_map(
             optimal_route=optimal_route,
             ranked_routes=ranked_routes
