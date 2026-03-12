@@ -190,31 +190,89 @@ class ReportGenerator:
                     <p><strong>Reason:</strong> {{ optimal.reason }}</p>
                 </div>
                 <div class="row">
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <div class="metric">
                             <div class="metric-value">{{ "%.1f"|format(optimal.avg_duration_min) }}</div>
                             <div class="metric-label">Minutes</div>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <div class="metric">
                             <div class="metric-value">{{ "%.2f"|format(optimal.avg_distance_km) }}</div>
                             <div class="metric-label">Kilometers</div>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <div class="metric">
                             <div class="metric-value">{{ "%.1f"|format(optimal.avg_speed_kmh) }}</div>
                             <div class="metric-label">km/h</div>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <div class="metric">
                             <div class="metric-value">{{ optimal.frequency }}</div>
                             <div class="metric-label">Times Used</div>
                         </div>
                     </div>
+                    <div class="col-md-2">
+                        <div class="metric">
+                            <div class="metric-value">{{ "%.0f"|format(optimal.breakdown.get('weather', 50)) }}</div>
+                            <div class="metric-label">Weather Score</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="metric">
+                            {% if optimal.breakdown.get('weather_details') %}
+                                {% set wd = optimal.breakdown.weather_details %}
+                                <div class="metric-value" style="font-size: 1.5em;">
+                                    {% if wd.wind_favorability == 'favorable' %}🌬️✅{% elif wd.wind_favorability == 'unfavorable' %}🌬️⚠️{% else %}🌬️{% endif %}
+                                </div>
+                                <div class="metric-label">{{ wd.wind_favorability|title }} Wind</div>
+                            {% else %}
+                                <div class="metric-value" style="font-size: 1.5em;">🌤️</div>
+                                <div class="metric-label">No Weather Data</div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
+                {% if optimal.breakdown.get('weather_details') %}
+                {% set wd = optimal.breakdown.weather_details %}
+                <div class="alert alert-info mt-3">
+                    <h6>🌤️ Current Weather Conditions</h6>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <strong>Wind:</strong> {{ "%.1f"|format(wd.wind_speed_kph) }} km/h from {{ "%.0f"|format(wd.wind_direction_deg) }}°
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Avg Headwind:</strong>
+                            {% if wd.avg_headwind_kph < 0 %}
+                                <span class="text-success">{{ "%.1f"|format(wd.avg_headwind_kph|abs) }} km/h tailwind</span>
+                            {% else %}
+                                <span class="text-danger">{{ "%.1f"|format(wd.avg_headwind_kph) }} km/h headwind</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Avg Crosswind:</strong> {{ "%.1f"|format(wd.avg_crosswind_kph) }} km/h
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-4">
+                            <strong>Temperature:</strong> {{ "%.1f"|format(wd.temp_c) }}°C
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Time Impact:</strong>
+                            {% if wd.time_penalty_pct < 0 %}
+                                <span class="text-success">{{ "%.1f"|format(wd.time_penalty_pct|abs) }}% faster</span>
+                            {% else %}
+                                <span class="text-warning">{{ "%.1f"|format(wd.time_penalty_pct) }}% slower</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Humidity:</strong> {{ "%.0f"|format(wd.humidity) }}%
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
 
@@ -244,7 +302,7 @@ class ReportGenerator:
                         <table class="table table-hover" id="routesTable">
                             <thead>
                                 <tr>
-                                    <th>Rank</th><th>Route Name</th><th>Score</th><th>Duration</th><th>Distance</th><th>Uses</th><th>View on Strava</th>
+                                    <th>Rank</th><th>Route Name</th><th>Score</th><th>Duration</th><th>Distance</th><th>Uses</th><th>Wind</th><th>View on Strava</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -265,6 +323,22 @@ class ReportGenerator:
                                     <td>{{ "%.1f"|format(route.metrics.avg_duration / 60) }} min</td>
                                     <td>{{ "%.2f"|format(route.metrics.avg_distance / 1000) }} km</td>
                                     <td>{{ route.group.frequency }}</td>
+                                    <td>
+                                        {% if route.breakdown.get('weather_details') %}
+                                            {% set wd = route.breakdown.weather_details %}
+                                            <span title="Headwind: {{ '%.1f'|format(wd.avg_headwind_kph) }} km/h, Crosswind: {{ '%.1f'|format(wd.avg_crosswind_kph) }} km/h">
+                                                {% if wd.wind_favorability == 'favorable' %}
+                                                    <span style="color: green;">✅ {{ "%.0f"|format(route.breakdown.weather) }}</span>
+                                                {% elif wd.wind_favorability == 'unfavorable' %}
+                                                    <span style="color: red;">⚠️ {{ "%.0f"|format(route.breakdown.weather) }}</span>
+                                                {% else %}
+                                                    <span style="color: gray;">➖ {{ "%.0f"|format(route.breakdown.weather) }}</span>
+                                                {% endif %}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted" title="No weather data">-</span>
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         {% if route.strava_url %}
                                         <a href="{{ route.strava_url }}" target="_blank" class="btn btn-sm btn-outline-primary" title="View most recent activity on Strava">
