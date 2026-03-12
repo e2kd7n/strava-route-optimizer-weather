@@ -25,7 +25,8 @@ class RouteNamer:
             config: Configuration object
         """
         self.config = config
-        self.geolocator = Nominatim(user_agent="strava_commute_analyzer")
+        # Initialize with 10-second timeout to handle slow Nominatim responses
+        self.geolocator = Nominatim(user_agent="strava_commute_analyzer", timeout=10)
         self.cache = {}  # Cache geocoding results
         
     def name_route(self, coordinates: List[Tuple[float, float]],
@@ -189,11 +190,11 @@ class RouteNamer:
             return self.cache[cache_key]
         
         try:
-            # Rate limiting (0.5 seconds - balance between speed and API reliability)
-            time.sleep(0.5)
+            # Rate limiting (1 second per Nominatim usage policy: max 1 request/second)
+            time.sleep(1.0)
             
             # Reverse geocode
-            location = self.geolocator.reverse(point, exactly_one=True, language='en')
+            location = self.geolocator.reverse(point, exactly_one=True, language='en', timeout=5)
             
             if location and location.raw.get('address'):
                 address = location.raw['address']
@@ -231,11 +232,11 @@ class RouteNamer:
             return self.cache[cache_key]
         
         try:
-            # Rate limiting (0.5 seconds - balance between speed and API reliability)
-            time.sleep(0.5)
+            # Rate limiting (1 second per Nominatim usage policy: max 1 request/second)
+            time.sleep(1.0)
             
             # Reverse geocode
-            location = self.geolocator.reverse(point, exactly_one=True, language='en')
+            location = self.geolocator.reverse(point, exactly_one=True, language='en', timeout=5)
             
             if location and location.raw.get('address'):
                 address = location.raw['address']
