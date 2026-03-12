@@ -324,8 +324,116 @@ class RouteVisualizer:
             self.map.save(output_path)
             logger.info(f"Map saved to {output_path}")
         
+        # Add JavaScript for long rides click handler if long rides are available
+        self._add_long_rides_javascript()
+        
         # Return HTML
         return self.map._repr_html_()
+    
+    def _add_long_rides_javascript(self) -> None:
+        """Add JavaScript for interactive long ride recommendations on map click."""
+        if self.map is None:
+            return
+        
+        # JavaScript code for click handling
+        js_code = """
+        <script>
+        // Long Rides Click Handler
+        var longRidesEnabled = true;
+        var clickMarker = null;
+        var recommendationPopup = null;
+        
+        // Add click event listener to map
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get the map object (Folium creates it with a specific ID)
+            var mapElement = document.querySelector('.folium-map');
+            if (mapElement && mapElement._leaflet_id) {
+                var map = window[mapElement._leaflet_id];
+                
+                map.on('click', function(e) {
+                    if (!longRidesEnabled) return;
+                    
+                    var lat = e.latlng.lat;
+                    var lon = e.latlng.lng;
+                    
+                    // Remove previous marker if exists
+                    if (clickMarker) {
+                        map.removeLayer(clickMarker);
+                    }
+                    
+                    // Add new marker at clicked location
+                    clickMarker = L.marker([lat, lon], {
+                        icon: L.icon({
+                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
+                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [1, -34],
+                            shadowSize: [41, 41]
+                        })
+                    }).addTo(map);
+                    
+                    // Show loading popup
+                    var loadingHtml = '<div style="text-align: center; padding: 10px;">' +
+                                     '<b>Finding Long Rides...</b><br>' +
+                                     '<small>Searching for rides near this location</small>' +
+                                     '</div>';
+                    clickMarker.bindPopup(loadingHtml).openPopup();
+                    
+                    // Call backend to get recommendations (would need API endpoint)
+                    // For now, show placeholder
+                    setTimeout(function() {
+                        var recommendationHtml = createRecommendationHtml(lat, lon);
+                        clickMarker.getPopup().setContent(recommendationHtml);
+                    }, 500);
+                });
+            }
+        });
+        
+        function createRecommendationHtml(lat, lon) {
+            return '<div style="font-family: Arial, sans-serif; min-width: 250px;">' +
+                   '<h4 style="margin: 0 0 10px 0; color: #8B008B;">🚴 Long Ride Recommendations</h4>' +
+                   '<p style="font-size: 11px; color: #666; margin: 5px 0;">Location: ' + lat.toFixed(4) + ', ' + lon.toFixed(4) + '</p>' +
+                   '<div style="background: #f0f0f0; padding: 10px; border-radius: 5px; margin: 10px 0;">' +
+                   '<p style="margin: 5px 0; font-size: 12px;"><b>Feature Coming Soon!</b></p>' +
+                   '<p style="margin: 5px 0; font-size: 11px;">Click any location to find:</p>' +
+                   '<ul style="margin: 5px 0; padding-left: 20px; font-size: 11px;">' +
+                   '<li>Nearby long rides from your history</li>' +
+                   '<li>Weather-aware route suggestions</li>' +
+                   '<li>Wind direction analysis</li>' +
+                   '<li>Distance & duration options</li>' +
+                   '</ul>' +
+                   '</div>' +
+                   '<div style="margin-top: 10px;">' +
+                   '<label style="font-size: 11px;">Target Distance (km):</label><br>' +
+                   '<input type="range" min="20" max="100" value="40" style="width: 100%;" ' +
+                   'oninput="this.nextElementSibling.value = this.value">' +
+                   '<output style="font-size: 11px;">40</output>' +
+                   '</div>' +
+                   '<div style="margin-top: 10px;">' +
+                   '<label style="font-size: 11px;">Target Duration (hours):</label><br>' +
+                   '<input type="range" min="1" max="6" value="2" step="0.5" style="width: 100%;" ' +
+                   'oninput="this.nextElementSibling.value = this.value">' +
+                   '<output style="font-size: 11px;">2</output>' +
+                   '</div>' +
+                   '<button style="margin-top: 10px; width: 100%; padding: 8px; background: #8B008B; color: white; border: none; border-radius: 4px; cursor: pointer;" ' +
+                   'onclick="alert(\'API integration coming in next phase!\')">Find Rides</button>' +
+                   '</div>';
+        }
+        
+        // Toggle long rides feature
+        function toggleLongRides() {
+            longRidesEnabled = !longRidesEnabled;
+            console.log('Long rides feature:', longRidesEnabled ? 'enabled' : 'disabled');
+        }
+        </script>
+        """
+        
+        # Add the JavaScript to the map
+        from folium import Element
+        self.map.get_root().html.add_child(Element(js_code))
+        
+        logger.info("Added long rides JavaScript click handler to map")
     
     def get_route_names(self) -> Dict[str, str]:
         """
