@@ -612,6 +612,16 @@ class RouteVisualizer:
             }}
         }};  // Close window.filterRoutes
         
+        // Expose zoom functions globally for report to call
+        window.zoomToRouteById = function(routeId) {{
+            var data = routeData['route-' + routeId];
+            if (data && data.bounds) {{
+                zoomToRoute(data.bounds);
+            }}
+        }};
+        
+        window.resetMapView = resetMapView;
+        
         function zoomToRoute(bounds) {{
             try {{
                 var mapElement = document.querySelector('.folium-map');

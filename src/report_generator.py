@@ -684,11 +684,21 @@ class ReportGenerator:
                         selectedRouteId = null;
                         this.classList.remove('selected');
                         resetRoutes();
+                        
+                        // Reset map zoom to show all routes
+                        if (typeof window.resetMapView === 'function') {
+                            window.resetMapView();
+                        }
                     } else {
                         // Select new route
                         selectedRouteId = routeId;
                         this.classList.add('selected');
                         highlightRoute(routeId, true);
+                        
+                        // Zoom map to selected route
+                        if (typeof window.zoomToRouteById === 'function') {
+                            window.zoomToRouteById(routeId);
+                        }
                     }
                 });
             });
