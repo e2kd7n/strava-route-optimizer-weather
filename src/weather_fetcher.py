@@ -19,36 +19,54 @@ logger = logging.getLogger(__name__)
 class WeatherFetcher:
     """Fetches weather data from Open-Meteo API (free, no API key needed)."""
     
-    def __init__(self, cache_radius_km: float = 2.0):
+    def __init__(self, cache_radius_km: float = 2.0, cache_duration_hours: float = 1.0):
         """
         Initialize weather fetcher.
         
         Args:
             cache_radius_km: Radius in km to consider locations as "same" for caching (default 2.0)
+            cache_duration_hours: How long to cache weather data in hours (default 1.0)
         """
         self.base_url = "https://api.open-meteo.com/v1/forecast"
         self.session = requests.Session()
-        self.cache = {}  # Cache weather data by location
+        self.cache = {}  # Cache weather data by location: {(lat, lon): {'data': {...}, 'timestamp': datetime}}
         self.cache_radius_km = cache_radius_km
+        self.cache_duration_hours = cache_duration_hours
         
     def _find_cached_weather(self, lat: float, lon: float) -> Optional[Dict]:
         """
-        Find cached weather data for a nearby location.
+        Find cached weather data for a nearby location (if not expired).
         
         Args:
             lat: Latitude
             lon: Longitude
             
         Returns:
-            Cached weather data or None
+            Cached weather data or None if not found or expired
         """
-        for cache_key, cached_data in self.cache.items():
+        now = datetime.now()
+        
+        for cache_key, cache_entry in list(self.cache.items()):
             cache_lat, cache_lon = cache_key
+            
+            # Check if cache entry has expired
+            cache_age = now - cache_entry['timestamp']
+            if cache_age > timedelta(hours=self.cache_duration_hours):
+                # Remove expired entry
+                del self.cache[cache_key]
+                logger.debug(f"Removed expired weather cache for ({cache_lat:.4f}, {cache_lon:.4f}) "
+                           f"- age: {cache_age.total_seconds()/3600:.1f} hours")
+                continue
+            
+            # Check if location is within cache radius
             distance_km = geodesic((lat, lon), (cache_lat, cache_lon)).km
             if distance_km <= self.cache_radius_km:
+                cache_age_min = cache_age.total_seconds() / 60
                 logger.debug(f"Using cached weather from ({cache_lat:.4f}, {cache_lon:.4f}) "
-                           f"for ({lat:.4f}, {lon:.4f}) - {distance_km:.2f}km away")
-                return cached_data
+                           f"for ({lat:.4f}, {lon:.4f}) - {distance_km:.2f}km away, "
+                           f"{cache_age_min:.1f} min old")
+                return cache_entry['data']
+        
         return None
     
     def get_current_conditions(self, lat: float, lon: float) -> Optional[Dict]:
@@ -102,8 +120,11 @@ class WeatherFetcher:
             logger.info(f"Fetched weather for ({lat:.4f}, {lon:.4f}): "
                        f"Wind {conditions['wind_speed_kph']:.1f} km/h from {conditions['wind_direction_deg']}°")
             
-            # Cache the result
-            self.cache[(lat, lon)] = conditions
+            # Cache the result with timestamp
+            self.cache[(lat, lon)] = {
+                'data': conditions,
+                'timestamp': datetime.now()
+            }
             
             return conditions
             
