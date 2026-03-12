@@ -2,7 +2,8 @@
 """
 Strava Commute Route Analyzer - Main Entry Point
 
-Analyzes Strava cycling activities to determine optimal commute routes.
+Analyzes Strava cycling activities to determine optimal commute routes
+and recommend long recreational rides.
 """
 
 import argparse
@@ -19,6 +20,7 @@ from src.route_analyzer import RouteAnalyzer
 from src.optimizer import RouteOptimizer
 from src.visualizer import RouteVisualizer
 from src.report_generator import ReportGenerator
+from src.long_ride_analyzer import LongRideAnalyzer
 
 # Configure logging
 logging.basicConfig(
@@ -123,7 +125,7 @@ def analyze_routes(config, output_dir):
         logger.info(f"Home: ({home.lat:.4f}, {home.lon:.4f}) - {home.activity_count} activities")
         logger.info(f"Work: ({work.lat:.4f}, {work.lon:.4f}) - {work.activity_count} activities")
         
-        # Analyze routes
+        # Analyze commute routes
         logger.info("Analyzing routes between home and work...")
         analyzer = RouteAnalyzer(commute_activities, home, work, config)
         route_groups = analyzer.group_similar_routes()
@@ -132,9 +134,33 @@ def analyze_routes(config, output_dir):
             logger.error("No route groups found")
             return
         
-        logger.info(f"Found {len(route_groups)} route variants")
+        logger.info(f"Found {len(route_groups)} commute route variants")
         for group in route_groups:
             logger.info(f"  - {group.id}: {group.frequency} uses")
+        
+        # Analyze long rides (if enabled)
+        long_rides = []
+        long_ride_analyzer = None
+        if config.get('long_rides.enabled', True):
+            logger.info("Analyzing long recreational rides...")
+            long_ride_analyzer = LongRideAnalyzer(all_activities, config)
+            
+            # Classify activities
+            _, long_ride_activities = long_ride_analyzer.classify_activities(commute_activities)
+            logger.info(f"Found {len(long_ride_activities)} long ride activities")
+            
+            # Extract long rides
+            if long_ride_activities:
+                long_rides = long_ride_analyzer.extract_long_rides(long_ride_activities)
+                logger.info(f"Extracted {len(long_rides)} long rides for analysis")
+                
+                # Show some statistics
+                if long_rides:
+                    distances = [r.distance_km for r in long_rides]
+                    logger.info(f"  Distance range: {min(distances):.1f} - {max(distances):.1f} km")
+                    logger.info(f"  Average distance: {sum(distances)/len(distances):.1f} km")
+                    loop_count = sum(1 for r in long_rides if r.is_loop)
+                    logger.info(f"  Loop rides: {loop_count} ({loop_count/len(long_rides)*100:.1f}%)")
         
         # Optimize routes
         logger.info("Optimizing route selection...")
@@ -176,7 +202,9 @@ def analyze_routes(config, output_dir):
             'all_activities': all_activities,
             'commute_activities': commute_activities,
             'optimizer': optimizer,
-            'visualizer': visualizer
+            'visualizer': visualizer,
+            'long_rides': long_rides,
+            'long_ride_analyzer': long_ride_analyzer
         }
         
         generator = ReportGenerator(analysis_results)

@@ -48,6 +48,13 @@ visualization:
     optimal: 5
     alternative: 3
 
+long_rides:
+  enabled: true
+  min_distance_km: 15  # Minimum distance to be considered a long ride
+  search_radius_km: 5  # Radius to search for rides near clicked location
+  default_target_duration_hours: 2.0  # Default target ride duration
+  default_target_distance_km: 40  # Default target ride distance
+
 output:
   report_directory: "output/reports"
   map_filename: "route_map.html"
