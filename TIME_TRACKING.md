@@ -1,25 +1,20 @@
 # Project Time Tracking
 
-## Actual Development Timeline (Based on Git Commits)
+## Actual Development Timeline (Based on File Timestamps & Git Commits)
 
 ### Session 1: March 11, 2026 (Evening)
-**Time**: 9:46 PM - 10:38 PM (~52 minutes)
-- Initial commit with core functionality
-- Strava OAuth and activity fetching
-- Route analysis and geocoding
+**Time**: ~8:30 PM - 10:38 PM (~2 hours 8 minutes)
+- Project initialization and setup
+- Strava OAuth and activity fetching (data_fetcher.py: 9:12 PM)
+- Location clustering algorithm (location_finder.py: 9:12 PM)
+- Route analysis and similarity matching
+- Weather integration with Open-Meteo API (optimizer.py: 10:08 PM)
 - Interactive HTML reports
-- **Commits**: 77b52c1 through c1cd5c2
+- Geocoding with Nominatim
+- **First git commit**: 9:46 PM (77b52c1)
+- **Session commits**: 77b52c1 through 5dc819d
 
-### Session 2: March 11, 2026 (Late Night)
-**Time**: 10:09 PM - 10:38 PM (~29 minutes)
-- Weather integration with Open-Meteo API
-- Wind impact calculations
-- Weather visualization in reports
-- Privacy features (route trimming)
-- Timestamped report filenames
-- **Commits**: 992d630 through 5dc819d
-
-### Session 3: March 12, 2026 (Early Morning)
+### Session 2: March 12, 2026 (Early Morning)
 **Time**: 7:19 AM - 9:30 AM (~2 hours 11 minutes)
 - Long rides feature implementation
 - Interactive map improvements
@@ -30,24 +25,23 @@
 - Geocoding improvements (rate limiting, persistent cache)
 - **Commits**: f6fbe84 through acba78c
 
-### Session 4: March 12, 2026 (Morning)
+### Session 3: March 12, 2026 (Morning)
 **Time**: 10:21 AM - 10:31 AM (~10 minutes)
 - Fixed map filter buttons (SVG compatibility)
 - Fixed page scrolling issue
 - Added tab structure
 - Implemented persistent weather cache (90-minute expiration)
 - Created TIME_TRACKING.md with accurate time estimates
-- **Ready to commit**
+- **Commit**: 3d07113
 
 ---
 
-## **Total Human Time Invested: ~3 hours 42 minutes**
+## **Total Human Time Invested: ~4 hours 29 minutes**
 
 Breaking it down:
-- Session 1: 52 minutes
-- Session 2: 29 minutes
-- Session 3: 2 hours 11 minutes
-- Session 4: 10 minutes
+- Session 1: 2 hours 8 minutes (March 11 evening)
+- Session 2: 2 hours 11 minutes (March 12 morning)
+- Session 3: 10 minutes (March 12 late morning)
 
 ---
 
@@ -101,12 +95,12 @@ Breaking it down:
 
 ---
 
-## **Productivity Multiplier: 11-16x**
+## **Productivity Multiplier: 9-13x**
 
 ### Time Breakdown:
-- **With Bob**: 3.65 hours
+- **With Bob**: 4.5 hours
 - **Without Bob**: 40-60 hours
-- **Time Saved**: 36-56 hours
+- **Time Saved**: 35-55 hours
 
 ### Why So Fast?
 
@@ -175,7 +169,7 @@ The **11-16x productivity multiplier** isn't just about speed—it's about:
 - **Learning**: Understanding best practices through implementation
 - **Focus**: More time thinking about features, less time debugging
 
-**What would have taken 1-2 weeks of evenings was completed in 4 focused hours.** ⚡
+**What would have taken 1-2 weeks of evenings was completed in 4.5 focused hours.** ⚡
 
 ---
 
@@ -183,15 +177,24 @@ The **11-16x productivity multiplier** isn't just about speed—it's about:
 
 This project demonstrates that AI-assisted development isn't just faster—it's fundamentally different. The combination of:
 - Instant expertise across multiple domains
-- Zero context-switching overhead  
+- Zero context-switching overhead
 - First-time-right implementations
 - Comprehensive error handling
 
-...creates a development experience that's **11-16x faster** than solo development, while maintaining or exceeding code quality standards.
+...creates a development experience that's **9-13x faster** than solo development, while maintaining or exceeding code quality standards.
 
-**Total time saved: 36-56 hours** ⏱️
+**Total time saved: 35-55 hours** ⏱️
 
 ---
 
-*Last updated: March 12, 2026 at 10:30 AM*
-*Based on actual git commit timestamps*
+## Outstanding Issues
+
+### To Investigate:
+- [ ] Route start/end truncation still occurring despite privacy feature removal
+  - Need to check if truncation is happening in route_analyzer or data_fetcher
+  - May be related to Strava API data or coordinate processing
+
+---
+
+*Last updated: March 12, 2026 at 10:52 AM*
+*Based on file timestamps and git commit history*
