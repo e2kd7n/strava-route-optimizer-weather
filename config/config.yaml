@@ -26,7 +26,7 @@ route_filtering:
   exclude_virtual: true
 
 route_analysis:
-  similarity_threshold: 0.50  # Lower = more aggressive grouping (0.50 = routes within ~1km are grouped together)
+  similarity_threshold: 0.70  # Routes must be within 200m at any point to be grouped (0.70 ≈ 200m max deviation)
   min_route_frequency: 2
   enable_geocoding: false  # Disable geocoding for faster analysis (use generic route names)
 

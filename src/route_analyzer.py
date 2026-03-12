@@ -177,16 +177,18 @@ class RouteAnalyzer:
         dist_forward = directed_hausdorff(coords1, coords2)[0]
         dist_backward = directed_hausdorff(coords2, coords1)[0]
         
-        # Use maximum distance
+        # Use maximum distance (this is the maximum deviation at any point)
         max_dist = max(dist_forward, dist_backward)
         
         # Convert degrees to meters (approximate)
+        # At Chicago's latitude (~42°), 1 degree ≈ 111km latitude, ~82km longitude
+        # Using 111km as conservative estimate
         normalized_dist = max_dist * 111000
         
         # Convert to similarity score (0-1)
-        # Use configurable distance threshold
-        # With threshold=0.65, routes within ~500m get similarity >= 0.65
-        distance_threshold = 500  # meters - routes within this distance are considered similar
+        # Routes are considered similar if max deviation is within 200m
+        # This allows for small detours (coffee shops, etc.) while keeping routes distinct
+        distance_threshold = 200  # meters - maximum acceptable deviation at any point
         similarity = 1 / (1 + normalized_dist / distance_threshold)
         
         return similarity
