@@ -212,15 +212,17 @@ class RouteNamer:
         mid_idx = len(coordinates) // 2
         point = coordinates[mid_idx]
         
-        # Check cache
+        # Check cache first - return immediately if found
         cache_key = f"neighborhood_{point[0]:.4f},{point[1]:.4f}"
         if cache_key in self.cache:
+            logger.debug(f"Cache hit for {cache_key}")
             return self.cache[cache_key]
         
+        # Rate limiting ONLY for actual API requests (1 second per Nominatim usage policy)
+        logger.debug(f"Cache miss for {cache_key}, making API request")
+        time.sleep(1.0)
+        
         try:
-            # Rate limiting (1 second per Nominatim usage policy: max 1 request/second)
-            time.sleep(1.0)
-            
             # Reverse geocode
             location = self.geolocator.reverse(point, exactly_one=True, language='en', timeout=5)
             
@@ -236,6 +238,7 @@ class RouteNamer:
                 # Cache result and save to disk
                 self.cache[cache_key] = neighborhood
                 self._save_cache()
+                logger.info(f"Geocoded {cache_key} -> {neighborhood}")
                 return neighborhood
             
         except (GeocoderTimedOut, GeocoderServiceError) as e:
@@ -255,15 +258,17 @@ class RouteNamer:
         Returns:
             Street name or None
         """
-        # Check cache
+        # Check cache first - return immediately if found
         cache_key = f"{point[0]:.4f},{point[1]:.4f}"
         if cache_key in self.cache:
+            logger.debug(f"Cache hit for {cache_key}")
             return self.cache[cache_key]
         
+        # Rate limiting ONLY for actual API requests (1 second per Nominatim usage policy)
+        logger.debug(f"Cache miss for {cache_key}, making API request")
+        time.sleep(1.0)
+        
         try:
-            # Rate limiting (1 second per Nominatim usage policy: max 1 request/second)
-            time.sleep(1.0)
-            
             # Reverse geocode
             location = self.geolocator.reverse(point, exactly_one=True, language='en', timeout=5)
             
@@ -278,8 +283,10 @@ class RouteNamer:
                          address.get('footway') or
                          address.get('highway'))
                 
-                # Cache result
+                # Cache result and save to disk
                 self.cache[cache_key] = street
+                self._save_cache()
+                logger.info(f"Geocoded {cache_key} -> {street}")
                 return street
             
         except (GeocoderTimedOut, GeocoderServiceError) as e:
