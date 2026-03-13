@@ -13,6 +13,13 @@ from scipy.spatial.distance import directed_hausdorff
 from geopy.distance import geodesic
 import polyline
 
+try:
+    import similaritymeasures
+    FRECHET_AVAILABLE = True
+except ImportError:
+    FRECHET_AVAILABLE = False
+    logger.warning("similaritymeasures not available, using Hausdorff distance only")
+
 from .data_fetcher import Activity
 from .location_finder import Location
 from .route_namer import RouteNamer
@@ -161,7 +168,14 @@ class RouteAnalyzer:
     
     def calculate_route_similarity(self, route1: Route, route2: Route) -> float:
         """
-        Calculate similarity between two routes using Hausdorff distance.
+        Calculate similarity between two routes using Fréchet distance as primary metric.
+        
+        Fréchet distance is superior for route comparison because:
+        - Considers the order of points (path similarity, like walking a dog)
+        - Better captures whether routes follow the same path
+        - More robust to GPS sampling differences
+        
+        Hausdorff is used as a secondary validation check.
         
         Args:
             route1: First route
@@ -173,6 +187,41 @@ class RouteAnalyzer:
         coords1 = np.array(route1.coordinates)
         coords2 = np.array(route2.coordinates)
         
+        # Calculate Fréchet distance (primary metric)
+        if FRECHET_AVAILABLE:
+            frechet_sim = self._calculate_frechet_similarity(coords1, coords2)
+            
+            # Calculate Hausdorff as secondary validation
+            hausdorff_sim = self._calculate_hausdorff_similarity(coords1, coords2)
+            
+            # Use Fréchet as primary, but require Hausdorff to not strongly disagree
+            # If Hausdorff is very low (<0.50), it indicates routes are spatially far apart
+            if hausdorff_sim < 0.50:
+                # Routes are too far apart spatially, reduce Fréchet score
+                combined_similarity = frechet_sim * 0.7  # Penalize by 30%
+                logger.debug(f"Fréchet: {frechet_sim:.3f}, Hausdorff: {hausdorff_sim:.3f} (spatial disagreement), Combined: {combined_similarity:.3f}")
+            else:
+                # Hausdorff agrees or is neutral, use Fréchet as-is
+                combined_similarity = frechet_sim
+                logger.debug(f"Fréchet: {frechet_sim:.3f} (primary), Hausdorff: {hausdorff_sim:.3f} (validates)")
+        else:
+            # Fallback to Hausdorff if Fréchet not available
+            combined_similarity = self._calculate_hausdorff_similarity(coords1, coords2)
+            logger.debug(f"Hausdorff only (Fréchet unavailable): {combined_similarity:.3f}")
+        
+        return combined_similarity
+    
+    def _calculate_hausdorff_similarity(self, coords1: np.ndarray, coords2: np.ndarray) -> float:
+        """
+        Calculate similarity using Hausdorff distance.
+        
+        Args:
+            coords1: First route coordinates
+            coords2: Second route coordinates
+            
+        Returns:
+            Similarity score (0-1)
+        """
         # Calculate Hausdorff distance in both directions
         dist_forward = directed_hausdorff(coords1, coords2)[0]
         dist_backward = directed_hausdorff(coords2, coords1)[0]
@@ -187,11 +236,44 @@ class RouteAnalyzer:
         
         # Convert to similarity score (0-1)
         # Routes are considered similar if max deviation is within 200m
-        # This allows for small detours (coffee shops, etc.) while keeping routes distinct
-        distance_threshold = 200  # meters - maximum acceptable deviation at any point
+        distance_threshold = 200  # meters
         similarity = 1 / (1 + normalized_dist / distance_threshold)
         
         return similarity
+    
+    def _calculate_frechet_similarity(self, coords1: np.ndarray, coords2: np.ndarray) -> float:
+        """
+        Calculate similarity using Fréchet distance.
+        
+        Fréchet distance considers the order of points, like walking a dog on a leash.
+        It's better at detecting routes that follow the same path vs routes that are
+        spatially close but follow different paths.
+        
+        Args:
+            coords1: First route coordinates
+            coords2: Second route coordinates
+            
+        Returns:
+            Similarity score (0-1)
+        """
+        try:
+            # Calculate Fréchet distance
+            # Note: similaritymeasures expects (n, 2) arrays
+            frechet_dist = similaritymeasures.frechet_dist(coords1, coords2)
+            
+            # Convert degrees to meters
+            normalized_dist = frechet_dist * 111000
+            
+            # Convert to similarity score
+            # Fréchet distance is typically larger than Hausdorff, so use larger threshold
+            distance_threshold = 300  # meters - allow more variation for path-based comparison
+            similarity = 1 / (1 + normalized_dist / distance_threshold)
+            
+            return similarity
+            
+        except Exception as e:
+            logger.warning(f"Fréchet distance calculation failed: {e}, falling back to Hausdorff")
+            return self._calculate_hausdorff_similarity(coords1, coords2)
     
     def group_similar_routes(self, routes: List[Route] = None) -> List[RouteGroup]:
         """

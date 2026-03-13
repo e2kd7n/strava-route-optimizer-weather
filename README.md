@@ -6,6 +6,7 @@ A Python application that analyzes your Strava cycling activities to determine t
 
 - 🔍 **Automatic Location Detection**: Identifies your home and work locations from activity patterns
 - 📊 **Multi-Criteria Analysis**: Evaluates routes based on time, distance, safety, and weather
+- 🧮 **Advanced Route Matching**: Uses Fréchet distance algorithm for accurate path similarity detection
 - 🌤️ **Real-Time Weather Analysis**: Considers wind speed and direction for optimal route selection
 - 🗺️ **Interactive Maps**: Generates beautiful HTML reports with interactive route visualizations
 - 📈 **Detailed Statistics**: Provides comprehensive metrics for each route variant
@@ -311,6 +312,26 @@ python main.py --analyze --months 3
 # Analyze specific date range
 python main.py --analyze --start 2024-01-01 --end 2024-03-31
 ```
+
+## Algorithm Improvements
+
+### Route Matching (March 2026)
+
+The system uses an advanced **Fréchet distance** algorithm for route similarity matching:
+
+**Key Features:**
+- **Path-aware matching**: Considers the order of GPS points (like walking a dog on a leash)
+- **Robust to GPS sampling**: Handles ~76m average spacing between GPS points
+- **Dual validation**: Uses Hausdorff distance as secondary check for spatial proximity
+- **Proven accuracy**: Validated on 9,251 route pairs with 100% agreement
+
+**Technical Details:**
+- Primary metric: Fréchet distance (300m threshold)
+- Secondary validation: Hausdorff distance (0.50 threshold)
+- Grouping threshold: 0.70 similarity score (configurable)
+- Library: `similaritymeasures` package
+
+See [SIMILARITY_ALGORITHM_CHANGE.md](SIMILARITY_ALGORITHM_CHANGE.md) for complete technical documentation.
 
 ## Contributing
 

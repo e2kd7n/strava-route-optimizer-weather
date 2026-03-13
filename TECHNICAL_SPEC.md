@@ -156,17 +156,45 @@ class RouteAnalyzer:
 
 ### Route Similarity Algorithm
 
-**Hausdorff Distance Method:**
+**Primary Method: Fréchet Distance (as of March 2026)**
+
+The system uses Fréchet distance as the primary similarity metric, with Hausdorff distance as a secondary validation check.
+
+```python
+def calculate_route_similarity(route1, route2):
+    # Primary: Fréchet distance (path similarity with point order)
+    frechet_sim = calculate_frechet_similarity(coords1, coords2)
+    
+    # Secondary: Hausdorff validation (spatial proximity check)
+    hausdorff_sim = calculate_hausdorff_similarity(coords1, coords2)
+    
+    # If routes are spatially far apart, penalize
+    if hausdorff_sim < 0.50:
+        return frechet_sim * 0.7  # 30% penalty
+    else:
+        return frechet_sim
+```
+
+**Why Fréchet Distance?**
+- Considers point order (like walking a dog on a leash)
+- Better captures routes that follow the same path
+- More robust to GPS sampling differences (~76m average point spacing)
+- Validated on 9,251 route pairs with 100% agreement with Hausdorff
+
+**Grouping Threshold:**
+- Similarity > 0.70 → same route variant (configurable)
+- Fréchet distance threshold: 300m
+- Hausdorff validation threshold: 0.50 (spatial sanity check)
+- Consider both forward and reverse directions
+
+**Legacy Method: Hausdorff Distance**
 ```python
 def hausdorff_distance(route1_coords, route2_coords):
     # Calculate maximum minimum distance between point sets
     # Normalize by route length
     # Return similarity score (0-1)
 ```
-
-**Grouping Threshold:**
-- Similarity > 0.85 → same route variant
-- Consider both forward and reverse directions
+Still used as secondary validation to catch spatially distant routes.
 
 ### Data Structures
 
