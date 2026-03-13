@@ -329,12 +329,345 @@ The current report layout with side-by-side comparison and map may not work well
 - [ ] Layout adapts to screen size
 - [ ] Performance is acceptable on mobile
 
+## Issue #7: Containerize Application with Podman Support
+
+**Labels:** `enhancement`, `feature`, `infrastructure`, `priority: high`
+
+**Title:** Add containerization support for Podman/Docker deployment
+
+**Description:**
+
+Containerize the application to enable easy deployment, consistent environments, and better portability. Support both Docker and Podman (rootless container runtime).
+
+### Requirements:
+
+1. **Dockerfile Creation**
+   - Base image: Python 3.11+ slim
+   - Install all dependencies from requirements.txt
+   - Set up proper working directory
+   - Configure environment variables
+   - Expose necessary ports (if web interface added later)
+
+2. **Podman Compatibility**
+   - Ensure Dockerfile works with both Docker and Podman
+   - Test rootless Podman deployment
+   - Document Podman-specific commands
+
+3. **Volume Mounts**
+   - `/app/cache` - For geocoding and weather cache
+   - `/app/data` - For activity data storage
+   - `/app/output` - For generated reports
+   - `/app/config` - For configuration files
+   - `/app/.env` - For environment variables (secrets)
+
+4. **Docker Compose / Podman Compose**
+   - Create compose file for easy deployment
+   - Configure volume mounts
+   - Set environment variables
+   - Add health checks
+
+### Implementation:
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p cache data output config
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+
+# Run the application
+CMD ["python3", "main.py", "--analyze"]
+```
+
+```yaml
+# docker-compose.yml / podman-compose.yml
+version: '3.8'
+
+services:
+  strava-analyzer:
+    build: .
+    container_name: strava-route-analyzer
+    volumes:
+      - ./cache:/app/cache
+      - ./data:/app/data
+      - ./output:/app/output
+      - ./config:/app/config
+      - ./.env:/app/.env:ro
+    environment:
+      - STRAVA_CLIENT_ID=${STRAVA_CLIENT_ID}
+      - STRAVA_CLIENT_SECRET=${STRAVA_CLIENT_SECRET}
+    restart: unless-stopped
+```
+
+### Testing:
+
+```bash
+# Docker
+docker build -t strava-analyzer .
+docker run -v $(pwd)/cache:/app/cache -v $(pwd)/.env:/app/.env strava-analyzer
+
+# Podman
+podman build -t strava-analyzer .
+podman run -v $(pwd)/cache:/app/cache:Z -v $(pwd)/.env:/app/.env:ro,Z strava-analyzer
+```
+
+### Acceptance Criteria:
+
+- [ ] Dockerfile builds successfully
+- [ ] Works with both Docker and Podman
+- [ ] All dependencies installed correctly
+- [ ] Volume mounts work properly
+- [ ] Environment variables passed correctly
+- [ ] Cache persists between runs
+- [ ] Documentation includes container usage
+- [ ] Compose file provided for easy deployment
+
+---
+
+## Issue #8: Add Multi-User Support with Strava OAuth
+
+**Labels:** `enhancement`, `feature`, `security`, `priority: high`
+
+**Title:** Implement multi-user system with individual Strava authentication
+
+**Description:**
+
+Transform the single-user CLI application into a multi-user system where each user can authenticate with their own Strava account and view their personal cycling data.
+
+### Architecture Changes:
+
+1. **User Management System**
+   - User registration/login system
+   - Store user credentials securely (hashed passwords)
+   - User session management
+   - User profile management
+
+2. **Per-User Strava Authentication**
+   - Each user authenticates with their own Strava account
+   - Store OAuth tokens per user (encrypted)
+   - Handle token refresh per user
+   - Support multiple Strava accounts per user (optional)
+
+3. **Data Isolation**
+   - Separate data storage per user
+   - User-specific cache directories
+   - User-specific output directories
+   - Prevent cross-user data access
+
+4. **Web Interface** (Required for multi-user)
+   - Flask or FastAPI web framework
+   - Login/logout functionality
+   - Dashboard showing user's routes
+   - Interactive report viewing
+   - Settings page for user preferences
+
+### Database Schema:
+
+```sql
+-- Users table
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP
+);
+
+-- Strava tokens table
+CREATE TABLE strava_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    access_token TEXT NOT NULL,  -- Encrypted
+    refresh_token TEXT NOT NULL,  -- Encrypted
+    expires_at TIMESTAMP NOT NULL,
+    athlete_id INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- User settings table
+CREATE TABLE user_settings (
+    user_id INTEGER PRIMARY KEY,
+    home_lat REAL,
+    home_lon REAL,
+    work_lat REAL,
+    work_lon REAL,
+    config_yaml TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+### Directory Structure:
+
+```
+/app/
+  /users/
+    /user_123/
+      /cache/
+      /data/
+      /output/
+      /config/
+```
+
+### Security Requirements:
+
+- Password hashing with bcrypt or argon2
+- OAuth tokens encrypted at rest
+- HTTPS required for production
+- CSRF protection
+- Rate limiting on API endpoints
+- Session timeout
+- Secure cookie handling
+
+### Acceptance Criteria:
+
+- [ ] User registration and login system
+- [ ] Per-user Strava OAuth flow
+- [ ] Data isolation between users
+- [ ] Web interface for user interaction
+- [ ] Secure token storage (encrypted)
+- [ ] Session management
+- [ ] User can only access their own data
+- [ ] Admin interface for user management (optional)
+
+---
+
+## Issue #9: Implement Security and Access Control
+
+**Labels:** `security`, `priority: critical`
+
+**Title:** Ensure robust security and user access control
+
+**Description:**
+
+Implement comprehensive security measures to protect user data and ensure proper access control in the multi-user system.
+
+### Security Requirements:
+
+1. **Authentication Security**
+   - Strong password requirements (min 12 chars, complexity)
+   - Password hashing with bcrypt (cost factor 12+)
+   - Account lockout after failed login attempts
+   - Two-factor authentication (optional, future)
+   - Secure password reset flow
+
+2. **Authorization & Access Control**
+   - Role-based access control (RBAC)
+   - User can only access their own data
+   - Admin role for system management
+   - API endpoint authorization checks
+   - File system permission checks
+
+3. **Data Protection**
+   - Encrypt sensitive data at rest (OAuth tokens, API keys)
+   - Use environment variables for secrets
+   - Secure key management (consider HashiCorp Vault)
+   - Regular security audits
+   - Data retention policies
+
+4. **Network Security**
+   - HTTPS/TLS required in production
+   - Secure headers (HSTS, CSP, X-Frame-Options)
+   - CORS configuration
+   - Rate limiting to prevent abuse
+   - DDoS protection considerations
+
+5. **Input Validation**
+   - Sanitize all user inputs
+   - Validate file uploads
+   - Prevent SQL injection (use parameterized queries)
+   - Prevent XSS attacks
+   - Validate OAuth callbacks
+
+6. **Audit Logging**
+   - Log all authentication attempts
+   - Log data access events
+   - Log configuration changes
+   - Log failed authorization attempts
+   - Secure log storage
+
+### Implementation:
+
+```python
+# Example: User data access control
+def get_user_data(user_id: int, requested_user_id: int):
+    """Ensure user can only access their own data."""
+    if user_id != requested_user_id:
+        raise PermissionError("Access denied: Cannot access other user's data")
+    
+    # Proceed with data retrieval
+    return fetch_data(requested_user_id)
+
+# Example: File system isolation
+def get_user_directory(user_id: int) -> Path:
+    """Get user-specific directory with proper permissions."""
+    user_dir = Path(f"/app/users/user_{user_id}")
+    user_dir.mkdir(mode=0o700, exist_ok=True)  # Owner only
+    return user_dir
+```
+
+### Security Checklist:
+
+- [ ] Password hashing implemented (bcrypt/argon2)
+- [ ] OAuth tokens encrypted at rest
+- [ ] HTTPS enforced in production
+- [ ] CSRF protection enabled
+- [ ] Rate limiting configured
+- [ ] Input validation on all endpoints
+- [ ] SQL injection prevention (parameterized queries)
+- [ ] XSS prevention (output escaping)
+- [ ] Secure session management
+- [ ] File system permissions properly set
+- [ ] Audit logging implemented
+- [ ] Security headers configured
+- [ ] Secrets stored in environment variables
+- [ ] Regular dependency updates (security patches)
+- [ ] Security testing performed
+
+### Compliance Considerations:
+
+- GDPR compliance (if serving EU users)
+- Data export functionality
+- Data deletion functionality
+- Privacy policy
+- Terms of service
+
+### Acceptance Criteria:
+
+- [ ] All security measures implemented
+- [ ] Security audit passed
+- [ ] Penetration testing completed
+- [ ] Documentation includes security best practices
+- [ ] Incident response plan documented
+
 ---
 
 ## Priority Summary
 
+**Critical Priority:**
+- Issue #9: Implement Security and Access Control
+
 **High Priority:**
 - Issue #1: Test Interactive Features
+- Issue #7: Containerize Application with Podman Support
+- Issue #8: Add Multi-User Support with Strava OAuth
 
 **Medium Priority:**
 - Issue #2: Enhance Route Naming
@@ -343,6 +676,9 @@ The current report layout with side-by-side comparison and map may not work well
 
 **Low Priority:**
 - Issue #4: Add Charts/Graphs
+
+**Resolved:**
+- Issue #6: ✅ Fix Logger Reference Before Definition (Commit: 7423f0d)
 
 ---
 
