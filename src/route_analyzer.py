@@ -5,6 +5,9 @@ Extracts, groups, and analyzes route variants between home and work.
 """
 
 import logging
+import json
+import hashlib
+from pathlib import Path
 from typing import List, Tuple, Dict, Any, Optional
 from dataclasses import dataclass, field
 
@@ -13,18 +16,18 @@ from scipy.spatial.distance import directed_hausdorff
 from geopy.distance import geodesic
 import polyline
 
+from .data_fetcher import Activity
+from .location_finder import Location
+from .route_namer import RouteNamer
+
+logger = logging.getLogger(__name__)
+
 try:
     import similaritymeasures
     FRECHET_AVAILABLE = True
 except ImportError:
     FRECHET_AVAILABLE = False
     logger.warning("similaritymeasures not available, using Hausdorff distance only")
-
-from .data_fetcher import Activity
-from .location_finder import Location
-from .route_namer import RouteNamer
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -83,6 +86,72 @@ class RouteAnalyzer:
         self.config = config
         self.similarity_threshold = config.get('route_analysis.similarity_threshold', 0.85)
         self.route_namer = RouteNamer(config)
+        
+        # Initialize similarity cache
+        self.cache_dir = Path('cache')
+        self.cache_dir.mkdir(exist_ok=True)
+        self.cache_file = self.cache_dir / 'route_similarity_cache.json'
+        self.similarity_cache = self._load_similarity_cache()
+        
+    def _load_similarity_cache(self) -> Dict[str, float]:
+        """Load similarity cache from disk."""
+        if self.cache_file.exists():
+            try:
+                with open(self.cache_file, 'r') as f:
+                    cache = json.load(f)
+                logger.info(f"Loaded {len(cache)} cached similarity calculations")
+                return cache
+            except Exception as e:
+                logger.warning(f"Failed to load similarity cache: {e}")
+                return {}
+        return {}
+    
+    def _save_similarity_cache(self):
+        """Save similarity cache to disk."""
+        try:
+            with open(self.cache_file, 'w') as f:
+                json.dump(self.similarity_cache, f)
+            logger.info(f"Saved {len(self.similarity_cache)} similarity calculations to cache")
+        except Exception as e:
+            logger.warning(f"Failed to save similarity cache: {e}")
+    
+    def _get_route_hash(self, route: Route) -> str:
+        """
+        Generate a unique hash for a route based on its coordinates.
+        
+        Args:
+            route: Route object
+            
+        Returns:
+            Hash string
+        """
+        # Create a string representation of coordinates (first, middle, last points)
+        coords = route.coordinates
+        if len(coords) > 10:
+            # Sample points to keep hash manageable
+            sample_coords = [coords[0], coords[len(coords)//4], coords[len(coords)//2],
+                           coords[3*len(coords)//4], coords[-1]]
+        else:
+            sample_coords = coords
+        
+        coord_str = ','.join([f"{lat:.6f},{lon:.6f}" for lat, lon in sample_coords])
+        return hashlib.md5(coord_str.encode()).hexdigest()[:16]
+    
+    def _get_cache_key(self, route1: Route, route2: Route) -> str:
+        """
+        Generate cache key for a route pair.
+        
+        Args:
+            route1: First route
+            route2: Second route
+            
+        Returns:
+            Cache key string
+        """
+        hash1 = self._get_route_hash(route1)
+        hash2 = self._get_route_hash(route2)
+        # Sort hashes to ensure same key regardless of order
+        return f"{min(hash1, hash2)}_{max(hash1, hash2)}"
         
     def extract_routes(self, direction: str = 'both') -> List[Route]:
         """
@@ -177,6 +246,8 @@ class RouteAnalyzer:
         
         Hausdorff is used as a secondary validation check.
         
+        Results are cached to avoid expensive recalculations.
+        
         Args:
             route1: First route
             route2: Second route
@@ -184,6 +255,13 @@ class RouteAnalyzer:
         Returns:
             Similarity score (0-1, higher is more similar)
         """
+        # Check cache first
+        cache_key = self._get_cache_key(route1, route2)
+        if cache_key in self.similarity_cache:
+            logger.debug(f"Using cached similarity for {cache_key}")
+            return self.similarity_cache[cache_key]
+        
+        # Calculate similarity
         coords1 = np.array(route1.coordinates)
         coords2 = np.array(route2.coordinates)
         
@@ -208,6 +286,9 @@ class RouteAnalyzer:
             # Fallback to Hausdorff if Fréchet not available
             combined_similarity = self._calculate_hausdorff_similarity(coords1, coords2)
             logger.debug(f"Hausdorff only (Fréchet unavailable): {combined_similarity:.3f}")
+        
+        # Cache the result
+        self.similarity_cache[cache_key] = combined_similarity
         
         return combined_similarity
     
@@ -308,6 +389,9 @@ class RouteAnalyzer:
             groups.extend(wth_groups)
         
         logger.info(f"Created {len(groups)} route groups from {len(routes)} routes")
+        
+        # Save similarity cache after grouping
+        self._save_similarity_cache()
         
         return groups
     

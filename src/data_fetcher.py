@@ -35,8 +35,14 @@ class Activity:
     max_speed: float  # m/s
     
     @classmethod
-    def from_strava_activity(cls, activity):
-        """Create Activity from Strava API activity object."""
+    def from_strava_activity(cls, activity, use_detailed_polyline=False):
+        """
+        Create Activity from Strava API activity object.
+        
+        Args:
+            activity: Strava activity object
+            use_detailed_polyline: If True, use detailed polyline instead of summary
+        """
         # Helper function to convert time to seconds
         def to_seconds(time_obj):
             if time_obj is None:
@@ -50,6 +56,16 @@ class Activity:
                 # Assume it's already an integer
                 return int(time_obj)
         
+        # Choose polyline based on parameter
+        # Detailed polyline is only available from get_activity() endpoint
+        # Summary polyline is available from get_activities() list endpoint
+        if use_detailed_polyline and activity.map and hasattr(activity.map, 'polyline'):
+            polyline_data = activity.map.polyline
+        elif activity.map:
+            polyline_data = activity.map.summary_polyline
+        else:
+            polyline_data = None
+        
         return cls(
             id=activity.id,
             name=activity.name,
@@ -61,7 +77,7 @@ class Activity:
             total_elevation_gain=float(activity.total_elevation_gain) if activity.total_elevation_gain else 0.0,
             start_latlng=tuple(activity.start_latlng) if activity.start_latlng else None,
             end_latlng=tuple(activity.end_latlng) if activity.end_latlng else None,
-            polyline=activity.map.summary_polyline if activity.map else None,
+            polyline=polyline_data,
             average_speed=float(activity.average_speed) if activity.average_speed else 0.0,
             max_speed=float(activity.max_speed) if activity.max_speed else 0.0
         )
@@ -160,10 +176,44 @@ class StravaDataFetcher:
         """
         try:
             activity = self.client.get_activity(activity_id)
-            return Activity.from_strava_activity(activity)
+            return Activity.from_strava_activity(activity, use_detailed_polyline=True)
         except Exception as e:
             logger.error(f"Failed to fetch activity {activity_id}: {e}")
             return None
+    
+    def enrich_activities_with_detailed_polylines(self, activities: List[Activity]) -> List[Activity]:
+        """
+        Fetch detailed polylines for activities that only have summary polylines.
+        This makes an additional API call per activity, so use sparingly.
+        
+        Args:
+            activities: List of Activity objects with summary polylines
+            
+        Returns:
+            List of Activity objects with detailed polylines
+        """
+        enriched_activities = []
+        
+        logger.info(f"Fetching detailed polylines for {len(activities)} activities...")
+        
+        for i, activity in enumerate(activities):
+            try:
+                # Fetch detailed activity data
+                detailed_activity = self.client.get_activity(activity.id)
+                enriched = Activity.from_strava_activity(detailed_activity, use_detailed_polyline=True)
+                enriched_activities.append(enriched)
+                
+                if (i + 1) % 10 == 0:
+                    logger.info(f"Enriched {i + 1}/{len(activities)} activities")
+                    
+            except Exception as e:
+                logger.warning(f"Failed to enrich activity {activity.id}: {e}")
+                # Keep original activity if enrichment fails
+                enriched_activities.append(activity)
+                continue
+        
+        logger.info(f"Successfully enriched {len(enriched_activities)} activities with detailed polylines")
+        return enriched_activities
     
     def cache_activities(self, activities: List[Activity]) -> None:
         """
