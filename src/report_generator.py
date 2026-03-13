@@ -428,12 +428,12 @@ class ReportGenerator:
                                               onclick="document.getElementById('howitworks').scrollIntoView({behavior: 'smooth'});"
                                               data-bs-toggle="tooltip"
                                               data-bs-placement="top"
-                                              title="Time: {{ "%.1f"|format(route.breakdown['time_score']) }} | Distance: {{ "%.1f"|format(route.breakdown['distance_score']) }} | Safety: {{ "%.1f"|format(route.breakdown['safety_score']) }}">
+                                              title="Time: {{ "%.1f"|format(route.breakdown['time']) }} | Distance: {{ "%.1f"|format(route.breakdown['distance']) }} | Safety: {{ "%.1f"|format(route.breakdown['safety']) }}">
                                             {{ "%.1f"|format(route.score) }}
                                         </span>
                                     </td>
-                                    <td>{{ "%.1f"|format(route.metrics.avg_duration / 60) }} min</td>
-                                    <td>{{ "%.2f"|format(route.metrics.avg_distance / 1000) }} km</td>
+                                    <td>{{ "%.1f"|format(route.metrics['avg_duration'] / 60) }} min</td>
+                                    <td>{{ "%.2f"|format(route.metrics['avg_distance'] / 1000) }} km</td>
                                     <td>{{ route.group.frequency }}</td>
                                     <td>
                                         {% if route.breakdown.get('weather_details') %}
@@ -1004,7 +1004,7 @@ class ReportGenerator:
                 <div class="card text-center">
                     <div class="card-body">
                         <h5 class="card-title">Average Distance</h5>
-                        <p class="card-text display-6">{{ "%.1f"|format(long_rides_stats.avg_distance) }} km</p>
+                        <p class="card-text display-6">{{ "%.1f"|format(long_rides_stats.avg_distance_km) }} km</p>
                     </div>
                 </div>
             </div>
