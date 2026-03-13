@@ -829,8 +829,10 @@ class ReportGenerator:
                         highlightRoute(routeId, true);
                         
                         // Zoom map to selected route
+                        // Strip 'route-' prefix if present since zoomToRouteById adds it
+                        var cleanRouteId = routeId.replace(/^route[-_]/, '');
                         if (typeof window.zoomToRouteById === 'function') {
-                            window.zoomToRouteById(routeId);
+                            window.zoomToRouteById(cleanRouteId);
                         }
                     }
                 });
