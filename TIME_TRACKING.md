@@ -34,14 +34,27 @@
 - Created TIME_TRACKING.md with accurate time estimates
 - **Commit**: 3d07113
 
+### Session 4: March 13, 2026 (Morning)
+**Time**: 9:21 AM - 10:29 AM (~1 hour 8 minutes)
+- Added API rate limits documentation to PLAN.md
+- Investigated route truncation (identified root cause: summary_polyline vs detailed polyline)
+- Added "How It Works" tab with comprehensive scoring methodology
+- Implemented score tooltips showing breakdown (Time/Distance/Safety)
+- Added click handlers on scores to link to "How It Works" section
+- Created Long Rides statistics dashboard with 4 metric cards
+- Implemented Chart.js distance distribution histogram
+- Added loop vs point-to-point breakdown visualization
+- **Commits**: TBD (pending push)
+
 ---
 
-## **Total Human Time Invested: ~4 hours 29 minutes**
+## **Total Human Time Invested: ~5 hours 37 minutes**
 
 Breaking it down:
 - Session 1: 2 hours 8 minutes (March 11 evening)
 - Session 2: 2 hours 11 minutes (March 12 morning)
 - Session 3: 10 minutes (March 12 late morning)
+- Session 4: 1 hour 8 minutes (March 13 morning)
 
 ---
 
@@ -98,9 +111,9 @@ Breaking it down:
 ## **Productivity Multiplier: 9-13x**
 
 ### Time Breakdown:
-- **With Bob**: 4.5 hours
-- **Without Bob**: 40-60 hours
-- **Time Saved**: 35-55 hours
+- **With Bob**: 5.6 hours
+- **Without Bob**: 50-70 hours (updated estimate with new features)
+- **Time Saved**: 44-64 hours
 
 ### Why So Fast?
 
@@ -183,18 +196,23 @@ This project demonstrates that AI-assisted development isn't just faster—it's 
 
 ...creates a development experience that's **9-13x faster** than solo development, while maintaining or exceeding code quality standards.
 
-**Total time saved: 35-55 hours** ⏱️
+**Total time saved: 44-64 hours** ⏱️
 
 ---
 
 ## Outstanding Issues
 
+### Resolved:
+- [x] Route start/end truncation - **ROOT CAUSE IDENTIFIED**: Using `summary_polyline` (simplified ~100 points) instead of `polyline` (full GPS data)
+  - Solution implemented but not integrated per user request
+  - Code ready in `data_fetcher.py` with `use_detailed_polyline` parameter
+
 ### To Investigate:
-- [ ] Route start/end truncation still occurring despite privacy feature removal
-  - Need to check if truncation is happening in route_analyzer or data_fetcher
-  - May be related to Strava API data or coordinate processing
+- [ ] Bootstrap tab switching not working properly (LOW PRIORITY)
+  - Attempted fix with aria attributes
+  - May need JavaScript debugging
 
 ---
 
-*Last updated: March 12, 2026 at 10:52 AM*
+*Last updated: March 13, 2026 at 10:29 AM*
 *Based on file timestamps and git commit history*

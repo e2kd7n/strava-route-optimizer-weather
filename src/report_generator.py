@@ -112,6 +112,51 @@ class ReportGenerator:
         else:
             date_range = "N/A"
         
+        # Prepare long rides data
+        long_rides = self.results.get('long_rides', [])
+        long_rides_stats = {}
+        distance_bins = []
+        
+        if long_rides:
+            distances = [r.distance_km for r in long_rides]
+            loop_count = sum(1 for r in long_rides if r.is_loop)
+            
+            # Calculate distance distribution bins (10km intervals)
+            min_dist = min(distances)
+            max_dist = max(distances)
+            bin_size = 10  # 10km bins
+            num_bins = int((max_dist - min_dist) / bin_size) + 1
+            
+            # Create bins
+            bins = {}
+            for i in range(num_bins):
+                bin_start = int(min_dist / bin_size) * bin_size + i * bin_size
+                bin_end = bin_start + bin_size
+                bin_label = f"{bin_start}-{bin_end}km"
+                bins[bin_label] = 0
+            
+            # Count rides in each bin
+            for dist in distances:
+                bin_index = int((dist - (int(min_dist / bin_size) * bin_size)) / bin_size)
+                bin_start = int(min_dist / bin_size) * bin_size + bin_index * bin_size
+                bin_end = bin_start + bin_size
+                bin_label = f"{bin_start}-{bin_end}km"
+                if bin_label in bins:
+                    bins[bin_label] += 1
+            
+            distance_bins = [{'label': k, 'count': v} for k, v in bins.items()]
+            
+            long_rides_stats = {
+                'total_rides': len(long_rides),
+                'total_distance_km': sum(distances),
+                'avg_distance_km': sum(distances) / len(distances),
+                'min_distance_km': min(distances),
+                'max_distance_km': max(distances),
+                'loop_count': loop_count,
+                'loop_percentage': (loop_count / len(long_rides)) * 100,
+                'point_to_point_count': len(long_rides) - loop_count
+            }
+        
         context = {
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'optimal': optimal,
@@ -126,7 +171,10 @@ class ReportGenerator:
                 'commute_activities': commute_activities,
                 'route_variants': route_variants,
                 'date_range': date_range
-            }
+            },
+            'long_rides': long_rides,
+            'long_rides_stats': long_rides_stats,
+            'distance_bins': distance_bins
         }
         
         return context
@@ -156,6 +204,7 @@ class ReportGenerator:
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Strava Commute Analysis Report</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f8f9fa; }
         .container-fluid { padding: 30px; }
@@ -188,6 +237,9 @@ class ReportGenerator:
         .coming-soon p { font-size: 1.2em; }
         .nav-tabs .nav-link { color: #667eea; font-weight: 500; }
         .nav-tabs .nav-link.active { background-color: #667eea; color: white; }
+        .score-link { cursor: pointer; color: #667eea; text-decoration: underline; }
+        .score-link:hover { color: #764ba2; }
+        [data-bs-toggle="tooltip"] { cursor: help; border-bottom: 1px dotted #667eea; }
     </style>
 </head>
 <body>
@@ -212,6 +264,11 @@ class ReportGenerator:
                 </button>
             </li>
             <li class="nav-item" role="presentation">
+                <button class="nav-link" id="howitworks-tab" data-bs-toggle="tab" data-bs-target="#howitworks" type="button" role="tab">
+                    📊 How It Works
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
                 <button class="nav-link" id="forecast-tab" data-bs-toggle="tab" data-bs-target="#forecast" type="button" role="tab">
                     🌤️ Commute Forecast
                 </button>
@@ -224,9 +281,9 @@ class ReportGenerator:
         </ul>
 
         <!-- Tab Content -->
-        <div class="tab-content" id="reportTabContent">
+        <div class="tab-content" id="reportTabContent" style="margin-top: 20px;">
             <!-- Commute Routes Tab -->
-            <div class="tab-pane fade show active" id="commute" role="tabpanel">
+            <div class="tab-pane fade show active" id="commute" role="tabpanel" aria-labelledby="commute-tab">
 
         <div class="card">
             <div class="card-header"><h3>🏆 Recommended Optimal Route</h3></div>
@@ -366,7 +423,15 @@ class ReportGenerator:
                                             {{ route.name }}
                                         </strong>
                                     </td>
-                                    <td>{{ "%.1f"|format(route.score) }}</td>
+                                    <td>
+                                        <span class="score-link"
+                                              onclick="document.getElementById('howitworks').scrollIntoView({behavior: 'smooth'});"
+                                              data-bs-toggle="tooltip"
+                                              data-bs-placement="top"
+                                              title="Time: {{ "%.1f"|format(route.breakdown['time_score']) }} | Distance: {{ "%.1f"|format(route.breakdown['distance_score']) }} | Safety: {{ "%.1f"|format(route.breakdown['safety_score']) }}">
+                                            {{ "%.1f"|format(route.score) }}
+                                        </span>
+                                    </td>
                                     <td>{{ "%.1f"|format(route.metrics.avg_duration / 60) }} min</td>
                                     <td>{{ "%.2f"|format(route.metrics.avg_distance / 1000) }} km</td>
                                     <td>{{ route.group.frequency }}</td>
@@ -805,8 +870,113 @@ class ReportGenerator:
 
     </div><!-- End Commute Routes Tab -->
 
+    <!-- How It Works Tab -->
+    <div class="tab-pane fade" id="howitworks" role="tabpanel" aria-labelledby="howitworks-tab">
+        <div class="card">
+            <div class="card-header"><h3>📊 How the Route Optimizer Works</h3></div>
+            <div class="card-body">
+                <p class="lead">The route optimizer uses a multi-criteria scoring system to recommend the best commute routes based on your historical riding data.</p>
+                
+                <h4 class="mt-4">🎯 Scoring Methodology</h4>
+                <p>Each route is evaluated using three key factors, weighted to balance speed, efficiency, and safety:</p>
+                
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h2 style="color: #667eea;">⏱️</h2>
+                                <h5>Time Score</h5>
+                                <p class="text-muted">Weight: 40%</p>
+                                <hr>
+                                <p class="small text-start">
+                                    <strong>What it measures:</strong> How fast you can complete the route<br><br>
+                                    <strong>Calculation:</strong> Faster routes score higher. We also consider consistency - routes with less time variation score better.<br><br>
+                                    <strong>Formula:</strong> Normalized average duration + consistency bonus
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h2 style="color: #667eea;">📏</h2>
+                                <h5>Distance Score</h5>
+                                <p class="text-muted">Weight: 30%</p>
+                                <hr>
+                                <p class="small text-start">
+                                    <strong>What it measures:</strong> Route efficiency and directness<br><br>
+                                    <strong>Calculation:</strong> Shorter routes generally score higher, but we balance this with time - sometimes a slightly longer route is faster.<br><br>
+                                    <strong>Formula:</strong> Normalized distance (inverted - shorter is better)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h2 style="color: #667eea;">🛡️</h2>
+                                <h5>Safety Score</h5>
+                                <p class="text-muted">Weight: 30%</p>
+                                <hr>
+                                <p class="small text-start">
+                                    <strong>What it measures:</strong> Route familiarity and predictability<br><br>
+                                    <strong>Calculation:</strong> Routes you use more frequently score higher (more familiar = safer). Flatter routes with less elevation change also score better.<br><br>
+                                    <strong>Formula:</strong> Usage frequency + elevation consistency
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h4 class="mt-5">🧮 Final Score Calculation</h4>
+                <div class="alert alert-info">
+                    <p class="mb-2"><strong>Overall Score = (Time Score × 0.40) + (Distance Score × 0.30) + (Safety Score × 0.30)</strong></p>
+                    <p class="mb-0 small">All scores are normalized to a 0-100 scale, then weighted and combined. Higher scores indicate better routes.</p>
+                </div>
+                
+                <h4 class="mt-4">🔍 Route Grouping</h4>
+                <p>Similar routes are automatically grouped together using the <strong>Fréchet distance algorithm</strong>, which measures how similar two paths are by considering:</p>
+                <ul>
+                    <li><strong>Path order:</strong> Routes must follow similar sequences of turns and streets</li>
+                    <li><strong>Spatial proximity:</strong> GPS points should be close together along the entire route</li>
+                    <li><strong>Direction consistency:</strong> Routes going the same direction are grouped separately</li>
+                </ul>
+                <p class="small text-muted">Routes with similarity above 85% are grouped together. The most frequently used route in each group becomes the representative route.</p>
+                
+                <h4 class="mt-4">🌦️ Weather Integration</h4>
+                <p>Current weather conditions are fetched for each route's start and end points, including:</p>
+                <ul>
+                    <li><strong>Temperature:</strong> Helps you dress appropriately</li>
+                    <li><strong>Wind speed & direction:</strong> Identifies headwinds and tailwinds</li>
+                    <li><strong>Precipitation:</strong> Alerts you to rain or snow</li>
+                </ul>
+                <p class="small text-muted">Weather data is cached for 90 minutes to minimize API calls while keeping information current.</p>
+                
+                <h4 class="mt-4">💡 Tips for Best Results</h4>
+                <div class="alert alert-success">
+                    <ul class="mb-0">
+                        <li>Record at least 5-10 commutes on each route for accurate analysis</li>
+                        <li>Use consistent start/end points (within 500m of home/work)</li>
+                        <li>Name your activities with keywords like "commute" or "to work" for better filtering</li>
+                        <li>The more data you have, the more accurate the recommendations become</li>
+                    </ul>
+                </div>
+                
+                <h4 class="mt-4">🔧 Customization</h4>
+                <p>You can adjust the scoring weights in <code>config/config.yaml</code> to match your priorities:</p>
+                <pre class="bg-light p-3 rounded"><code>optimization:
+  weights:
+    time: 0.4      # Increase if speed is your priority
+    distance: 0.3  # Increase if you want shorter routes
+    safety: 0.3    # Increase if you prefer familiar routes</code></pre>
+            </div>
+        </div>
+    </div><!-- End How It Works Tab -->
+
     <!-- Commute Forecast Tab -->
-    <div class="tab-pane fade" id="forecast" role="tabpanel">
+    <div class="tab-pane fade" id="forecast" role="tabpanel" aria-labelledby="forecast-tab">
         <div class="coming-soon">
             <h2>🌤️</h2>
             <h3>7-Day Commute Forecast</h3>
@@ -817,13 +987,53 @@ class ReportGenerator:
     </div>
 
     <!-- Long Rides Tab -->
-    <div class="tab-pane fade" id="longrides" role="tabpanel">
-        <div class="coming-soon">
-            <h2>🚵</h2>
-            <h3>Long Rides Analysis</h3>
-            <p>Coming Soon!</p>
-            <p class="text-muted">This feature will analyze your recreational rides,<br>
-            showing statistics, distance distributions, and route recommendations.</p>
+    <div class="tab-pane fade" id="longrides" role="tabpanel" aria-labelledby="longrides-tab">
+        <h3>Long Rides Analysis</h3>
+        
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Rides</h5>
+                        <p class="card-text display-6">{{ long_rides_stats.total_rides }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Average Distance</h5>
+                        <p class="card-text display-6">{{ "%.1f"|format(long_rides_stats.avg_distance) }} km</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Loop Rides</h5>
+                        <p class="card-text display-6">{{ "%.0f"|format(long_rides_stats.loop_percentage) }}%</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Point-to-Point</h5>
+                        <p class="card-text display-6">{{ "%.0f"|format(100 - long_rides_stats.loop_percentage) }}%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Distance Distribution Chart -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Distance Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="distanceChart" style="max-height: 400px;"></canvas>
+            </div>
         </div>
     </div>
 
@@ -831,6 +1041,78 @@ class ReportGenerator:
     </div><!-- End Container -->
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Initialize Bootstrap tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+
+        // Initialize distance distribution chart
+        {% if long_rides_stats and long_rides_stats.distance_bins %}
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('distanceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [
+                        {% for bin in long_rides_stats.distance_bins %}
+                        '{{ bin.label }}'{% if not loop.last %},{% endif %}
+                        {% endfor %}
+                    ],
+                    datasets: [{
+                        label: 'Number of Rides',
+                        data: [
+                            {% for bin in long_rides_stats.distance_bins %}
+                            {{ bin.count }}{% if not loop.last %},{% endif %}
+                            {% endfor %}
+                        ],
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            },
+                            title: {
+                                display: true,
+                                text: 'Number of Rides'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Distance Range (km)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y + ' ride' + (context.parsed.y !== 1 ? 's' : '');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+        {% endif %}
+    </script>
 </body>
 </html>'''
 

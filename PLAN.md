@@ -244,15 +244,87 @@ output:
 
 ## API Considerations
 
-**Strava API Limits:**
+### Strava API Limits
+**Rate Limits:**
 - 100 requests per 15 minutes
 - 1000 requests per day
+
+**Mitigation Strategies:**
 - Implement caching to minimize API calls
 - Store processed data locally
+- Use pagination efficiently (200 activities per request)
+- Batch process activities to reduce API calls
 
 **Required OAuth Scopes:**
 - `activity:read_all` - Read all activity data
 - `profile:read_all` - Read profile information
+
+### Nominatim (OpenStreetMap) Geocoding API Limits
+**Rate Limits:**
+- 1 request per second maximum
+- Usage Policy: https://operations.osmfoundation.org/policies/nominatim/
+- Requires User-Agent header with application identification
+- Intended for occasional geocoding, not bulk processing
+
+**Current Status:**
+- Hit rate limit during initial development (March 11, 2026)
+- Temporarily disabled geocoding to avoid further violations
+- Will re-enable after 24-48 hour cooldown period
+
+**Mitigation Strategies:**
+- Implement 1-second delay between geocoding requests
+- Cache all geocoded locations persistently (JSON file)
+- Only geocode unique locations (deduplicate by coordinates)
+- Limit geocoding to essential locations (home, work, route endpoints)
+- Consider alternative: Photon API (no rate limits, same OSM data)
+- Future: Add user configuration to disable geocoding if not needed
+
+**Implementation Details:**
+- User-Agent: "StravaCommuteAnalyzer/1.0 (contact@example.com)"
+- Cache file: `cache/geocoding_cache.json`
+- Cache expiration: 30 days (locations don't change frequently)
+- Spatial deduplication: 50m radius for location matching
+
+### Open-Meteo Weather API Limits
+**Rate Limits:**
+- Free tier: 10,000 requests per day
+- No authentication required
+- Commercial use allowed with attribution
+
+**Current Usage:**
+- Fetches current weather conditions for route analysis
+- Fetches historical weather data for past activities
+- Typical usage: 5-15 requests per report generation
+
+**Mitigation Strategies:**
+- Persistent JSON file cache with 90-minute expiration
+- Spatial caching: reuse weather data within 2km radius
+- Cache file: `cache/weather_cache.json`
+- Automatic cache loading on startup
+- Cache saves after each weather fetch
+
+**Implementation Details:**
+- API endpoint: https://api.open-meteo.com/v1/forecast
+- Parameters: temperature, wind speed, wind direction, precipitation
+- Historical data: Up to 90 days in the past
+- Forecast data: Up to 16 days in the future
+
+### API Rate Limit Summary
+
+| API | Rate Limit | Current Status | Cache Strategy | Notes |
+|-----|------------|----------------|----------------|-------|
+| Strava | 100/15min, 1000/day | Active | Local storage | Pagination optimized |
+| Nominatim | 1/second | Temporarily disabled | JSON file, 30-day expiration | Re-enable after cooldown |
+| Open-Meteo | 10,000/day | Active | JSON file, 90-min expiration | Spatial caching (2km) |
+
+### Best Practices for API Usage
+1. **Always check cache first** before making API requests
+2. **Implement exponential backoff** for rate limit errors
+3. **Log all API requests** for debugging and monitoring
+4. **Respect rate limits** even when not enforced
+5. **Provide user feedback** when rate limits are hit
+6. **Graceful degradation** when APIs are unavailable
+7. **Consider alternative APIs** for critical features
 
 ## Success Criteria
 
