@@ -62,9 +62,10 @@ class ReportGenerator:
         optimal = recommendations.get('optimal', {})
         alternative = recommendations.get('alternative')
         
-        # Get route names from visualizer
+        # Get route names and colors from visualizer
         visualizer = self.results.get('visualizer')
         route_names = visualizer.get_route_names() if visualizer else {}
+        route_colors = visualizer.get_route_colors() if visualizer else {}
         
         # Prepare ranked routes with metrics, names, Strava links, and prevailing wind
         ranked_routes = []
@@ -95,6 +96,7 @@ class ReportGenerator:
                 'breakdown': breakdown,
                 'metrics': metrics,
                 'name': route_name,
+                'color': route_colors.get(group.id, '#808080'),  # Default to gray if not found
                 'strava_url': f"https://www.strava.com/activities/{most_recent_activity_id}" if most_recent_activity_id else None,
                 'prevailing_wind': prevailing_wind
             })
@@ -419,6 +421,7 @@ class ReportGenerator:
                                     {% if loop.index == 1 %}data-optimal="true"{% endif %}>
                                     <td>{{ loop.index }}</td>
                                     <td>
+                                        <span class="route-color-indicator" style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: {{ route.color }}; margin-right: 8px; border: 1px solid #ddd;"></span>
                                         <strong class="route-name-link" style="cursor: pointer; color: #667eea;" title="Click to view on Strava">
                                             {{ route.name }}
                                         </strong>

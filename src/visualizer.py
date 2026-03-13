@@ -42,6 +42,7 @@ class RouteVisualizer:
         self.map = None
         self.route_namer = RouteNamer(config)
         self.route_names = {}  # Map route_id to human-readable name
+        self.route_colors = {}  # Map route_id to color
         self.long_rides = long_rides or []
         self.long_ride_analyzer = long_ride_analyzer
         
@@ -279,6 +280,9 @@ class RouteVisualizer:
                 weight = alternative_weight
                 color_idx += 1
             
+            # Store the color for this route
+            self.route_colors[group.id] = color
+            
             route_name = self.route_names.get(group.id)
             self.add_route_layer(group, color, weight, is_optimal, route_name)
         
@@ -301,6 +305,15 @@ class RouteVisualizer:
         
         # Return HTML
         return self.map._repr_html_()
+    
+    def get_route_colors(self) -> Dict[str, str]:
+        """
+        Get mapping of route IDs to their colors.
+        
+        Returns:
+            Dictionary mapping route_id to color hex code
+        """
+        return self.route_colors.copy()
     
     def _add_long_rides_javascript(self) -> None:
         """Add JavaScript for interactive long ride recommendations on map click."""
