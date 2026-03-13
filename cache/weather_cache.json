@@ -1,128 +1,128 @@
 {
   "41.9874,-87.65455": {
     "data": {
-      "timestamp": "2026-03-13T15:00",
-      "temp_c": 7.3,
-      "wind_speed_kph": 41.2,
-      "wind_gust_kph": 75.6,
-      "wind_direction_deg": 276,
-      "humidity": 46,
+      "timestamp": "2026-03-13T17:15",
+      "temp_c": 5.8,
+      "wind_speed_kph": 33.6,
+      "wind_gust_kph": 69.5,
+      "wind_direction_deg": 283,
+      "humidity": 45,
       "precipitation_mm": 0.0,
       "lat": 41.9874,
       "lon": -87.65455
     },
-    "timestamp": "2026-03-13T15:08:36.799995"
+    "timestamp": "2026-03-13T17:25:52.928241"
   },
   "41.93844,-87.63596": {
     "data": {
-      "timestamp": "2026-03-13T15:00",
-      "temp_c": 8.5,
-      "wind_speed_kph": 43.3,
-      "wind_gust_kph": 76.0,
-      "wind_direction_deg": 274,
-      "humidity": 35,
+      "timestamp": "2026-03-13T17:15",
+      "temp_c": 7.0,
+      "wind_speed_kph": 34.7,
+      "wind_gust_kph": 68.4,
+      "wind_direction_deg": 280,
+      "humidity": 43,
       "precipitation_mm": 0.0,
       "lat": 41.93844,
       "lon": -87.63596
     },
-    "timestamp": "2026-03-13T15:08:36.955806"
+    "timestamp": "2026-03-13T17:25:53.167062"
   },
   "41.8835,-87.63393": {
     "data": {
-      "timestamp": "2026-03-13T15:00",
-      "temp_c": 8.3,
-      "wind_speed_kph": 43.6,
-      "wind_gust_kph": 76.3,
-      "wind_direction_deg": 273,
-      "humidity": 35,
+      "timestamp": "2026-03-13T17:15",
+      "temp_c": 6.8,
+      "wind_speed_kph": 34.7,
+      "wind_gust_kph": 68.8,
+      "wind_direction_deg": 280,
+      "humidity": 43,
       "precipitation_mm": 0.0,
       "lat": 41.8835,
       "lon": -87.63393
     },
-    "timestamp": "2026-03-13T15:08:37.113398"
+    "timestamp": "2026-03-13T17:25:53.384830"
   },
   "41.96564,-87.64354": {
     "data": {
-      "timestamp": "2026-03-13T15:00",
-      "temp_c": 8.2,
-      "wind_speed_kph": 42.6,
-      "wind_gust_kph": 75.6,
-      "wind_direction_deg": 275,
-      "humidity": 37,
+      "timestamp": "2026-03-13T17:15",
+      "temp_c": 7.1,
+      "wind_speed_kph": 34.7,
+      "wind_gust_kph": 69.1,
+      "wind_direction_deg": 283,
+      "humidity": 42,
       "precipitation_mm": 0.0,
       "lat": 41.96564,
       "lon": -87.64354
     },
-    "timestamp": "2026-03-13T15:08:37.376879"
+    "timestamp": "2026-03-13T17:25:53.623289"
   },
   "41.90109,-87.61935": {
     "data": {
-      "timestamp": "2026-03-13T15:00",
-      "temp_c": 8.5,
-      "wind_speed_kph": 43.3,
-      "wind_gust_kph": 76.0,
-      "wind_direction_deg": 274,
-      "humidity": 35,
+      "timestamp": "2026-03-13T17:15",
+      "temp_c": 7.1,
+      "wind_speed_kph": 34.7,
+      "wind_gust_kph": 68.4,
+      "wind_direction_deg": 280,
+      "humidity": 43,
       "precipitation_mm": 0.0,
       "lat": 41.90109,
       "lon": -87.61935
     },
-    "timestamp": "2026-03-13T15:08:37.757576"
+    "timestamp": "2026-03-13T17:25:53.975108"
   },
   "41.9429,-87.69578": {
     "data": {
-      "timestamp": "2026-03-13T15:00",
-      "temp_c": 8.4,
-      "wind_speed_kph": 43.0,
-      "wind_gust_kph": 75.6,
-      "wind_direction_deg": 275,
-      "humidity": 36,
+      "timestamp": "2026-03-13T17:15",
+      "temp_c": 7.3,
+      "wind_speed_kph": 34.2,
+      "wind_gust_kph": 68.0,
+      "wind_direction_deg": 282,
+      "humidity": 42,
       "precipitation_mm": 0.0,
       "lat": 41.9429,
       "lon": -87.69578
     },
-    "timestamp": "2026-03-13T15:08:38.717689"
+    "timestamp": "2026-03-13T17:25:54.803581"
   },
   "41.92186,-87.67772": {
     "data": {
-      "timestamp": "2026-03-13T15:00",
-      "temp_c": 8.4,
-      "wind_speed_kph": 43.3,
-      "wind_gust_kph": 75.6,
-      "wind_direction_deg": 274,
-      "humidity": 36,
+      "timestamp": "2026-03-13T17:15",
+      "temp_c": 6.9,
+      "wind_speed_kph": 34.5,
+      "wind_gust_kph": 68.0,
+      "wind_direction_deg": 281,
+      "humidity": 43,
       "precipitation_mm": 0.0,
       "lat": 41.92186,
       "lon": -87.67772
     },
-    "timestamp": "2026-03-13T15:08:38.914236"
+    "timestamp": "2026-03-13T17:25:54.979372"
   },
   "41.92021,-87.64863": {
     "data": {
-      "timestamp": "2026-03-13T15:00",
-      "temp_c": 8.4,
-      "wind_speed_kph": 43.3,
-      "wind_gust_kph": 76.0,
-      "wind_direction_deg": 274,
-      "humidity": 35,
+      "timestamp": "2026-03-13T17:15",
+      "temp_c": 7.0,
+      "wind_speed_kph": 34.7,
+      "wind_gust_kph": 68.4,
+      "wind_direction_deg": 280,
+      "humidity": 43,
       "precipitation_mm": 0.0,
       "lat": 41.92021,
       "lon": -87.64863
     },
-    "timestamp": "2026-03-13T15:08:39.095918"
+    "timestamp": "2026-03-13T17:25:55.138653"
   },
   "41.9415,-87.67111": {
     "data": {
-      "timestamp": "2026-03-13T15:00",
-      "temp_c": 8.4,
-      "wind_speed_kph": 43.3,
-      "wind_gust_kph": 75.6,
-      "wind_direction_deg": 274,
-      "humidity": 35,
+      "timestamp": "2026-03-13T17:15",
+      "temp_c": 7.2,
+      "wind_speed_kph": 35.2,
+      "wind_gust_kph": 68.8,
+      "wind_direction_deg": 281,
+      "humidity": 41,
       "precipitation_mm": 0.0,
       "lat": 41.9415,
       "lon": -87.67111
     },
-    "timestamp": "2026-03-13T15:08:39.339019"
+    "timestamp": "2026-03-13T17:25:55.350165"
   }
 }

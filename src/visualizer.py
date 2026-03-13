@@ -524,7 +524,7 @@ class RouteVisualizer:
         <script>
         // Route interaction data
         var routeData = {route_data_json};
-        var selectedRoute = null;
+        var selectedRoutes = new Set();  // Track multiple selected routes
         var currentFilter = 'all';
         
         // Wait for map to be ready
@@ -545,30 +545,40 @@ class RouteVisualizer:
                         if (!data) return;
                         
                         // Toggle selection
-                        if (selectedRoute === routeId) {{
-                            // Deselect - restore all routes
-                            resetRouteStyles();
-                            selectedRoute = null;
+                        if (selectedRoutes.has(routeId)) {{
+                            // Deselect this route
+                            selectedRoutes.delete(routeId);
                         }} else {{
                             // Select this route
-                            selectedRoute = routeId;
-                            
-                            // Fade all other routes
+                            selectedRoutes.add(routeId);
+                        }}
+                        
+                        // Update all route visibility
+                        if (selectedRoutes.size === 0) {{
+                            // No routes selected - show all
+                            resetRouteStyles();
+                        }} else {{
+                            // Some routes selected - hide unselected, show selected
                             routeLines.forEach(function(line) {{
                                 var lineClasses = line.className.baseVal || line.className;
-                                if (lineClasses.indexOf(routeId) === -1) {{
-                                    // Not the selected route - fade it
-                                    line.style.opacity = '0.15';
-                                    line.style.strokeWidth = '2';
-                                }} else {{
-                                    // Selected route - highlight it
+                                var lineRouteMatch = lineClasses.match(/route-([\\w_]+)/);
+                                if (!lineRouteMatch) return;
+                                
+                                var lineRouteId = 'route-' + lineRouteMatch[1];
+                                
+                                if (selectedRoutes.has(lineRouteId)) {{
+                                    // Selected route - show with original color and thicker line
+                                    line.style.display = '';
                                     line.style.opacity = '1.0';
                                     line.style.strokeWidth = '6';
+                                }} else {{
+                                    // Unselected route - completely hide
+                                    line.style.display = 'none';
                                 }}
                             }});
                             
-                            // Zoom to route bounds
-                            zoomToRoute(data.bounds);
+                            // Zoom to show all selected routes
+                            zoomToSelectedRoutes();
                         }}
                         
                         // Stop event propagation
@@ -582,9 +592,9 @@ class RouteVisualizer:
                     var map = window[mapElement._leaflet_id];
                     map.on('click', function(e) {{
                         // Only reset if not clicking on a route
-                        if (selectedRoute && !e.originalEvent.target.classList.contains('route-line')) {{
+                        if (selectedRoutes.size > 0 && !e.originalEvent.target.classList.contains('route-line')) {{
+                            selectedRoutes.clear();
                             resetRouteStyles();
-                            selectedRoute = null;
                         }}
                     }});
                 }}
@@ -707,21 +717,36 @@ class RouteVisualizer:
         function resetRouteStyles() {{
             var routeLines = document.querySelectorAll('path.route-line');
             routeLines.forEach(function(line) {{
-                // For SVG elements, use getAttribute to get class
-                var classes = line.getAttribute('class') || '';
-                
-                // Only reset if route is visible based on current filter
-                if (currentFilter === 'all') {{
-                    line.style.opacity = '';
-                    line.style.strokeWidth = '';
-                }} else {{
-                    var directionClass = 'direction-' + currentFilter;
-                    if (classes.indexOf(directionClass) !== -1) {{
-                        line.style.opacity = '';
-                        line.style.strokeWidth = '';
-                    }}
-                }}
+                // Reset all styles to show routes normally
+                line.style.display = '';
+                line.style.opacity = '';
+                line.style.strokeWidth = '';
             }});
+        }}
+        
+        function zoomToSelectedRoutes() {{
+            try {{
+                var mapElement = document.querySelector('.folium-map');
+                if (!mapElement || !mapElement._leaflet_id) return;
+                
+                var map = window[mapElement._leaflet_id];
+                var allBounds = [];
+                
+                // Collect bounds from all selected routes
+                selectedRoutes.forEach(function(routeId) {{
+                    var data = routeData[routeId];
+                    if (data && data.bounds) {{
+                        allBounds = allBounds.concat(data.bounds);
+                    }}
+                }});
+                
+                if (allBounds.length > 0) {{
+                    var latLngBounds = L.latLngBounds(allBounds);
+                    map.fitBounds(latLngBounds, {{padding: [50, 50]}});
+                }}
+            }} catch (err) {{
+                console.error('Error zooming to selected routes:', err);
+            }}
         }}
         </script>
         """

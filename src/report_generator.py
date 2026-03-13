@@ -441,25 +441,40 @@ class ReportGenerator:
                                     <td>
                                         {% if route.breakdown.get('weather_details') %}
                                             {% set wd = route.breakdown.weather_details %}
-                                            <div title="Current: Headwind {{ '%.1f'|format(wd.avg_headwind_kph) }} km/h, Crosswind {{ '%.1f'|format(wd.avg_crosswind_kph) }} km/h">
-                                                {% if wd.wind_favorability == 'favorable' %}
-                                                    <span style="color: green;">✅ {{ "%.0f"|format(route.breakdown.weather) }}</span>
-                                                {% elif wd.wind_favorability == 'unfavorable' %}
-                                                    <span style="color: red;">⚠️ {{ "%.0f"|format(route.breakdown.weather) }}</span>
-                                                {% else %}
-                                                    <span style="color: gray;">➖ {{ "%.0f"|format(route.breakdown.weather) }}</span>
-                                                {% endif %}
-                                            </div>
+                                            {% if wd.wind_favorability == 'favorable' %}
+                                                <div style="background-color: #d4edda; padding: 6px 8px; border-radius: 4px; border-left: 3px solid #28a745;"
+                                                     title="Favorable: Headwind {{ '%.1f'|format(wd.avg_headwind_kph) }} km/h, Crosswind {{ '%.1f'|format(wd.avg_crosswind_kph) }} km/h">
+                                                    <span style="font-size: 16px;">🌬️</span>
+                                                    <span style="color: #155724; font-weight: 600;">{{ "%.0f"|format(route.breakdown.weather) }}</span>
+                                                    <span style="color: #155724; font-size: 11px;">✓ Tailwind</span>
+                                                </div>
+                                            {% elif wd.wind_favorability == 'unfavorable' %}
+                                                <div style="background-color: #f8d7da; padding: 6px 8px; border-radius: 4px; border-left: 3px solid #dc3545;"
+                                                     title="Unfavorable: Headwind {{ '%.1f'|format(wd.avg_headwind_kph) }} km/h, Crosswind {{ '%.1f'|format(wd.avg_crosswind_kph) }} km/h">
+                                                    <span style="font-size: 16px;">💨</span>
+                                                    <span style="color: #721c24; font-weight: 600;">{{ "%.0f"|format(route.breakdown.weather) }}</span>
+                                                    <span style="color: #721c24; font-size: 11px;">⚠ Headwind</span>
+                                                </div>
+                                            {% else %}
+                                                <div style="background-color: #e2e3e5; padding: 6px 8px; border-radius: 4px; border-left: 3px solid #6c757d;"
+                                                     title="Neutral: Headwind {{ '%.1f'|format(wd.avg_headwind_kph) }} km/h, Crosswind {{ '%.1f'|format(wd.avg_crosswind_kph) }} km/h">
+                                                    <span style="font-size: 16px;">🌫️</span>
+                                                    <span style="color: #383d41; font-weight: 600;">{{ "%.0f"|format(route.breakdown.weather) }}</span>
+                                                    <span style="color: #383d41; font-size: 11px;">~ Neutral</span>
+                                                </div>
+                                            {% endif %}
                                             {% if route.prevailing_wind %}
-                                                <small class="text-muted" title="{{ route.prevailing_wind.description }}">
-                                                    {{ route.prevailing_wind.month }}: {{ route.prevailing_wind.direction_name }}
+                                                <small class="text-muted" style="font-size: 10px; display: block; margin-top: 4px;" title="{{ route.prevailing_wind.description }}">
+                                                    📅 {{ route.prevailing_wind.month }}: {{ route.prevailing_wind.direction_name }}
                                                 </small>
                                             {% endif %}
                                         {% else %}
-                                            <span class="text-muted" title="No weather data">-</span>
+                                            <div style="background-color: #f8f9fa; padding: 6px 8px; border-radius: 4px; text-align: center;" title="No weather data available">
+                                                <span class="text-muted">-</span>
+                                            </div>
                                             {% if route.prevailing_wind %}
-                                                <br><small class="text-muted" title="{{ route.prevailing_wind.description }}">
-                                                    {{ route.prevailing_wind.month }}: {{ route.prevailing_wind.direction_name }}
+                                                <small class="text-muted" style="font-size: 10px; display: block; margin-top: 4px;" title="{{ route.prevailing_wind.description }}">
+                                                    📅 {{ route.prevailing_wind.month }}: {{ route.prevailing_wind.direction_name }}
                                                 </small>
                                             {% endif %}
                                         {% endif %}
