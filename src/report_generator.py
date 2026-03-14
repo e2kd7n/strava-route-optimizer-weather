@@ -101,6 +101,42 @@ class ReportGenerator:
                 'prevailing_wind': prevailing_wind
             })
         
+        # Add test routes to verify zoom functionality
+        class TestGroup:
+            def __init__(self, id, direction):
+                self.id = id
+                self.direction = direction
+        
+        test_metrics = type('obj', (object,), {
+            'avg_duration': 0,
+            'avg_duration_min': 0,
+            'avg_distance': 0,
+            'avg_distance_m': 0,
+            'use_count': 0
+        })()
+        
+        ranked_routes.insert(0, {
+            'group': TestGroup('test_ferry', 'test'),
+            'score': 999.0,
+            'breakdown': {'time': 100, 'distance': 100, 'safety': 100},
+            'metrics': test_metrics,
+            'name': 'TEST: Four States Ferry (267km)',
+            'color': '#FF0000',
+            'strava_url': 'https://www.strava.com/activities/9458631701',
+            'prevailing_wind': None
+        })
+        
+        ranked_routes.insert(1, {
+            'group': TestGroup('test_unbound', 'test'),
+            'score': 998.0,
+            'breakdown': {'time': 100, 'distance': 100, 'safety': 100},
+            'metrics': test_metrics,
+            'name': 'TEST: Unbound 200 (327km)',
+            'color': '#0000FF',
+            'strava_url': 'https://www.strava.com/activities/11551867398',
+            'prevailing_wind': None
+        })
+        
         # Calculate statistics
         total_activities = len(self.results.get('all_activities', []))
         commute_activities = len(self.results.get('commute_activities', []))
@@ -216,7 +252,8 @@ class ReportGenerator:
         .metric { text-align: center; padding: 20px; }
         .metric-value { font-size: 2em; font-weight: bold; color: #667eea; }
         .metric-label { color: #6c757d; font-size: 0.9em; }
-        .map-container { height: 600px; border-radius: 10px; overflow: hidden; position: sticky; top: 20px; }
+        .map-container { height: 800px; border-radius: 10px; overflow: hidden; position: sticky; top: 20px; }
+        .map-container iframe { height: 800px !important; width: 100% !important; }
         .route-row { cursor: pointer; transition: background-color 0.2s; }
         .route-row:hover { background-color: #f0f0f0; }
         .route-row.selected { background-color: #d4edda; font-weight: bold; }
@@ -726,8 +763,13 @@ class ReportGenerator:
         
         // Interactive route highlighting functionality
         (function() {
+            console.log('Route interaction script loaded');
+            console.log('Found route rows:', document.querySelectorAll('.route-row').length);
+            
             let selectedRouteId = null;
             const routeRows = document.querySelectorAll('.route-row');
+            
+            console.log('Setting up', routeRows.length, 'route row listeners');
             
             // Function to highlight route on map
             function highlightRoute(routeId, persist = false) {
@@ -828,11 +870,26 @@ class ReportGenerator:
                         this.classList.add('selected');
                         highlightRoute(routeId, true);
                         
-                        // Zoom map to selected route
-                        // Strip 'route-' prefix if present since zoomToRouteById adds it
-                        var cleanRouteId = routeId.replace(/^route[-_]/, '');
-                        if (typeof window.zoomToRouteById === 'function') {
-                            window.zoomToRouteById(cleanRouteId);
+                        // Zoom map to selected route - need to access iframe's contentWindow
+                        console.log('Table row clicked, routeId:', routeId);
+                        try {
+                            const mapIframe = document.querySelector('iframe');
+                            if (mapIframe && mapIframe.contentWindow) {
+                                const iframeWindow = mapIframe.contentWindow;
+                                console.log('Found iframe, checking for zoomToRouteById...');
+                                console.log('iframe.contentWindow.zoomToRouteById exists?', typeof iframeWindow.zoomToRouteById);
+                                
+                                if (typeof iframeWindow.zoomToRouteById === 'function') {
+                                    console.log('Calling iframe.contentWindow.zoomToRouteById with:', routeId);
+                                    iframeWindow.zoomToRouteById(routeId);
+                                } else {
+                                    console.error('zoomToRouteById not found in iframe contentWindow');
+                                }
+                            } else {
+                                console.error('Map iframe not found or no contentWindow');
+                            }
+                        } catch (err) {
+                            console.error('Error accessing iframe:', err);
                         }
                     }
                 });
