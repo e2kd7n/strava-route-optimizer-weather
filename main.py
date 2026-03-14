@@ -93,6 +93,254 @@ def fetch_activities(config):
         raise
 
 
+def _load_and_filter_activities(fetcher, config):
+    """
+    Load cached activities and filter for commutes.
+    
+    Args:
+        fetcher: StravaDataFetcher instance
+        config: Configuration object
+        
+    Returns:
+        tuple: (all_activities, commute_activities)
+        
+    Raises:
+        SystemExit: If no cached activities or insufficient commute activities
+    """
+    logger.info("Loading activities from cache...")
+    all_activities = fetcher.load_cached_activities()
+    
+    if not all_activities:
+        logger.error("No cached activities found. Run with --fetch first.")
+        return None, None
+    
+    logger.info(f"Loaded {len(all_activities)} activities from cache")
+    
+    # Filter commute activities
+    logger.info("Filtering commute activities...")
+    commute_activities = fetcher.filter_commute_activities(all_activities)
+    
+    if len(commute_activities) < 10:
+        logger.error(f"Insufficient commute activities: {len(commute_activities)} found, need at least 10")
+        logger.info("Try adjusting distance filters in config/config.yaml")
+        return None, None
+    
+    logger.info(f"Found {len(commute_activities)} potential commute activities")
+    return all_activities, commute_activities
+
+
+def _identify_locations(commute_activities, config):
+    """
+    Identify home and work locations from commute activities.
+    
+    Args:
+        commute_activities: List of commute activities
+        config: Configuration object
+        
+    Returns:
+        tuple: (home, work) Location objects
+        
+    Raises:
+        ValueError: If locations cannot be identified
+    """
+    logger.info("Identifying home and work locations...")
+    finder = LocationFinder(commute_activities, config)
+    
+    try:
+        home, work = finder.identify_home_work()
+    except ValueError as e:
+        logger.error(f"Failed to identify locations: {e}")
+        logger.info("Try adjusting clustering parameters in config/config.yaml")
+        raise
+    
+    logger.info(f"Home: ({home.lat:.4f}, {home.lon:.4f}) - {home.activity_count} activities")
+    logger.info(f"Work: ({work.lat:.4f}, {work.lon:.4f}) - {work.activity_count} activities")
+    
+    return home, work
+
+
+def _log_route_summary(route_groups):
+    """
+    Log summary of route groups.
+    
+    Args:
+        route_groups: List of RouteGroup objects
+    """
+    logger.info(f"Found {len(route_groups)} commute route variants")
+    for group in route_groups:
+        logger.info(f"  - {group.id}: {group.frequency} uses")
+
+
+def _analyze_long_rides(all_activities, commute_activities, config):
+    """
+    Analyze long recreational rides if enabled.
+    
+    Args:
+        all_activities: List of all activities
+        commute_activities: List of commute activities
+        config: Configuration object
+        
+    Returns:
+        tuple: (long_rides, long_ride_analyzer)
+    """
+    long_rides = []
+    long_ride_analyzer = None
+    
+    # Check if long rides analysis is enabled
+    long_rides_config = config.get('long_rides', {})
+    if isinstance(long_rides_config, dict):
+        enabled = long_rides_config.get('enabled', True)
+    else:
+        enabled = config.get('long_rides.enabled', True)
+    
+    if not enabled:
+        return long_rides, long_ride_analyzer
+    
+    logger.info("Analyzing long recreational rides...")
+    long_ride_analyzer = LongRideAnalyzer(all_activities, config)
+    
+    # Classify activities
+    _, long_ride_activities = long_ride_analyzer.classify_activities(commute_activities)
+    logger.info(f"Found {len(long_ride_activities)} long ride activities")
+    
+    # Extract long rides
+    if long_ride_activities:
+        long_rides = long_ride_analyzer.extract_long_rides(long_ride_activities)
+        logger.info(f"Extracted {len(long_rides)} long rides for analysis")
+        
+        # Show statistics
+        if long_rides:
+            distances = [r.distance_km for r in long_rides]
+            logger.info(f"  Distance range: {min(distances):.1f} - {max(distances):.1f} km")
+            logger.info(f"  Average distance: {sum(distances)/len(distances):.1f} km")
+            loop_count = sum(1 for r in long_rides if r.is_loop)
+            logger.info(f"  Loop rides: {loop_count} ({loop_count/len(long_rides)*100:.1f}%)")
+    
+    return long_rides, long_ride_analyzer
+
+
+def _optimize_and_rank_routes(route_groups, config):
+    """
+    Optimize and rank routes.
+    
+    Args:
+        route_groups: List of RouteGroup objects
+        config: Configuration object
+        
+    Returns:
+        dict: Optimization results with keys:
+            - ranked_routes
+            - optimal_route
+            - optimal_score
+            - optimal_breakdown
+            - recommendations
+            - optimizer
+    """
+    logger.info("Optimizing route selection...")
+    optimizer = RouteOptimizer(route_groups, config)
+    ranked_routes = optimizer.rank_routes()
+    optimal_route, optimal_score, optimal_breakdown = optimizer.get_optimal_route()
+    recommendations = optimizer.get_route_recommendations()
+    
+    logger.info(f"Optimal route: {optimal_route.id}")
+    logger.info(f"  Score: {optimal_score:.2f}")
+    logger.info(f"  Time: {optimal_breakdown['time']:.1f}, Distance: {optimal_breakdown['distance']:.1f}, Safety: {optimal_breakdown['safety']:.1f}")
+    
+    return {
+        'ranked_routes': ranked_routes,
+        'optimal_route': optimal_route,
+        'optimal_score': optimal_score,
+        'optimal_breakdown': optimal_breakdown,
+        'recommendations': recommendations,
+        'optimizer': optimizer
+    }
+
+
+def _generate_visualization(route_groups, home, work, config, long_rides,
+                           long_ride_analyzer, optimal_route, ranked_routes):
+    """
+    Generate interactive map visualization.
+    
+    Args:
+        route_groups: List of RouteGroup objects
+        home: Home Location object
+        work: Work Location object
+        config: Configuration object
+        long_rides: List of long ride objects
+        long_ride_analyzer: LongRideAnalyzer instance
+        optimal_route: Optimal RouteGroup object
+        ranked_routes: List of ranked routes
+        
+    Returns:
+        str: HTML content for the map
+    """
+    logger.info("Generating interactive map...")
+    visualizer = RouteVisualizer(
+        route_groups, home, work, config,
+        long_rides=long_rides,
+        long_ride_analyzer=long_ride_analyzer
+    )
+    map_html = visualizer.generate_map(
+        optimal_route=optimal_route,
+        ranked_routes=ranked_routes
+    )
+    return map_html, visualizer
+
+
+def _save_report(analysis_results, output_dir):
+    """
+    Generate and save HTML report with timestamp.
+    
+    Args:
+        analysis_results: Dictionary of analysis results
+        output_dir: Output directory path
+        
+    Returns:
+        Path: Path to the saved report file
+    """
+    logger.info("Generating HTML report...")
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    
+    # Create timestamped filename
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    report_path = output_path / f'commute_analysis_{timestamp}.html'
+    
+    generator = ReportGenerator(analysis_results)
+    generator.generate_report(str(report_path))
+    
+    logger.info(f"✅ Analysis complete!")
+    logger.info(f"📄 Report saved to: {report_path}")
+    logger.info(f"🚴 Optimal route: {analysis_results['optimal_route'].id} (score: {analysis_results['optimal_score']:.2f})")
+    
+    return report_path
+
+
+def _open_report_in_browser(report_path):
+    """
+    Open report in browser with Chrome preference.
+    
+    Args:
+        report_path: Path to the report file
+    """
+    try:
+        # Convert to absolute path and file:// URL
+        abs_path = report_path.resolve()
+        file_url = f"file://{abs_path}"
+        
+        # Try Chrome first, fallback to default browser
+        try:
+            chrome = webbrowser.get('chrome')
+            chrome.open_new_tab(file_url)
+            logger.info("🌐 Opening report in Chrome...")
+        except webbrowser.Error:
+            webbrowser.open_new_tab(file_url)
+            logger.info("🌐 Opening report in default browser...")
+    except Exception as e:
+        logger.warning(f"Could not automatically open report: {e}")
+        logger.info(f"Please open manually: {report_path}")
+
+
 def analyze_routes(config, output_dir):
     """
     Analyze routes and generate report.
@@ -113,40 +361,16 @@ def analyze_routes(config, output_dir):
         client = get_authenticated_client(config)
         fetcher = StravaDataFetcher(client, config)
         
-        # Load cached activities
-        logger.info("Loading activities from cache...")
-        all_activities = fetcher.load_cached_activities()
-        
-        if not all_activities:
-            logger.error("No cached activities found. Run with --fetch first.")
+        # Load and filter activities
+        all_activities, commute_activities = _load_and_filter_activities(fetcher, config)
+        if not all_activities or not commute_activities:
             return
         
-        logger.info(f"Loaded {len(all_activities)} activities from cache")
-        
-        # Filter commute activities
-        logger.info("Filtering commute activities...")
-        commute_activities = fetcher.filter_commute_activities(all_activities)
-        
-        if len(commute_activities) < 10:
-            logger.error(f"Insufficient commute activities: {len(commute_activities)} found, need at least 10")
-            logger.info("Try adjusting distance filters in config/config.yaml")
-            return
-        
-        logger.info(f"Found {len(commute_activities)} potential commute activities")
-        
-        # Identify home and work locations
-        logger.info("Identifying home and work locations...")
-        finder = LocationFinder(commute_activities, config)
-        
+        # Identify locations
         try:
-            home, work = finder.identify_home_work()
-        except ValueError as e:
-            logger.error(f"Failed to identify locations: {e}")
-            logger.info("Try adjusting clustering parameters in config/config.yaml")
+            home, work = _identify_locations(commute_activities, config)
+        except ValueError:
             return
-        
-        logger.info(f"Home: ({home.lat:.4f}, {home.lon:.4f}) - {home.activity_count} activities")
-        logger.info(f"Work: ({work.lat:.4f}, {work.lon:.4f}) - {work.activity_count} activities")
         
         # Analyze commute routes
         logger.info("Analyzing routes between home and work...")
@@ -157,115 +381,41 @@ def analyze_routes(config, output_dir):
             logger.error("No route groups found")
             return
         
-        logger.info(f"Found {len(route_groups)} commute route variants")
-        for group in route_groups:
-            logger.info(f"  - {group.id}: {group.frequency} uses")
+        _log_route_summary(route_groups)
         
-        # Analyze long rides (if enabled)
-        long_rides = []
-        long_ride_analyzer = None
-        if config.get('long_rides.enabled', True):
-            logger.info("Analyzing long recreational rides...")
-            long_ride_analyzer = LongRideAnalyzer(all_activities, config)
-            
-            # Classify activities
-            _, long_ride_activities = long_ride_analyzer.classify_activities(commute_activities)
-            logger.info(f"Found {len(long_ride_activities)} long ride activities")
-            
-            # Extract long rides
-            if long_ride_activities:
-                long_rides = long_ride_analyzer.extract_long_rides(long_ride_activities)
-                logger.info(f"Extracted {len(long_rides)} long rides for analysis")
-                
-                # Show some statistics
-                if long_rides:
-                    distances = [r.distance_km for r in long_rides]
-                    logger.info(f"  Distance range: {min(distances):.1f} - {max(distances):.1f} km")
-                    logger.info(f"  Average distance: {sum(distances)/len(distances):.1f} km")
-                    loop_count = sum(1 for r in long_rides if r.is_loop)
-                    logger.info(f"  Loop rides: {loop_count} ({loop_count/len(long_rides)*100:.1f}%)")
+        # Analyze long rides (optional)
+        long_rides, long_ride_analyzer = _analyze_long_rides(
+            all_activities, commute_activities, config
+        )
         
         # Optimize routes
-        logger.info("Optimizing route selection...")
-        optimizer = RouteOptimizer(route_groups, config)
-        ranked_routes = optimizer.rank_routes()
-        optimal_route, optimal_score, optimal_breakdown = optimizer.get_optimal_route()
-        recommendations = optimizer.get_route_recommendations()
+        optimization_results = _optimize_and_rank_routes(route_groups, config)
         
-        logger.info(f"Optimal route: {optimal_route.id}")
-        logger.info(f"  Score: {optimal_score:.2f}")
-        logger.info(f"  Time: {optimal_breakdown['time']:.1f}, Distance: {optimal_breakdown['distance']:.1f}, Safety: {optimal_breakdown['safety']:.1f}")
-        
-        # Generate map with long rides support
-        logger.info("Generating interactive map...")
-        visualizer = RouteVisualizer(
+        # Generate visualization
+        map_html, visualizer = _generate_visualization(
             route_groups, home, work, config,
-            long_rides=long_rides,
-            long_ride_analyzer=long_ride_analyzer
-        )
-        map_html = visualizer.generate_map(
-            optimal_route=optimal_route,
-            ranked_routes=ranked_routes
+            long_rides, long_ride_analyzer,
+            optimization_results['optimal_route'],
+            optimization_results['ranked_routes']
         )
         
-        # Generate report with timestamp
-        logger.info("Generating HTML report...")
-        output_path = Path(output_dir)
-        output_path.mkdir(parents=True, exist_ok=True)
-        
-        # Create timestamped filename
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        report_filename = f'commute_analysis_{timestamp}.html'
-        report_path = output_path / report_filename
-        
+        # Build complete analysis results
         analysis_results = {
-            'optimal_route': optimal_route,
-            'ranked_routes': ranked_routes,
-            'recommendations': recommendations,
+            **optimization_results,
             'route_groups': route_groups,
             'home': home,
             'work': work,
             'map_html': map_html,
             'all_activities': all_activities,
             'commute_activities': commute_activities,
-            'optimizer': optimizer,
             'visualizer': visualizer,
             'long_rides': long_rides,
             'long_ride_analyzer': long_ride_analyzer
         }
         
-        generator = ReportGenerator(analysis_results)
-        generator.generate_report(str(report_path))
-        
-        logger.info(f"✅ Analysis complete!")
-        logger.info(f"📄 Report saved to: {report_path}")
-        logger.info(f"🚴 Optimal route: {optimal_route.id} (score: {optimal_score:.2f})")
-        
-        # Open report in Chrome
-        try:
-            # Convert to absolute path and file:// URL
-            abs_path = report_path.resolve()
-            file_url = f"file://{abs_path}"
-            
-            # Try to open in Chrome specifically
-            chrome_path = None
-            if sys.platform == 'darwin':  # macOS
-                chrome_path = 'open -a /Applications/Google\\ Chrome.app %s'
-            elif sys.platform == 'win32':  # Windows
-                chrome_path = 'C:/Program Files/Google/Chrome/Application/chrome.exe %s'
-            elif sys.platform == 'linux':  # Linux
-                chrome_path = '/usr/bin/google-chrome %s'
-            
-            if chrome_path:
-                webbrowser.get(chrome_path).open(file_url)
-                logger.info(f"🌐 Opening report in Chrome...")
-            else:
-                # Fallback to default browser
-                webbrowser.open(file_url)
-                logger.info(f"🌐 Opening report in default browser...")
-        except Exception as e:
-            logger.warning(f"Could not automatically open report: {e}")
-            logger.info(f"Please open manually: {report_path}")
+        # Save and open report
+        report_path = _save_report(analysis_results, output_dir)
+        _open_report_in_browser(report_path)
         
     except Exception as e:
         logger.error(f"Analysis failed: {e}", exc_info=True)

@@ -138,7 +138,7 @@ class RouteAnalyzer:
             sample_coords = coords
         
         coord_str = ','.join([f"{lat:.6f},{lon:.6f}" for lat, lon in sample_coords])
-        return hashlib.md5(coord_str.encode()).hexdigest()[:16]
+        return hashlib.sha256(coord_str.encode()).hexdigest()[:16]
     
     def _get_cache_key(self, route1: Route, route2: Route) -> str:
         """

@@ -11,4 +11,5 @@ __pycache__/
 *.log
 DMCA_*.pdf
 DMCA_*.md
+DMCA_*.txt
 legal/
