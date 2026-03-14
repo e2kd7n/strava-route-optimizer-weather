@@ -2,6 +2,12 @@
 
 A Python application that analyzes your Strava cycling activities to determine the optimal commute route between home and work, considering time, distance, and safety factors.
 
+## 🔒 Security Notice
+
+**This application requires valid Strava API credentials to run.** The program will not execute without proper authentication credentials configured in your `.env` file. This protects against unauthorized use and ensures the application only runs for legitimate users with their own Strava API access.
+
+If you encounter this project hosted elsewhere without proper attribution or with modifications that bypass authentication, please report it as it violates the terms of use.
+
 ## Features
 
 - 🔍 **Automatic Location Detection**: Identifies your home and work locations from activity patterns
@@ -48,7 +54,9 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 4. Get Strava API Credentials
+### 4. Get Strava API Credentials (REQUIRED)
+
+**⚠️ The application will not run without valid Strava API credentials.**
 
 1. Go to https://www.strava.com/settings/api
 2. Create a new application:
@@ -58,14 +66,19 @@ pip install -r requirements.txt
    - **Authorization Callback Domain**: localhost
 3. Note your **Client ID** and **Client Secret**
 
-### 5. Configure Environment
+### 5. Configure Environment (REQUIRED)
 
-Create a `.env` file in the project root:
+Create a `.env` file in the project root with your actual credentials:
 
 ```bash
-STRAVA_CLIENT_ID=your_client_id
-STRAVA_CLIENT_SECRET=your_client_secret
+STRAVA_CLIENT_ID=your_actual_client_id
+STRAVA_CLIENT_SECRET=your_actual_client_secret
 ```
+
+**Important:**
+- Replace `your_actual_client_id` and `your_actual_client_secret` with your real credentials
+- The application validates credentials at startup and will exit if they are missing or invalid
+- Never share your `.env` file or commit it to version control
 
 ## Quick Start
 
@@ -240,6 +253,16 @@ route_filtering:
 - Verify your Client ID and Secret in `.env`
 - Check that callback domain is set to `localhost` in Strava API settings
 
+### "STRAVA API CREDENTIALS REQUIRED" Error
+
+**Problem**: Application exits immediately with credential error.
+
+**Solutions**:
+- Ensure you have created a `.env` file in the project root
+- Verify your credentials are correctly formatted in `.env`
+- Obtain valid credentials from https://www.strava.com/settings/api
+- Do not use placeholder values - you must use your actual Strava API credentials
+
 ## Project Structure
 
 ```
@@ -266,12 +289,18 @@ commute/
 └── README.md               # This file
 ```
 
-## Data Privacy
+## Data Privacy & Security
 
 - All data is stored locally on your computer
 - API credentials are stored in `.env` and `config/credentials.json`
 - No data is sent to any third-party services
+- The application validates Strava API credentials at startup to prevent unauthorized use
 - Add `.env` and `config/credentials.json` to `.gitignore` if using version control
+
+**Security Features:**
+- Mandatory credential validation before any operations
+- Application exits immediately if credentials are missing or invalid
+- Protects against unauthorized redistribution and use
 
 ## Advanced Features
 

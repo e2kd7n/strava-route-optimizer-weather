@@ -4,6 +4,12 @@ Strava Commute Route Analyzer - Main Entry Point
 
 Analyzes Strava cycling activities to determine optimal commute routes
 and recommend long recreational rides.
+
+Copyright (c) 2024-2026 e2kd7n
+Licensed under the MIT License - see LICENSE file for details.
+
+This software requires valid Strava API credentials to function.
+Unauthorized use, reproduction, or distribution is prohibited.
 """
 
 import argparse
@@ -14,7 +20,7 @@ from pathlib import Path
 from datetime import datetime
 
 from src.config import load_config
-from src.auth import StravaAuthenticator, get_authenticated_client
+from src.auth import StravaAuthenticator, get_authenticated_client, validate_strava_credentials
 from src.data_fetcher import StravaDataFetcher
 from src.location_finder import LocationFinder
 from src.route_analyzer import RouteAnalyzer
@@ -40,9 +46,14 @@ def authenticate(config):
     """
     logger.info("Starting authentication...")
     
+    # Validate credentials before attempting authentication
+    client_id = config.get('strava.client_id')
+    client_secret = config.get('strava.client_secret')
+    validate_strava_credentials(client_id, client_secret)
+    
     authenticator = StravaAuthenticator(
-        client_id=config.get('strava.client_id'),
-        client_secret=config.get('strava.client_secret')
+        client_id=client_id,
+        client_secret=client_secret
     )
     
     tokens = authenticator.authenticate()
@@ -58,6 +69,11 @@ def fetch_activities(config):
         config: Configuration object
     """
     logger.info("Fetching activities from Strava...")
+    
+    # Validate credentials before fetching
+    client_id = config.get('strava.client_id')
+    client_secret = config.get('strava.client_secret')
+    validate_strava_credentials(client_id, client_secret)
     
     try:
         client = get_authenticated_client(config)
@@ -85,6 +101,11 @@ def analyze_routes(config, output_dir):
         output_dir: Output directory for reports
     """
     logger.info("Starting route analysis...")
+    
+    # Validate credentials before analysis
+    client_id = config.get('strava.client_id')
+    client_secret = config.get('strava.client_secret')
+    validate_strava_credentials(client_id, client_secret)
     
     try:
         # Get authenticated client
@@ -297,6 +318,12 @@ Examples:
         # Load configuration
         logger.info(f"Loading configuration from {args.config}")
         config = load_config(args.config)
+        
+        # Validate Strava credentials at startup
+        logger.info("Validating Strava API credentials...")
+        client_id = config.get('strava.client_id')
+        client_secret = config.get('strava.client_secret')
+        validate_strava_credentials(client_id, client_secret)
         
         # Execute requested operations
         if args.auth:

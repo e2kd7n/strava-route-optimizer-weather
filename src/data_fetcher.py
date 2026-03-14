@@ -2,6 +2,9 @@
 Data fetching module.
 
 Handles retrieving and caching activity data from Strava API.
+
+Copyright (c) 2024-2026 e2kd7n
+Licensed under the MIT License - see LICENSE file for details.
 """
 
 import json

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anti-Piracy Demo</title>
+</head>
+<body>
+    <h1>Testing Anti-Piracy Protection</h1>
+    <p>This page simulates what pirates will see...</p>
+    
+    <!-- Anti-Piracy Protection (simulated unauthorized hosting) -->
+    <script>
+        // Simulate unauthorized hosting by forcing the warning
+        document.addEventListener('DOMContentLoaded', function() {
+            document.body.innerHTML = `
+                <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: white;">
+                    <div style="max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                        <h1 style="color: #dc3545; font-size: 3em; margin-bottom: 20px;">🏴‍☠️ ARRR! YE BE CAUGHT! 🏴‍☠️</h1>
+                        
+                        <div style="font-size: 8em; margin: 30px 0;">🏴‍☠️</div>
+                        
+                        <h2 style="color: #333; margin-bottom: 20px;">Unauthorized Use Detected</h2>
+                        
+                        <div style="background: #fff3cd; border: 3px solid #ffc107; border-radius: 10px; padding: 30px; margin: 30px 0; color: #333;">
+                            <p style="font-size: 1.3em; font-weight: bold; margin-bottom: 15px;">
+                                This software has been stolen and is being hosted without authorization.
+                            </p>
+                            <p style="font-size: 1.1em; line-height: 1.6;">
+                                You should be <strong>ashamed</strong> of yourself for:
+                            </p>
+                            <ul style="text-align: left; display: inline-block; font-size: 1.1em; line-height: 1.8;">
+                                <li>Stealing open-source software</li>
+                                <li>Hosting it with ads and malicious redirects</li>
+                                <li>Violating the MIT License terms</li>
+                                <li>Disrespecting the developer's work</li>
+                            </ul>
+                        </div>
+                        
+                        <div style="background: #f8d7da; border: 3px solid #dc3545; border-radius: 10px; padding: 30px; margin: 30px 0; color: #721c24;">
+                            <h3 style="margin-bottom: 15px;">⚠️ This Application Requires Authentication ⚠️</h3>
+                            <p style="font-size: 1.1em; line-height: 1.6;">
+                                This software <strong>requires valid Strava API credentials</strong> to function.
+                                It cannot be run without proper authentication.
+                            </p>
+                            <p style="font-size: 1.1em; line-height: 1.6; margin-top: 15px;">
+                                If you want to use this software legitimately:
+                            </p>
+                            <ol style="text-align: left; display: inline-block; font-size: 1.1em; line-height: 1.8;">
+                                <li>Get the source code from the official repository</li>
+                                <li>Obtain your own FREE Strava API credentials</li>
+                                <li>Run it locally on your own computer</li>
+                                <li>Respect the open-source license</li>
+                            </ol>
+                        </div>
+                        
+                        <div style="margin-top: 40px; padding: 20px; background: #d4edda; border-radius: 10px; color: #155724;">
+                            <h3>Get the Legitimate Version</h3>
+                            <p style="font-size: 1.1em; margin: 15px 0;">
+                                This is open-source software. Get it for FREE from the official source.
+                            </p>
+                            <p style="font-size: 0.9em; color: #666; margin-top: 20px;">
+                                Strava Commute Route Analyzer - MIT License
+                            </p>
+                        </div>
+                        
+                        <div style="margin-top: 40px; font-size: 4em;">
+                            🏴‍☠️ ⚓ 🦜
+                        </div>
+                        
+                        <p style="color: #666; margin-top: 30px; font-style: italic;">
+                            "A pirate's life is not for thee. Use software legitimately!"
+                        </p>
+                    </div>
+                </div>
+            `;
+        });
+    </script>
+</body>
+</html>

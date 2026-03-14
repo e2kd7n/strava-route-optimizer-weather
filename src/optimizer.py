@@ -2,6 +2,9 @@
 Route optimization module.
 
 Scores and ranks routes based on multiple criteria including weather conditions.
+
+Copyright (c) 2024-2026 e2kd7n
+Licensed under the MIT License - see LICENSE file for details.
 """
 
 import logging

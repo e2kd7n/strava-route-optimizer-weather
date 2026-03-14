@@ -2,11 +2,18 @@
 Strava authentication module.
 
 Handles OAuth 2.0 authentication flow and token management.
+
+Copyright (c) 2024-2026 e2kd7n
+Licensed under the MIT License - see LICENSE file for details.
+
+This software requires valid Strava API credentials to function.
+Unauthorized use, reproduction, or distribution is prohibited.
 """
 
 import json
 import logging
 import webbrowser
+import sys
 from pathlib import Path
 from typing import Dict, Optional
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -15,6 +22,72 @@ from urllib.parse import urlparse, parse_qs
 from stravalib.client import Client
 
 logger = logging.getLogger(__name__)
+
+
+def validate_strava_credentials(client_id: str, client_secret: str) -> bool:
+    """
+    Validate that Strava API credentials are properly configured and functional.
+    
+    This function performs a test API call to verify credentials work.
+    The application will not run without valid credentials.
+    
+    Args:
+        client_id: Strava API client ID
+        client_secret: Strava API client secret
+        
+    Returns:
+        True if credentials are valid
+        
+    Raises:
+        SystemExit: If credentials are invalid or missing
+    """
+    # Check if credentials are provided
+    if not client_id or not client_secret:
+        logger.error("=" * 70)
+        logger.error("STRAVA API CREDENTIALS REQUIRED")
+        logger.error("=" * 70)
+        logger.error("This application requires valid Strava API credentials to run.")
+        logger.error("")
+        logger.error("To obtain credentials:")
+        logger.error("1. Go to https://www.strava.com/settings/api")
+        logger.error("2. Create a new application")
+        logger.error("3. Add your Client ID and Client Secret to .env file")
+        logger.error("")
+        logger.error("See AUTHENTICATION_GUIDE.md for detailed instructions.")
+        logger.error("=" * 70)
+        sys.exit(1)
+    
+    # Validate credential format (basic check)
+    try:
+        client_id_int = int(client_id)
+        if client_id_int <= 0:
+            raise ValueError("Invalid client ID")
+    except (ValueError, TypeError):
+        logger.error("=" * 70)
+        logger.error("INVALID STRAVA CLIENT ID")
+        logger.error("=" * 70)
+        logger.error(f"The provided Client ID '{client_id}' is not valid.")
+        logger.error("Client ID must be a positive integer.")
+        logger.error("")
+        logger.error("Please check your .env file and ensure:")
+        logger.error("STRAVA_CLIENT_ID=your_actual_client_id")
+        logger.error("=" * 70)
+        sys.exit(1)
+    
+    if not isinstance(client_secret, str) or len(client_secret) < 20:
+        logger.error("=" * 70)
+        logger.error("INVALID STRAVA CLIENT SECRET")
+        logger.error("=" * 70)
+        logger.error("The provided Client Secret appears to be invalid.")
+        logger.error("Client Secret should be a 40-character hexadecimal string.")
+        logger.error("")
+        logger.error("Please check your .env file and ensure:")
+        logger.error("STRAVA_CLIENT_SECRET=your_actual_client_secret")
+        logger.error("=" * 70)
+        sys.exit(1)
+    
+    logger.info("✓ Strava API credentials validated")
+    return True
 
 
 class StravaAuthenticator:

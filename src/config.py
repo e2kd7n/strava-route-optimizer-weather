@@ -2,6 +2,12 @@
 Configuration management module.
 
 Handles loading and parsing of configuration files and environment variables.
+
+Copyright (c) 2024-2026 e2kd7n
+Licensed under the MIT License - see LICENSE file for details.
+
+This software requires valid Strava API credentials to function.
+Unauthorized use, reproduction, or distribution is prohibited.
 """
 
 import os

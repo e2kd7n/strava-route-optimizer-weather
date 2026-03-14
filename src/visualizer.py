@@ -2,6 +2,9 @@
 Visualization module.
 
 Generates interactive maps using Folium.
+
+Copyright (c) 2024-2026 e2kd7n
+Licensed under the MIT License - see LICENSE file for details.
 """
 
 import logging

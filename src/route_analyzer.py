@@ -2,6 +2,9 @@
 Route analysis module.
 
 Extracts, groups, and analyzes route variants between home and work.
+
+Copyright (c) 2024-2026 e2kd7n
+Licensed under the MIT License - see LICENSE file for details.
 """
 
 import logging
