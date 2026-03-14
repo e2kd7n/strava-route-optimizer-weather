@@ -20,7 +20,8 @@ from pathlib import Path
 from datetime import datetime
 
 from src.config import load_config
-from src.auth import StravaAuthenticator, get_authenticated_client, validate_strava_credentials
+# Use secure authentication module with enhanced security features
+from src.auth_secure import SecureStravaAuthenticator, get_authenticated_client, validate_strava_credentials
 from src.data_fetcher import StravaDataFetcher
 from src.location_finder import LocationFinder
 from src.route_analyzer import RouteAnalyzer
@@ -51,7 +52,7 @@ def authenticate(config):
     client_secret = config.get('strava.client_secret')
     validate_strava_credentials(client_id, client_secret)
     
-    authenticator = StravaAuthenticator(
+    authenticator = SecureStravaAuthenticator(
         client_id=client_id,
         client_secret=client_secret
     )
