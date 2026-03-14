@@ -19,6 +19,8 @@ import webbrowser
 from pathlib import Path
 from datetime import datetime
 
+from tqdm import tqdm
+
 from src.config import load_config
 # Use secure authentication module with enhanced security features
 from src.auth_secure import SecureStravaAuthenticator, get_authenticated_client, validate_strava_credentials
@@ -30,12 +32,20 @@ from src.visualizer import RouteVisualizer
 from src.report_generator import ReportGenerator
 from src.long_ride_analyzer import LongRideAnalyzer
 
-# Configure logging
+# Configure logging - suppress timestamps for cleaner output during analysis
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.WARNING,  # Only show warnings and errors by default
+    format='%(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Create a separate logger for progress messages
+progress_logger = logging.getLogger('progress')
+progress_logger.setLevel(logging.INFO)
+progress_handler = logging.StreamHandler()
+progress_handler.setFormatter(logging.Formatter('%(message)s'))
+progress_logger.addHandler(progress_handler)
+progress_logger.propagate = False
 
 
 def authenticate(config):
@@ -349,7 +359,9 @@ def analyze_routes(config, output_dir):
         config: Configuration object
         output_dir: Output directory for reports
     """
-    logger.info("Starting route analysis...")
+    print("\n" + "="*70)
+    print("🚴 STRAVA COMMUTE ROUTE ANALYZER")
+    print("="*70 + "\n")
     
     # Validate credentials before analysis
     client_id = config.get('strava.client_id')
@@ -357,64 +369,95 @@ def analyze_routes(config, output_dir):
     validate_strava_credentials(client_id, client_secret)
     
     try:
-        # Get authenticated client
-        client = get_authenticated_client(config)
-        fetcher = StravaDataFetcher(client, config)
+        # Progress tracking
+        total_steps = 8
         
-        # Load and filter activities
-        all_activities, commute_activities = _load_and_filter_activities(fetcher, config)
-        if not all_activities or not commute_activities:
-            return
+        with tqdm(total=total_steps, desc="Overall Progress", unit="step", ncols=100) as pbar:
+            # Step 1: Get authenticated client
+            pbar.set_description("🔐 Authenticating")
+            client = get_authenticated_client(config)
+            fetcher = StravaDataFetcher(client, config)
+            pbar.update(1)
+            
+            # Step 2: Load and filter activities
+            pbar.set_description("📥 Loading activities")
+            all_activities, commute_activities = _load_and_filter_activities(fetcher, config)
+            if not all_activities or not commute_activities:
+                return
+            pbar.update(1)
+            
+            # Step 3: Identify locations
+            pbar.set_description("📍 Identifying locations")
+            try:
+                home, work = _identify_locations(commute_activities, config)
+            except ValueError:
+                return
+            pbar.update(1)
+            
+            # Step 4: Analyze commute routes
+            pbar.set_description("🗺️  Analyzing commute routes")
+            analyzer = RouteAnalyzer(commute_activities, home, work, config)
+            route_groups = analyzer.group_similar_routes()
+            
+            if not route_groups:
+                logger.error("No route groups found")
+                return
+            
+            _log_route_summary(route_groups)
+            pbar.update(1)
+            
+            # Step 5: Analyze long rides (optional)
+            pbar.set_description("🚵 Analyzing long rides")
+            long_rides, long_ride_analyzer = _analyze_long_rides(
+                all_activities, commute_activities, config
+            )
+            pbar.update(1)
+            
+            # Step 6: Optimize routes
+            pbar.set_description("⚡ Optimizing routes")
+            optimization_results = _optimize_and_rank_routes(route_groups, config)
+            pbar.update(1)
+            
+            # Step 7: Generate visualization
+            pbar.set_description("🗺️  Generating map")
+            map_html, visualizer = _generate_visualization(
+                route_groups, home, work, config,
+                long_rides, long_ride_analyzer,
+                optimization_results['optimal_route'],
+                optimization_results['ranked_routes']
+            )
+            pbar.update(1)
+            
+            # Step 8: Save report
+            pbar.set_description("💾 Saving report")
+            
+            # Build complete analysis results
+            analysis_results = {
+                **optimization_results,
+                'route_groups': route_groups,
+                'home': home,
+                'work': work,
+                'map_html': map_html,
+                'all_activities': all_activities,
+                'commute_activities': commute_activities,
+                'visualizer': visualizer,
+                'long_rides': long_rides,
+                'long_ride_analyzer': long_ride_analyzer
+            }
+            
+            # Save and open report
+            report_path = _save_report(analysis_results, output_dir)
+            pbar.update(1)
         
-        # Identify locations
-        try:
-            home, work = _identify_locations(commute_activities, config)
-        except ValueError:
-            return
+        # Print completion message
+        print("\n" + "="*70)
+        print("✅ ANALYSIS COMPLETE!")
+        print("="*70)
+        print(f"📄 Report: {report_path}")
+        print(f"🚴 Optimal route: {analysis_results['optimal_route'].id}")
+        print(f"⭐ Score: {analysis_results['optimal_score']:.2f}")
+        print("="*70 + "\n")
         
-        # Analyze commute routes
-        logger.info("Analyzing routes between home and work...")
-        analyzer = RouteAnalyzer(commute_activities, home, work, config)
-        route_groups = analyzer.group_similar_routes()
-        
-        if not route_groups:
-            logger.error("No route groups found")
-            return
-        
-        _log_route_summary(route_groups)
-        
-        # Analyze long rides (optional)
-        long_rides, long_ride_analyzer = _analyze_long_rides(
-            all_activities, commute_activities, config
-        )
-        
-        # Optimize routes
-        optimization_results = _optimize_and_rank_routes(route_groups, config)
-        
-        # Generate visualization
-        map_html, visualizer = _generate_visualization(
-            route_groups, home, work, config,
-            long_rides, long_ride_analyzer,
-            optimization_results['optimal_route'],
-            optimization_results['ranked_routes']
-        )
-        
-        # Build complete analysis results
-        analysis_results = {
-            **optimization_results,
-            'route_groups': route_groups,
-            'home': home,
-            'work': work,
-            'map_html': map_html,
-            'all_activities': all_activities,
-            'commute_activities': commute_activities,
-            'visualizer': visualizer,
-            'long_rides': long_rides,
-            'long_ride_analyzer': long_ride_analyzer
-        }
-        
-        # Save and open report
-        report_path = _save_report(analysis_results, output_dir)
         _open_report_in_browser(report_path)
         
     except Exception as e:

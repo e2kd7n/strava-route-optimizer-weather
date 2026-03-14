@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Dict, Optional
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
-from datetime import datetime
+from datetime import datetime, timezone
 from collections import defaultdict
 from time import time as current_time
 
@@ -120,7 +120,7 @@ def validate_strava_credentials(client_id: str, client_secret: str) -> bool:
         sys.exit(1)
     
     logger.info("✓ Strava API credentials validated")
-    log_security_event('CREDENTIALS_VALIDATED', {'timestamp': datetime.utcnow().isoformat()})
+    log_security_event('CREDENTIALS_VALIDATED', {'timestamp': datetime.now(timezone.utc).isoformat()})
     return True
 
 
@@ -148,7 +148,7 @@ class SecureTokenStorage:
             logger.warning("To persist this key across sessions, add to your .env file:")
             logger.warning(f"TOKEN_ENCRYPTION_KEY={key.decode()}")
             logger.warning("=" * 70)
-            log_security_event('ENCRYPTION_KEY_GENERATED', {'timestamp': datetime.utcnow().isoformat()})
+            log_security_event('ENCRYPTION_KEY_GENERATED', {'timestamp': datetime.now(timezone.utc).isoformat()})
         
         self.cipher = Fernet(key if isinstance(key, bytes) else key.encode())
     
@@ -176,7 +176,7 @@ class SecureTokenStorage:
         logger.info(f"✓ Tokens saved securely to {self.credentials_path}")
         log_security_event('TOKENS_SAVED', {
             'path': str(self.credentials_path),
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         })
     
     def load_tokens(self) -> Optional[Dict[str, any]]:
@@ -199,7 +199,7 @@ class SecureTokenStorage:
             
             log_security_event('TOKENS_LOADED', {
                 'path': str(self.credentials_path),
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             })
             return tokens
             
@@ -207,7 +207,7 @@ class SecureTokenStorage:
             logger.error(f"Failed to load tokens: {e}")
             log_security_event('TOKENS_LOAD_FAILED', {
                 'error': str(e),
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             })
             return None
 
@@ -243,7 +243,7 @@ class RateLimitedCallbackHandler(BaseHTTPRequestHandler):
             self.wfile.write(b"<h1>Rate limit exceeded</h1>")
             log_security_event('RATE_LIMIT_EXCEEDED', {
                 'client_ip': client_ip,
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             })
             return
         
@@ -262,7 +262,7 @@ class RateLimitedCallbackHandler(BaseHTTPRequestHandler):
             log_security_event('OAUTH_CALLBACK_FAILED', {
                 'reason': 'missing_state',
                 'client_ip': client_ip,
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             })
             return
         
@@ -274,7 +274,7 @@ class RateLimitedCallbackHandler(BaseHTTPRequestHandler):
             self.wfile.write(b"<h1>Error: Invalid state parameter (CSRF detected)</h1>")
             log_security_event('CSRF_ATTEMPT_DETECTED', {
                 'client_ip': client_ip,
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             })
             return
         
@@ -304,7 +304,7 @@ class RateLimitedCallbackHandler(BaseHTTPRequestHandler):
             """)
             log_security_event('OAUTH_CALLBACK_SUCCESS', {
                 'client_ip': client_ip,
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             })
         else:
             self.send_response(400)
@@ -314,7 +314,7 @@ class RateLimitedCallbackHandler(BaseHTTPRequestHandler):
             log_security_event('OAUTH_CALLBACK_FAILED', {
                 'reason': 'missing_code',
                 'client_ip': client_ip,
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             })
     
     def _send_security_headers(self):
@@ -373,7 +373,7 @@ class SecureStravaAuthenticator:
         )
         
         log_security_event('AUTH_URL_GENERATED', {
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         })
         return url
     
@@ -401,7 +401,7 @@ class SecureStravaAuthenticator:
         }
         
         log_security_event('TOKEN_EXCHANGED', {
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         })
         return tokens
     
@@ -429,7 +429,7 @@ class SecureStravaAuthenticator:
         }
         
         log_security_event('TOKEN_REFRESHED', {
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         })
         return tokens
     
@@ -448,7 +448,7 @@ class SecureStravaAuthenticator:
         Returns:
             Dictionary containing access tokens
         """
-        log_security_event('AUTH_START', {'timestamp': datetime.utcnow().isoformat()})
+        log_security_event('AUTH_START', {'timestamp': datetime.now(timezone.utc).isoformat()})
         
         # Check if we have existing tokens
         tokens = self.load_tokens()
@@ -462,7 +462,7 @@ class SecureStravaAuthenticator:
                 self.save_tokens(tokens)
             log_security_event('AUTH_SUCCESS', {
                 'method': 'existing_tokens',
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             })
             return tokens
         
@@ -487,7 +487,7 @@ class SecureStravaAuthenticator:
         logger.info("✓ Authentication successful!")
         log_security_event('AUTH_SUCCESS', {
             'method': 'oauth_flow',
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         })
         return tokens
     
@@ -509,7 +509,7 @@ class SecureStravaAuthenticator:
         logger.info("Waiting for authorization callback on http://localhost:8000...")
         log_security_event('CALLBACK_SERVER_STARTED', {
             'port': 8000,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         })
         
         # Handle one request
@@ -519,7 +519,7 @@ class SecureStravaAuthenticator:
         if code_container['code'] is None:
             log_security_event('CALLBACK_FAILED', {
                 'reason': 'no_code_received',
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             })
             raise ValueError("Failed to receive authorization code")
         

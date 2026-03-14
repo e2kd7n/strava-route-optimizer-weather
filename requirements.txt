@@ -12,3 +12,4 @@ requests>=2.28.0
 scipy>=1.9.0
 similaritymeasures>=0.5.0
 cryptography>=41.0.0
+tqdm>=4.65.0

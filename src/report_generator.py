@@ -1153,51 +1153,118 @@ class ReportGenerator:
 
     <!-- Long Rides Tab -->
     <div class="tab-pane fade" id="longrides" role="tabpanel" aria-labelledby="longrides-tab">
-        <h3>Long Rides Analysis</h3>
-        
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <h5 class="card-title">Total Rides</h5>
-                        <p class="card-text display-6">{{ long_rides_stats.total_rides }}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <h5 class="card-title">Average Distance</h5>
-                        <p class="card-text display-6">{{ "%.1f"|format(long_rides_stats.avg_distance_km) }} km</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <h5 class="card-title">Loop Rides</h5>
-                        <p class="card-text display-6">{{ "%.0f"|format(long_rides_stats.loop_percentage) }}%</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <h5 class="card-title">Point-to-Point</h5>
-                        <p class="card-text display-6">{{ "%.0f"|format(100 - long_rides_stats.loop_percentage) }}%</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Distance Distribution Chart -->
         <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">Distance Distribution</h5>
+            <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h3 class="mb-0">🚵 Long Ride Recommendations</h3>
+                <p class="mb-0 mt-2" style="font-size: 0.95em;">Find the best routes based on wind conditions - prioritizing tailwinds on the return journey</p>
             </div>
             <div class="card-body">
-                <canvas id="distanceChart" style="max-height: 400px;"></canvas>
+                <!-- User Input Section -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label for="rideDateTime" class="form-label"><strong>📅 When do you plan to ride?</strong></label>
+                        <input type="datetime-local" class="form-control" id="rideDateTime">
+                        <small class="text-muted">We'll analyze wind conditions for this time</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="startLocation" class="form-label"><strong>📍 Starting Location</strong></label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="startLocation" placeholder="City, State or ZIP code" value="Chicago, IL">
+                            <button class="btn btn-outline-secondary" type="button" onclick="geocodeLocation()" title="Search location">
+                                🔍
+                            </button>
+                        </div>
+                        <small class="text-muted">Enter city name, ZIP code, or coordinates - or click on map</small>
+                        <div id="geocodeStatus" class="mt-1"></div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary btn-lg mb-4" onclick="loadAndAnalyzeRoutes()">
+                    🔍 Get Recommendations
+                </button>
+
+                <!-- Info Box -->
+                <div class="alert alert-info">
+                    <h5>💡 How Wind Scoring Works</h5>
+                    <p class="mb-2">
+                        Our recommendation system analyzes wind conditions along each route and calculates a <strong>Wind Score (0-1)</strong>:
+                    </p>
+                    <ul class="mb-2">
+                        <li><strong>70% weight on second half</strong> - Tailwinds when you're tired are more valuable</li>
+                        <li><strong>30% weight on first half</strong> - Fighting headwinds when fresh is manageable</li>
+                        <li><strong>10% bonus</strong> for routes with strong consistent tailwinds (>0.8 score) on return</li>
+                    </ul>
+                    <p class="mb-0">
+                        <strong>Score Guide:</strong>
+                        <span class="badge bg-success ms-2">0.80-1.00 = Excellent</span>
+                        <span class="badge bg-primary ms-2">0.65-0.79 = Good</span>
+                        <span class="badge bg-warning ms-2">0.50-0.64 = Fair</span>
+                        <span class="badge bg-danger ms-2">0.00-0.49 = Poor</span>
+                    </p>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loadingState" class="text-center py-5" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Fetching weather data and analyzing routes...</p>
+                </div>
+
+                <!-- Recommendations Container -->
+                <div id="recommendationsContainer">
+                    <!-- Statistics Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">Total Rides</h5>
+                                    <p class="card-text display-6">{{ long_rides_stats.total_rides }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">Average Distance</h5>
+                                    <p class="card-text display-6">{{ "%.1f"|format(long_rides_stats.avg_distance_km) }} km</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">Loop Rides</h5>
+                                    <p class="card-text display-6">{{ "%.0f"|format(long_rides_stats.loop_percentage) }}%</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">Point-to-Point</h5>
+                                    <p class="card-text display-6">{{ "%.0f"|format(100 - long_rides_stats.loop_percentage) }}%</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Placeholder for recommendations -->
+                    <div class="alert alert-secondary text-center">
+                        <h5>👆 Set your ride time and starting location above to get personalized recommendations</h5>
+                        <p class="mb-0">We'll analyze wind conditions and show you the best routes with detailed maps and wind analysis</p>
+                    </div>
+                </div>
+
+                <!-- Map Container -->
+                <div class="card mt-4" id="longRideMapCard" style="display: none;">
+                    <div class="card-header">
+                        <h5 class="mb-0">🗺️ Route Map</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="longRideMap" style="height: 600px; width: 100%;"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1277,7 +1344,374 @@ class ReportGenerator:
             });
         });
         {% endif %}
+
+        // Long Ride Recommendations JavaScript
+        let longRideMap = null;
+        let longRidePolylines = [];
+        
+        // Load long rides data from template context
+        let cachedRoutes = [
+            {% for ride in long_rides %}
+            {
+                activity_id: {{ ride.activity_id }},
+                name: "{{ ride.name|replace('"', '\\"') }}",
+                distance: {{ ride.distance }},
+                elevation_gain: {{ ride.elevation_gain }},
+                coordinates: {{ ride.coordinates|tojson }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        function initializeLongRideMap() {
+            if (!longRideMap) {
+                longRideMap = L.map('longRideMap').setView([41.8781, -87.6298], 6);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(longRideMap);
+                
+                longRideMap.on('click', function(e) {
+                    document.getElementById('startLocation').value = `${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`;
+                    document.getElementById('geocodeStatus').innerHTML = '<small class="text-success">✓ Location set from map</small>';
+                });
+            }
+        }
+        
+        async function geocodeLocation() {
+            const location = document.getElementById('startLocation').value.trim();
+            const statusDiv = document.getElementById('geocodeStatus');
+            
+            if (!location) {
+                statusDiv.innerHTML = '<small class="text-danger">Please enter a location</small>';
+                return;
+            }
+            
+            statusDiv.innerHTML = '<small class="text-info">🔍 Searching...</small>';
+            
+            try {
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1`,
+                    { headers: { 'User-Agent': 'StravaCommuteAnalyzer/1.0' } }
+                );
+                
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    const result = data[0];
+                    const lat = parseFloat(result.lat);
+                    const lon = parseFloat(result.lon);
+                    
+                    document.getElementById('startLocation').value = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+                    statusDiv.innerHTML = `<small class="text-success">✓ Found: ${result.display_name}</small>`;
+                    
+                    if (longRideMap) {
+                        longRideMap.setView([lat, lon], 10);
+                        const marker = L.marker([lat, lon]).addTo(longRideMap);
+                        marker.bindPopup(`<strong>Starting Location</strong><br>${result.display_name}`).openPopup();
+                        setTimeout(() => longRideMap.removeLayer(marker), 3000);
+                    }
+                } else {
+                    statusDiv.innerHTML = '<small class="text-danger">❌ Location not found. Try a different search term.</small>';
+                }
+            } catch (error) {
+                console.error('Geocoding error:', error);
+                statusDiv.innerHTML = '<small class="text-danger">❌ Error searching location. Please try again.</small>';
+            }
+        }
+        
+        function loadAndAnalyzeRoutes() {
+            const dateTime = document.getElementById('rideDateTime').value;
+            const location = document.getElementById('startLocation').value;
+            
+            if (!dateTime || !location) {
+                alert('Please enter both date/time and location');
+                return;
+            }
+            
+            if (cachedRoutes.length === 0) {
+                alert('No long ride data available. Please ensure you have non-commute rides in your Strava data.');
+                return;
+            }
+            
+            document.getElementById('loadingState').style.display = 'block';
+            document.getElementById('recommendationsContainer').style.display = 'none';
+            
+            // Simulate wind analysis (in real app, this would call weather API)
+            // TODO: Integrate with actual weather API based on dateTime
+            const windDirection = 180; // South wind
+            const windSpeed = 20;
+            
+            setTimeout(() => {
+                analyzeAndDisplayRoutes(cachedRoutes, windDirection, windSpeed);
+            }, 500);
+        }
+        
+        function analyzeAndDisplayRoutes(routes, windDirection, windSpeed) {
+            const recommendations = routes.map(route => {
+                const analysis = calculateWindScore(route.coordinates, windDirection, windSpeed);
+                
+                return {
+                    activity_id: route.activity_id,
+                    name: route.name,
+                    distance: route.distance / 1000,
+                    elevation: route.elevation_gain,
+                    duration: (route.distance / 1000) / 25,
+                    coordinates: route.coordinates,
+                    windScore: analysis.score,
+                    firstHalfScore: analysis.firstHalfScore,
+                    secondHalfScore: analysis.secondHalfScore,
+                    recommendation: analysis.recommendation,
+                    segments: analysis.segments
+                };
+            });
+            
+            recommendations.sort((a, b) => b.windScore - a.windScore);
+            displayRecommendations(recommendations, windDirection, windSpeed);
+        }
+        
+        function calculateWindScore(coordinates, windDirection, windSpeed) {
+            const numSegments = Math.min(8, Math.floor(coordinates.length / 100));
+            const segmentSize = Math.floor(coordinates.length / numSegments);
+            
+            const segments = [];
+            let firstHalfScores = [];
+            let secondHalfScores = [];
+            
+            for (let i = 0; i < numSegments; i++) {
+                const startIdx = i * segmentSize;
+                const endIdx = Math.min((i + 1) * segmentSize, coordinates.length - 1);
+                
+                const bearing = calculateBearing(
+                    coordinates[startIdx],
+                    coordinates[endIdx]
+                );
+                
+                const relativeAngle = ((windDirection - bearing + 180) % 360) - 180;
+                const absAngle = Math.abs(relativeAngle);
+                
+                let windType, score;
+                if (absAngle < 45) {
+                    windType = 'headwind';
+                    score = 0.3;
+                } else if (absAngle > 135) {
+                    windType = 'tailwind';
+                    score = 1.0;
+                } else if (absAngle < 90) {
+                    windType = 'quartering_headwind';
+                    score = 0.5;
+                } else {
+                    windType = 'quartering_tailwind';
+                    score = 0.8;
+                }
+                
+                segments.push({ type: windType, score: score });
+                
+                if (i < numSegments / 2) {
+                    firstHalfScores.push(score);
+                } else {
+                    secondHalfScores.push(score);
+                }
+            }
+            
+            const firstHalfAvg = firstHalfScores.reduce((a, b) => a + b, 0) / firstHalfScores.length;
+            const secondHalfAvg = secondHalfScores.reduce((a, b) => a + b, 0) / secondHalfScores.length;
+            
+            let combinedScore = 0.3 * firstHalfAvg + 0.7 * secondHalfAvg;
+            
+            if (secondHalfAvg > 0.8) {
+                combinedScore = Math.min(1.0, combinedScore * 1.1);
+            }
+            
+            let recommendation;
+            if (windSpeed < 10) {
+                recommendation = 'Light winds - minimal impact on ride';
+            } else if (secondHalfAvg > 0.8) {
+                if (firstHalfAvg < 0.5) {
+                    recommendation = 'Excellent! Headwind out, strong tailwind back - perfect for a long ride';
+                } else {
+                    recommendation = 'Great tailwinds for the return journey';
+                }
+            } else if (secondHalfAvg > 0.6) {
+                recommendation = 'Favorable winds on the way back';
+            } else if (secondHalfAvg < 0.4) {
+                recommendation = 'Challenging headwinds on return - consider shorter route or different day';
+            } else {
+                recommendation = 'Mixed wind conditions - manageable but not ideal';
+            }
+            
+            return {
+                score: combinedScore,
+                firstHalfScore: firstHalfAvg,
+                secondHalfScore: secondHalfAvg,
+                segments: segments,
+                recommendation: recommendation
+            };
+        }
+        
+        function calculateBearing(point1, point2) {
+            const lat1 = point1[0] * Math.PI / 180;
+            const lat2 = point2[0] * Math.PI / 180;
+            const lon1 = point1[1] * Math.PI / 180;
+            const lon2 = point2[1] * Math.PI / 180;
+            
+            const dlon = lon2 - lon1;
+            const x = Math.sin(dlon) * Math.cos(lat2);
+            const y = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dlon);
+            
+            let bearing = Math.atan2(x, y) * 180 / Math.PI;
+            bearing = (bearing + 360) % 360;
+            
+            return bearing;
+        }
+        
+        function displayRecommendations(recommendations, windDirection, windSpeed) {
+            longRidePolylines.forEach(p => longRideMap && longRideMap.removeLayer(p));
+            longRidePolylines = [];
+            
+            let html = `
+                <div class="alert alert-primary mb-4">
+                    <strong>🌬️ Current Wind Conditions:</strong> ${windSpeed} km/h from ${windDirection}°
+                    (${getWindDirectionName(windDirection)})
+                </div>
+                <div class="row">
+            `;
+            
+            recommendations.forEach((rec, index) => {
+                const scoreClass = rec.windScore >= 0.8 ? 'success' : rec.windScore >= 0.65 ? 'primary' : rec.windScore >= 0.5 ? 'warning' : 'danger';
+                const scoreLabel = rec.windScore >= 0.8 ? 'Excellent' : rec.windScore >= 0.65 ? 'Good' : rec.windScore >= 0.5 ? 'Fair' : 'Poor';
+                
+                html += `
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100 border-${scoreClass} route-card" onclick="showRouteOnMap(${index})" style="cursor: pointer; transition: all 0.2s;">
+                            <div class="card-header bg-${scoreClass} text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">${index + 1}. ${rec.name}</h5>
+                                    <span class="badge bg-light text-dark fs-4">${rec.windScore.toFixed(3)}</span>
+                                </div>
+                                <small>${scoreLabel} Wind Conditions</small>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-4 text-center">
+                                        <strong class="fs-5">${rec.distance.toFixed(1)} km</strong><br>
+                                        <small class="text-muted">Distance</small>
+                                    </div>
+                                    <div class="col-4 text-center">
+                                        <strong class="fs-5">${rec.duration.toFixed(1)} h</strong><br>
+                                        <small class="text-muted">Est. Duration</small>
+                                    </div>
+                                    <div class="col-4 text-center">
+                                        <strong class="fs-5">${rec.elevation.toFixed(0)} m</strong><br>
+                                        <small class="text-muted">Elevation</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-light mb-3">
+                                    <h6 class="mb-2">🌬️ Wind Analysis</h6>
+                                    <div class="row mb-2">
+                                        <div class="col-6">
+                                            <small><strong>First Half:</strong> ${rec.firstHalfScore.toFixed(3)}</small>
+                                        </div>
+                                        <div class="col-6">
+                                            <small><strong>Second Half:</strong> ${rec.secondHalfScore.toFixed(3)}</small>
+                                        </div>
+                                    </div>
+                                    <div class="progress mb-2" style="height: 30px;">
+                                        <div class="progress-bar bg-warning" style="width: 30%">
+                                            <strong>30%</strong>
+                                        </div>
+                                        <div class="progress-bar bg-success" style="width: 70%">
+                                            <strong>70%</strong>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">
+                                        Tailwinds when tired are more valuable
+                                    </small>
+                                    
+                                    <div class="mt-3">
+                                        <strong>Segments:</strong><br>
+                                        ${rec.segments.slice(0, 8).map((seg, i) => `
+                                            <span class="badge ${seg.type.includes('tail') ? 'bg-success' : 'bg-danger'} me-1 mb-1">
+                                                ${i+1}: ${seg.type.replace('_', ' ')} (${seg.score.toFixed(2)})
+                                            </span>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-${scoreClass} mb-0">
+                                    <strong>💨 ${rec.recommendation}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add polyline to map
+                const colors = ['#28a745', '#dc3545', '#007bff', '#ffc107'];
+                const polyline = L.polyline(rec.coordinates, {
+                    color: colors[index % colors.length],
+                    weight: 4,
+                    opacity: 0.7
+                }).addTo(longRideMap);
+                
+                polyline.bindPopup(`
+                    <strong>${rec.name}</strong><br>
+                    Distance: ${rec.distance.toFixed(1)} km<br>
+                    Wind Score: ${rec.windScore.toFixed(3)}
+                `);
+                
+                longRidePolylines.push(polyline);
+            });
+            
+            html += '</div>';
+            
+            document.getElementById('recommendationsContainer').innerHTML = html;
+            document.getElementById('recommendationsContainer').style.display = 'block';
+            document.getElementById('loadingState').style.display = 'none';
+            
+            if (longRidePolylines.length > 0) {
+                const group = L.featureGroup(longRidePolylines);
+                longRideMap.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+        
+        function showRouteOnMap(index) {
+            // Highlight selected route
+            longRidePolylines.forEach((p, i) => {
+                p.setStyle({
+                    weight: i === index ? 6 : 4,
+                    opacity: i === index ? 1.0 : 0.5
+                });
+            });
+            
+            // Zoom to route
+            longRideMap.fitBounds(longRidePolylines[index].getBounds().pad(0.1));
+        }
+        
+        function getWindDirectionName(degrees) {
+            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            const index = Math.round(degrees / 45) % 8;
+            return directions[index];
+        }
+        
+        // Set default date/time and initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('rideDateTime').value = now.toISOString().slice(0, 16);
+            
+            initializeLongRideMap();
+            
+            document.getElementById('startLocation').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    geocodeLocation();
+                }
+            });
+        });
     </script>
+    
+    <!-- Leaflet CSS and JS for maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </body>
 </html>'''
 

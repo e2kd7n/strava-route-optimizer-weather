@@ -384,13 +384,18 @@ class RouteAnalyzer:
         groups = []
         
         if home_to_work:
+            print(f"  Grouping {len(home_to_work)} home→work routes...")
             htw_groups = self._group_routes_by_similarity(home_to_work, 'home_to_work')
             groups.extend(htw_groups)
+            print(f"  Found {len(htw_groups)} home→work route groups")
         
         if work_to_home:
+            print(f"  Grouping {len(work_to_home)} work→home routes...")
             wth_groups = self._group_routes_by_similarity(work_to_home, 'work_to_home')
             groups.extend(wth_groups)
+            print(f"  Found {len(wth_groups)} work→home route groups")
         
+        print(f"✓ Created {len(groups)} total route groups")
         logger.info(f"Created {len(groups)} route groups from {len(routes)} routes")
         
         # Save similarity cache after grouping
@@ -436,13 +441,9 @@ class RouteAnalyzer:
             # Create route group
             representative = self._select_representative_route(group)
             
-            # Generate descriptive name for the route
+            # Generate simple route ID without geocoding (skip naming for speed)
             route_id = f"{direction}_{group_id}"
-            route_name = self.route_namer.name_route(
-                representative.coordinates,
-                route_id,
-                direction
-            )
+            route_name = f"Route {group_id}"  # Simple name, skip geocoding
             
             route_group = RouteGroup(
                 id=route_id,
