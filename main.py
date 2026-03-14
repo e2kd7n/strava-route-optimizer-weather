@@ -9,6 +9,7 @@ and recommend long recreational rides.
 import argparse
 import logging
 import sys
+import webbrowser
 from pathlib import Path
 from datetime import datetime
 
@@ -217,6 +218,32 @@ def analyze_routes(config, output_dir):
         logger.info(f"✅ Analysis complete!")
         logger.info(f"📄 Report saved to: {report_path}")
         logger.info(f"🚴 Optimal route: {optimal_route.id} (score: {optimal_score:.2f})")
+        
+        # Open report in Chrome
+        try:
+            # Convert to absolute path and file:// URL
+            abs_path = report_path.resolve()
+            file_url = f"file://{abs_path}"
+            
+            # Try to open in Chrome specifically
+            chrome_path = None
+            if sys.platform == 'darwin':  # macOS
+                chrome_path = 'open -a /Applications/Google\\ Chrome.app %s'
+            elif sys.platform == 'win32':  # Windows
+                chrome_path = 'C:/Program Files/Google/Chrome/Application/chrome.exe %s'
+            elif sys.platform == 'linux':  # Linux
+                chrome_path = '/usr/bin/google-chrome %s'
+            
+            if chrome_path:
+                webbrowser.get(chrome_path).open(file_url)
+                logger.info(f"🌐 Opening report in Chrome...")
+            else:
+                # Fallback to default browser
+                webbrowser.open(file_url)
+                logger.info(f"🌐 Opening report in default browser...")
+        except Exception as e:
+            logger.warning(f"Could not automatically open report: {e}")
+            logger.info(f"Please open manually: {report_path}")
         
     except Exception as e:
         logger.error(f"Analysis failed: {e}", exc_info=True)
