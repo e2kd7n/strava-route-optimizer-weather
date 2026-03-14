@@ -9,7 +9,4 @@ __pycache__/
 *.egg-info/
 .DS_Store
 *.log
-DMCA_*.pdf
-DMCA_*.md
-DMCA_*.txt
-legal/
+project_comms/

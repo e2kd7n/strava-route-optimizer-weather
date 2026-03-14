@@ -289,16 +289,20 @@ class ReportGenerator:
     <script>
         (function() {
             // Check if this is being hosted on an unauthorized domain
-            const authorizedDomains = ['localhost', '127.0.0.1', 'file://'];
-            const currentHost = window.location.hostname || window.location.protocol;
-            const isAuthorized = authorizedDomains.some(domain =>
-                currentHost.includes(domain) || window.location.protocol === 'file:'
-            );
+            const authorizedDomains = ['localhost', '127.0.0.1'];
+            const currentHost = window.location.hostname || '';
+            const protocol = window.location.protocol;
+            
+            // Allow file:// protocol (for local viewing on desktop/mobile)
+            // Allow localhost and 127.0.0.1 (for local development)
+            const isAuthorized = protocol === 'file:' ||
+                                authorizedDomains.some(domain => currentHost.includes(domain));
             
             // Check for suspicious indicators (ads, redirects, etc.)
             const hasSuspiciousElements = document.querySelectorAll('iframe[src*="ads"], script[src*="doubleclick"], script[src*="googlesyndication"]').length > 0;
             
-            if (!isAuthorized || hasSuspiciousElements || window.location.href.includes('porn') || window.location.href.includes('redirect')) {
+            // Only block if hosted on unauthorized web domain with suspicious content
+            if (!isAuthorized && (hasSuspiciousElements || window.location.href.includes('porn') || window.location.href.includes('redirect'))) {
                 // Replace entire page with piracy warning
                 document.addEventListener('DOMContentLoaded', function() {
                     document.body.innerHTML = `
@@ -1012,7 +1016,7 @@ class ReportGenerator:
         function refreshReport() {
             const projectPath = window.location.pathname.includes('/commute/') ?
                 window.location.pathname.split('/commute/')[0] + '/commute' :
-                '/Users/erik/commute';
+                '.';
             
             const message = `To refresh the report with latest data:\\n\\n` +
                 `1. Open Terminal\\n` +

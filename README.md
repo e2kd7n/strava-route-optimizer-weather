@@ -133,6 +133,16 @@ python main.py --analyze --output ~/Desktop/reports
 
 # Combine options
 python main.py --fetch --analyze --output ./my_reports
+### 📱 Mobile Usage
+
+The generated HTML report is mobile-friendly! You can transfer it to your phone and view it there. Weather data will update automatically when you have an internet connection.
+
+**See [MOBILE_USAGE_GUIDE.md](MOBILE_USAGE_GUIDE.md) for detailed instructions on:**
+- How to transfer the report to your phone (AirDrop, email, cloud storage, USB)
+- Opening and viewing on iPhone or Android
+- What features work offline vs. require internet
+- Troubleshooting tips
+
 ```
 
 ## Configuration
