@@ -1,11 +1,12 @@
 """
 Route naming module.
 
-Generates human-readable route names based on streets and geographic features.
+Generates human-readable route names based on streets, neighborhoods, landmarks,
+and geographic features to clearly indicate where routes actually go.
 """
 
 import logging
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional, Dict, Set
 from collections import Counter
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
@@ -56,14 +57,15 @@ class RouteNamer:
                 json.dump(self.cache, f, indent=2)
         except Exception as e:
             logger.warning(f"Failed to save geocoding cache: {e}")
-        
+    
     def name_route(self, coordinates: List[Tuple[float, float]],
                    route_id: str, direction: str) -> str:
         """
-        Generate a descriptive name for a route based on:
-        1. First street/trail taken
-        2. Street/trail that represents the majority of the route
-        3. Neighborhood name if there are many streets
+        Generate a descriptive name for a route using multi-strategy approach:
+        1. Major streets (most significant roads along route)
+        2. Neighborhoods/districts traversed
+        3. Landmarks when available
+        4. Geographic features (rivers, parks, etc.)
         
         Args:
             coordinates: List of (lat, lon) tuples
@@ -71,7 +73,7 @@ class RouteNamer:
             direction: Route direction
             
         Returns:
-            Human-readable route name
+            Human-readable route name that clearly indicates where route goes
         """
         # Check if geocoding is disabled in config
         if self.config and not self.config.get('route_analysis.enable_geocoding', True):
@@ -80,44 +82,11 @@ class RouteNamer:
             return f"Route {route_num} {direction_label}"
         
         try:
-            # Get first street (near start of route)
-            first_street = self._get_first_street(coordinates)
+            # Multi-strategy naming approach
+            route_info = self._analyze_route_geography(coordinates)
             
-            # Get all streets along the route
-            all_streets = self._get_all_streets(coordinates)
-            
-            # Find the dominant street (most frequent)
-            dominant_street = self._get_dominant_street(all_streets)
-            
-            # Check if route has many different streets (fragmented)
-            is_fragmented = len(set(all_streets)) > 8
-            
-            # Generate name based on what we found
-            if is_fragmented:
-                # Use neighborhood name if too many streets
-                neighborhood = self._get_neighborhood(coordinates)
-                if neighborhood and first_street:
-                    name = f"{first_street} via {neighborhood}"
-                elif neighborhood:
-                    name = f"Via {neighborhood}"
-                elif first_street and dominant_street and first_street != dominant_street:
-                    name = f"{first_street} → {dominant_street}"
-                elif first_street:
-                    name = f"Via {first_street}"
-                else:
-                    direction_label = "to Work" if direction == "home_to_work" else "to Home"
-                    name = f"Route {route_id.split('_')[-1]} {direction_label}"
-            else:
-                # Use first street and dominant street
-                if first_street and dominant_street and first_street != dominant_street:
-                    name = f"{first_street} → {dominant_street}"
-                elif dominant_street:
-                    name = f"Via {dominant_street}"
-                elif first_street:
-                    name = f"Via {first_street}"
-                else:
-                    direction_label = "to Work" if direction == "home_to_work" else "to Home"
-                    name = f"Route {route_id.split('_')[-1]} {direction_label}"
+            # Generate name based on available information
+            name = self._generate_descriptive_name(route_info, route_id, direction)
             
             logger.info(f"Named route {route_id}: {name}")
             return name
@@ -128,118 +97,138 @@ class RouteNamer:
             direction_label = "to Work" if direction == "home_to_work" else "to Home"
             return f"Route {route_id.split('_')[-1]} {direction_label}"
     
-    def _get_first_street(self, coordinates: List[Tuple[float, float]]) -> Optional[str]:
+    def _analyze_route_geography(self, coordinates: List[Tuple[float, float]]) -> Dict:
         """
-        Get the first street/trail name near the start of the route.
+        Analyze route geography to extract naming information.
         
-        Args:
-            coordinates: List of (lat, lon) tuples
-            
-        Returns:
-            First street name or None
-        """
-        if len(coordinates) < 2:
-            return None
-        
-        # Check first few points (within first 10% of route)
-        sample_size = max(2, len(coordinates) // 10)
-        for i in range(min(sample_size, len(coordinates))):
-            street = self._get_street_name(coordinates[i])
-            if street:
-                return street
-        
-        return None
-    
-    def _get_all_streets(self, coordinates: List[Tuple[float, float]],
-                         sample_rate: int = 10) -> List[str]:
-        """
-        Get all street names along the route.
-        
-        Args:
-            coordinates: List of (lat, lon) tuples
-            sample_rate: Sample every Nth point
-            
-        Returns:
-            List of street names
-        """
-        streets = []
-        
-        # Sample points along the route
-        for i in range(0, len(coordinates), sample_rate):
-            street = self._get_street_name(coordinates[i])
-            if street:
-                streets.append(street)
-        
-        return streets
-    
-    def _get_dominant_street(self, streets: List[str]) -> Optional[str]:
-        """
-        Find the street that appears most frequently (represents majority of route).
-        
-        Args:
-            streets: List of street names
-            
-        Returns:
-            Most common street name or None
-        """
-        if not streets:
-            return None
-        
-        # Count occurrences
-        street_counts = Counter(streets)
-        
-        # Return most common
-        most_common = street_counts.most_common(1)
-        if most_common:
-            return most_common[0][0]
-        
-        return None
-    
-    def _get_neighborhood(self, coordinates: List[Tuple[float, float]]) -> Optional[str]:
-        """
-        Get neighborhood name for the route.
-        
-        Args:
-            coordinates: List of (lat, lon) tuples
-            
-        Returns:
-            Neighborhood name or None
+        Returns dict with:
+        - major_streets: List of significant streets (not every small street)
+        - neighborhoods: List of neighborhoods/districts traversed
+        - landmarks: List of notable landmarks
+        - geographic_features: Parks, rivers, etc.
         """
         if not coordinates:
-            return None
+            return {}
         
-        # Use midpoint of route
-        mid_idx = len(coordinates) // 2
-        point = coordinates[mid_idx]
+        # Sample strategic points along route
+        sample_points = self._get_strategic_sample_points(coordinates)
         
-        # Check cache first - return immediately if found
-        cache_key = f"neighborhood_{point[0]:.4f},{point[1]:.4f}"
+        # Collect geographic information
+        streets = []
+        neighborhoods = set()
+        landmarks = []
+        features = []
+        
+        for point in sample_points:
+            location_info = self._get_location_details(point)
+            
+            if location_info:
+                # Collect major streets (highways, primary roads)
+                if location_info.get('street') and location_info.get('is_major'):
+                    streets.append(location_info['street'])
+                
+                # Collect neighborhoods
+                if location_info.get('neighborhood'):
+                    neighborhoods.add(location_info['neighborhood'])
+                
+                # Collect landmarks
+                if location_info.get('landmark'):
+                    landmarks.append(location_info['landmark'])
+                
+                # Collect geographic features
+                if location_info.get('feature'):
+                    features.append(location_info['feature'])
+        
+        return {
+            'major_streets': self._filter_significant_streets(streets),
+            'neighborhoods': list(neighborhoods),
+            'landmarks': landmarks[:2],  # Limit to 2 most prominent
+            'geographic_features': features[:1]  # Limit to 1 most prominent
+        }
+    
+    def _get_strategic_sample_points(self, coordinates: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+        """
+        Get strategic sample points along route for naming.
+        Focuses on start, key waypoints, and end.
+        """
+        if len(coordinates) < 3:
+            return coordinates
+        
+        # Always include start and end
+        points = [coordinates[0], coordinates[-1]]
+        
+        # Add points at 25%, 50%, 75% of route
+        for pct in [0.25, 0.5, 0.75]:
+            idx = int(len(coordinates) * pct)
+            points.append(coordinates[idx])
+        
+        return points
+    
+    def _get_location_details(self, point: Tuple[float, float]) -> Optional[Dict]:
+        """
+        Get detailed location information for a point.
+        
+        Returns dict with street, neighborhood, landmark, feature, and is_major flag.
+        """
+        # Check cache first
+        cache_key = f"details_{point[0]:.4f},{point[1]:.4f}"
         if cache_key in self.cache:
             logger.debug(f"Cache hit for {cache_key}")
             return self.cache[cache_key]
         
-        # Rate limiting ONLY for actual API requests (1 second per Nominatim usage policy)
+        # Rate limiting for API requests
         logger.debug(f"Cache miss for {cache_key}, making API request")
         time.sleep(1.0)
         
         try:
-            # Reverse geocode
             location = self.geolocator.reverse(point, exactly_one=True, language='en', timeout=5)
             
-            if location and location.raw.get('address'):
-                address = location.raw['address']
-                
-                # Try to get neighborhood or suburb
-                neighborhood = (address.get('neighbourhood') or
-                              address.get('suburb') or
-                              address.get('quarter') or
-                              address.get('district'))
-                
-                # Cache result and save to disk
-                self.cache[cache_key] = neighborhood
-                self._save_cache()
-                logger.info(f"Geocoded {cache_key} -> {neighborhood}")
-                return neighborhood
+            if not location or not location.raw.get('address'):
+                return None
+            
+            address = location.raw['address']
+            
+            # Extract street information
+            street = (address.get('road') or
+                     address.get('street') or
+                     address.get('cycleway') or
+                     address.get('path'))
+            
+            # Determine if this is a major street
+            is_major = self._is_major_street(address)
+            
+            # Extract neighborhood
+            neighborhood = (address.get('neighbourhood') or
+                          address.get('suburb') or
+                          address.get('quarter') or
+                          address.get('district') or
+                          address.get('city_district'))
+            
+            # Extract landmarks
+            landmark = (address.get('amenity') or
+                       address.get('tourism') or
+                       address.get('historic'))
+            
+            # Extract geographic features
+            feature = (address.get('natural') or
+                      address.get('water') or
+                      address.get('waterway') or
+                      address.get('leisure'))
+            
+            result = {
+                'street': street,
+                'is_major': is_major,
+                'neighborhood': neighborhood,
+                'landmark': landmark,
+                'feature': feature
+            }
+            
+            # Cache and save
+            self.cache[cache_key] = result
+            self._save_cache()
+            logger.info(f"Geocoded {cache_key} -> {result}")
+            
+            return result
             
         except (GeocoderTimedOut, GeocoderServiceError) as e:
             logger.debug(f"Geocoding failed for {point}: {e}")
@@ -248,9 +237,95 @@ class RouteNamer:
         
         return None
     
+    def _is_major_street(self, address: Dict) -> bool:
+        """Determine if a street is major (highway, primary, secondary road)."""
+        # Check for highway classification
+        highway_type = address.get('highway')
+        if highway_type in ['motorway', 'trunk', 'primary', 'secondary', 'tertiary']:
+            return True
+        
+        # Check for named major roads (often have route numbers)
+        road = address.get('road', '')
+        if any(keyword in road.lower() for keyword in ['highway', 'boulevard', 'avenue', 'parkway']):
+            return True
+        
+        return False
+    
+    def _filter_significant_streets(self, streets: List[str]) -> List[str]:
+        """
+        Filter to most significant streets (remove duplicates, keep most frequent).
+        Returns up to 3 most significant streets.
+        """
+        if not streets:
+            return []
+        
+        # Count occurrences
+        street_counts = Counter(streets)
+        
+        # Get top 3 most common
+        top_streets = [street for street, count in street_counts.most_common(3)]
+        
+        return top_streets
+    
+    def _generate_descriptive_name(self, route_info: Dict, route_id: str, direction: str) -> str:
+        """
+        Generate descriptive name from route information.
+        
+        Priority:
+        1. Major streets (if 2-3 available): "Street A → Street B"
+        2. Neighborhood + major street: "Through [Neighborhood] via [Street]"
+        3. Landmark + street: "Past [Landmark] on [Street]"
+        4. Geographic feature: "Along [River/Park]"
+        5. Fallback: Generic name
+        """
+        major_streets = route_info.get('major_streets', [])
+        neighborhoods = route_info.get('neighborhoods', [])
+        landmarks = route_info.get('landmarks', [])
+        features = route_info.get('geographic_features', [])
+        
+        # Strategy 1: Multiple major streets (shows clear path)
+        if len(major_streets) >= 2:
+            if len(major_streets) == 2:
+                return f"{major_streets[0]} → {major_streets[1]}"
+            else:
+                return f"{major_streets[0]} → {major_streets[1]} → {major_streets[2]}"
+        
+        # Strategy 2: Single major street with neighborhood
+        if len(major_streets) == 1 and neighborhoods:
+            return f"Through {neighborhoods[0]} via {major_streets[0]}"
+        
+        # Strategy 3: Neighborhood with landmark
+        if neighborhoods and landmarks:
+            return f"Through {neighborhoods[0]} past {landmarks[0]}"
+        
+        # Strategy 4: Major street with geographic feature
+        if major_streets and features:
+            return f"{major_streets[0]} along {features[0]}"
+        
+        # Strategy 5: Just major street
+        if major_streets:
+            return f"Via {major_streets[0]}"
+        
+        # Strategy 6: Just neighborhood
+        if neighborhoods:
+            if len(neighborhoods) >= 2:
+                return f"Through {neighborhoods[0]} and {neighborhoods[1]}"
+            else:
+                return f"Through {neighborhoods[0]}"
+        
+        # Strategy 7: Geographic feature
+        if features:
+            return f"Along {features[0]}"
+        
+        # Fallback: Generic name with direction
+        direction_label = "to Work" if direction == "home_to_work" else "to Home"
+        route_num = route_id.split('_')[-1]
+        return f"Route {route_num} {direction_label}"
+    
     def _get_street_name(self, point: Tuple[float, float]) -> Optional[str]:
         """
         Get street name for a point using reverse geocoding.
+        (Legacy method - kept for compatibility)
         
         Args:
             point: (lat, lon) tuple
@@ -258,24 +333,22 @@ class RouteNamer:
         Returns:
             Street name or None
         """
-        # Check cache first - return immediately if found
+        # Check cache first
         cache_key = f"{point[0]:.4f},{point[1]:.4f}"
         if cache_key in self.cache:
             logger.debug(f"Cache hit for {cache_key}")
             return self.cache[cache_key]
         
-        # Rate limiting ONLY for actual API requests (1 second per Nominatim usage policy)
+        # Rate limiting for API requests
         logger.debug(f"Cache miss for {cache_key}, making API request")
         time.sleep(1.0)
         
         try:
-            # Reverse geocode
             location = self.geolocator.reverse(point, exactly_one=True, language='en', timeout=5)
             
             if location and location.raw.get('address'):
                 address = location.raw['address']
                 
-                # Try to get street name (including trails/paths)
                 street = (address.get('road') or
                          address.get('street') or
                          address.get('cycleway') or
@@ -283,7 +356,7 @@ class RouteNamer:
                          address.get('footway') or
                          address.get('highway'))
                 
-                # Cache result and save to disk
+                # Cache and save
                 self.cache[cache_key] = street
                 self._save_cache()
                 logger.info(f"Geocoded {cache_key} -> {street}")
