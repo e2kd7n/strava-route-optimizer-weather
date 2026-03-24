@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List
 
-from jinja2 import Environment, FileSystemLoader, Template
+from jinja2 import Template
 
 logger = logging.getLogger(__name__)
 

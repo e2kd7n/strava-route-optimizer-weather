@@ -12,7 +12,7 @@ import json
 import hashlib
 from pathlib import Path
 from typing import List, Tuple, Dict, Any, Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 from scipy.spatial.distance import directed_hausdorff

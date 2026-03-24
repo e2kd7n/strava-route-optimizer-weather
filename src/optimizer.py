@@ -12,7 +12,7 @@ from typing import List, Tuple, Dict, Any, Optional
 
 import numpy as np
 
-from .route_analyzer import RouteGroup, RouteMetrics, RouteAnalyzer
+from .route_analyzer import RouteGroup, RouteMetrics
 from .weather_fetcher import WeatherFetcher, WindImpactCalculator
 
 logger = logging.getLogger(__name__)

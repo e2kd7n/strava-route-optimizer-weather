@@ -6,7 +6,7 @@ Analyzes non-commute cycling activities for recreational ride recommendations.
 
 import logging
 from typing import List, Tuple, Dict, Any, Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 
 import numpy as np
