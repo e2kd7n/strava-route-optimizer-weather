@@ -130,14 +130,16 @@ class StravaDataFetcher:
         self.config = config
         self.cache_path = Path("data/cache/activities.json")
         
-    def fetch_activities(self, limit: Optional[int] = None, 
-                        after: Optional[datetime] = None) -> List[Activity]:
+    def fetch_activities(self, limit: Optional[int] = None,
+                        after: Optional[datetime] = None,
+                        before: Optional[datetime] = None) -> List[Activity]:
         """
         Fetch activities from Strava API.
         
         Args:
-            limit: Maximum number of activities to fetch
+            limit: Maximum number of activities to fetch (default from config or 500)
             after: Only fetch activities after this date
+            before: Only fetch activities before this date
             
         Returns:
             List of Activity objects
@@ -145,19 +147,71 @@ class StravaDataFetcher:
         if limit is None:
             limit = self.config.get('data_fetching.max_activities', 500)
         
+        # Print fetch parameters
+        print("\n" + "="*70)
+        print("📥 FETCHING ACTIVITIES FROM STRAVA")
+        print("="*70)
+        print(f"Max activities to fetch: {limit}")
+        if after and before:
+            print(f"Date range: {after.date()} to {before.date()}")
+        elif after:
+            print(f"Fetching activities after: {after.date()}")
+        elif before:
+            print(f"Fetching activities before: {before.date()}")
+        else:
+            print("Fetching most recent activities")
+        print("="*70 + "\n")
+        
         logger.info(f"Fetching up to {limit} activities from Strava...")
         
         activities = []
+        earliest_date = None
+        latest_date = None
+        
         try:
-            strava_activities = self.client.get_activities(limit=limit, after=after)
+            strava_activities = self.client.get_activities(limit=limit, after=after, before=before)
             
+            processed_count = 0
             for activity in strava_activities:
                 try:
                     act = Activity.from_strava_activity(activity)
+                    
+                    # If before date specified, filter activities (make before timezone-aware for comparison)
+                    if before and act.start_date:
+                        act_date = datetime.fromisoformat(act.start_date.replace('Z', '+00:00'))
+                        # Make before date timezone-aware (UTC) for comparison
+                        from datetime import timezone
+                        before_aware = before.replace(tzinfo=timezone.utc)
+                        if act_date > before_aware:
+                            continue  # Skip activities after the before date
+                    
                     activities.append(act)
+                    processed_count += 1
+                    
+                    # Show progress every 100 activities
+                    if processed_count % 100 == 0:
+                        print(f"  Fetched {processed_count} activities so far...")
+                    
+                    # Track date range
+                    if act.start_date:
+                        try:
+                            act_date = datetime.fromisoformat(act.start_date.replace('Z', '+00:00'))
+                            if earliest_date is None or act_date < earliest_date:
+                                earliest_date = act_date
+                            if latest_date is None or act_date > latest_date:
+                                latest_date = act_date
+                        except:
+                            pass
+                            
                 except Exception as e:
                     logger.warning(f"Failed to process activity {activity.id}: {e}")
                     continue
+            
+            # Print fetch results
+            print(f"✓ Fetched {len(activities)} activities from Strava")
+            if earliest_date and latest_date:
+                print(f"  Date range: {earliest_date.date()} to {latest_date.date()}")
+            print()
             
             logger.info(f"Fetched {len(activities)} activities")
             
@@ -218,14 +272,82 @@ class StravaDataFetcher:
         logger.info(f"Successfully enriched {len(enriched_activities)} activities with detailed polylines")
         return enriched_activities
     
-    def cache_activities(self, activities: List[Activity]) -> None:
+    def cache_activities(self, activities: List[Activity], merge: bool = True) -> dict:
         """
         Save activities to cache file.
         
         Args:
-            activities: List of Activity objects
+            activities: List of Activity objects to cache
+            merge: If True, merge with existing cache (default). If False, replace cache.
+            
+        Returns:
+            Dictionary with cache statistics: {
+                'new': int,
+                'updated': int,
+                'total': int,
+                'previous_total': int
+            }
         """
         self.cache_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        stats = {
+            'new': 0,
+            'updated': 0,
+            'total': 0,
+            'previous_total': 0
+        }
+        
+        if merge and self.cache_path.exists():
+            # Load existing cache
+            try:
+                existing_activities = self.load_cached_activities()
+                stats['previous_total'] = len(existing_activities)
+                logger.info(f"Loaded {len(existing_activities)} existing activities from cache")
+                
+                # Create a dict of existing activities by ID for fast lookup
+                existing_by_id = {act.id: act for act in existing_activities}
+                
+                # Add new activities, replacing any duplicates
+                for act in activities:
+                    if act.id in existing_by_id:
+                        stats['updated'] += 1
+                    else:
+                        stats['new'] += 1
+                    existing_by_id[act.id] = act
+                
+                # Convert back to list and sort by date (newest first)
+                merged_activities = list(existing_by_id.values())
+                merged_activities.sort(key=lambda x: x.start_date, reverse=True)
+                
+                stats['total'] = len(merged_activities)
+                
+                print("="*70)
+                print("💾 CACHE UPDATE SUMMARY")
+                print("="*70)
+                print(f"Previous cache size: {stats['previous_total']} activities")
+                print(f"New activities added: {stats['new']}")
+                print(f"Existing activities updated: {stats['updated']}")
+                print(f"Total cache size: {stats['total']} activities")
+                print(f"Net change: +{stats['total'] - stats['previous_total']} activities")
+                print("="*70 + "\n")
+                
+                logger.info(f"Merged cache: {stats['new']} new, {stats['updated']} updated, {stats['total']} total")
+                activities = merged_activities
+                
+            except Exception as e:
+                logger.warning(f"Failed to merge with existing cache: {e}. Replacing cache.")
+                stats['new'] = len(activities)
+                stats['total'] = len(activities)
+        else:
+            # Not merging or no existing cache
+            stats['new'] = len(activities)
+            stats['total'] = len(activities)
+            
+            print("="*70)
+            print("💾 CACHE CREATED")
+            print("="*70)
+            print(f"Total activities cached: {stats['total']}")
+            print("="*70 + "\n")
         
         cache_data = {
             'timestamp': datetime.now().isoformat(),
@@ -237,6 +359,8 @@ class StravaDataFetcher:
             json.dump(cache_data, f, indent=2)
         
         logger.info(f"Cached {len(activities)} activities to {self.cache_path}")
+        
+        return stats
     
     def load_cached_activities(self) -> List[Activity]:
         """

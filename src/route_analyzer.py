@@ -13,6 +13,7 @@ import hashlib
 from pathlib import Path
 from typing import List, Tuple, Dict, Any, Optional
 from dataclasses import dataclass
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import numpy as np
 from scipy.spatial.distance import directed_hausdorff
@@ -75,7 +76,7 @@ class RouteAnalyzer:
     """Analyzes and groups routes between home and work."""
     
     def __init__(self, activities: List[Activity], home: Location,
-                 work: Location, config):
+                 work: Location, config, n_workers=2):
         """
         Initialize route analyzer.
         
@@ -84,11 +85,13 @@ class RouteAnalyzer:
             home: Home location
             work: Work location
             config: Configuration object
+            n_workers: Number of parallel workers for route grouping (1-8)
         """
         self.activities = activities
         self.home = home
         self.work = work
         self.config = config
+        self.n_workers = max(1, min(8, n_workers))  # Clamp between 1 and 8
         self.similarity_threshold = config.get('route_analysis.similarity_threshold', 0.85)
         self.route_namer = RouteNamer(config)
         
@@ -363,7 +366,7 @@ class RouteAnalyzer:
     
     def group_similar_routes(self, routes: List[Route] = None) -> List[RouteGroup]:
         """
-        Group similar routes together.
+        Group similar routes together using parallel processing.
         
         Args:
             routes: List of routes to group (if None, extracts all routes)
@@ -382,25 +385,57 @@ class RouteAnalyzer:
         home_to_work = [r for r in routes if r.direction == 'home_to_work']
         work_to_home = [r for r in routes if r.direction == 'work_to_home']
         
-        # Group each direction separately
+        # Group each direction separately (potentially in parallel)
         groups = []
         
-        if home_to_work:
-            print(f"  Grouping {len(home_to_work)} home→work routes...")
-            htw_groups = self._group_routes_by_similarity(home_to_work, 'home_to_work')
-            groups.extend(htw_groups)
-            print(f"  Found {len(htw_groups)} home→work route groups")
-        
-        if work_to_home:
-            print(f"  Grouping {len(work_to_home)} work→home routes...")
-            wth_groups = self._group_routes_by_similarity(work_to_home, 'work_to_home')
-            groups.extend(wth_groups)
-            print(f"  Found {len(wth_groups)} work→home route groups")
+        if self.n_workers > 1 and home_to_work and work_to_home:
+            # Parallel processing for both directions
+            print(f"  Grouping routes in parallel ({self.n_workers} workers)...")
+            with ProcessPoolExecutor(max_workers=self.n_workers) as executor:
+                futures = {}
+                
+                if home_to_work:
+                    print(f"    Submitting {len(home_to_work)} home→work routes...")
+                    future_htw = executor.submit(
+                        self._group_routes_by_similarity_static,
+                        home_to_work, 'home_to_work', self.similarity_threshold,
+                        self.similarity_cache
+                    )
+                    futures[future_htw] = 'home_to_work'
+                
+                if work_to_home:
+                    print(f"    Submitting {len(work_to_home)} work→home routes...")
+                    future_wth = executor.submit(
+                        self._group_routes_by_similarity_static,
+                        work_to_home, 'work_to_home', self.similarity_threshold,
+                        self.similarity_cache
+                    )
+                    futures[future_wth] = 'work_to_home'
+                
+                # Collect results as they complete
+                for future in as_completed(futures):
+                    direction = futures[future]
+                    result_groups = future.result()
+                    groups.extend(result_groups)
+                    print(f"    ✓ Found {len(result_groups)} {direction.replace('_', '→')} route groups")
+        else:
+            # Sequential processing
+            if home_to_work:
+                print(f"  Grouping {len(home_to_work)} home→work routes...")
+                htw_groups = self._group_routes_by_similarity(home_to_work, 'home_to_work')
+                groups.extend(htw_groups)
+                print(f"  Found {len(htw_groups)} home→work route groups")
+            
+            if work_to_home:
+                print(f"  Grouping {len(work_to_home)} work→home routes...")
+                wth_groups = self._group_routes_by_similarity(work_to_home, 'work_to_home')
+                groups.extend(wth_groups)
+                print(f"  Found {len(wth_groups)} work→home route groups")
         
         print(f"✓ Created {len(groups)} total route groups")
         logger.info(f"Created {len(groups)} route groups from {len(routes)} routes")
         
-        # Mark plus routes (routes >25% longer than median)
+        # Mark plus routes (routes >15% longer than median)
         groups = self._mark_plus_routes(groups)
         
         # Save similarity cache after grouping
@@ -412,7 +447,7 @@ class RouteAnalyzer:
         """
         Mark route groups that are significantly longer than typical commutes.
         
-        A "plus route" is one where the distance is >25% above the median distance
+        A "plus route" is one where the distance is >15% above the median distance
         for that direction (home_to_work or work_to_home).
         
         Args:
@@ -444,7 +479,7 @@ class RouteAnalyzer:
             
             # Calculate median
             median_distance = np.median(distances)
-            threshold = median_distance * 1.25  # 25% above median
+            threshold = median_distance * 1.15  # 15% above median
             
             direction = direction_groups[0].direction
             print(f"  {direction}: median={median_distance/1000:.2f}km, "
@@ -523,6 +558,105 @@ class RouteAnalyzer:
         # Sort by frequency
         groups.sort(key=lambda g: g.frequency, reverse=True)
         
+        return groups
+    
+    @staticmethod
+    def _group_routes_by_similarity_static(routes: List[Route], direction: str, 
+                                          similarity_threshold: float,
+                                          similarity_cache: Dict[str, float]) -> List[RouteGroup]:
+        """
+        Static method for parallel route grouping.
+        
+        This is a static method so it can be pickled for multiprocessing.
+        
+        Args:
+            routes: List of routes to group
+            direction: Route direction
+            similarity_threshold: Similarity threshold for grouping
+            similarity_cache: Cached similarity calculations
+            
+        Returns:
+            List of RouteGroup objects
+        """
+        if not routes:
+            return []
+        
+        groups = []
+        ungrouped = routes.copy()
+        group_id = 0
+        
+        # Helper function to calculate similarity (simplified for static context)
+        def calc_similarity(route1: Route, route2: Route) -> float:
+            # Check cache first
+            cache_key = f"{route1.activity_id}_{route2.activity_id}"
+            if cache_key in similarity_cache:
+                return similarity_cache[cache_key]
+            
+            # Calculate Fréchet distance if available
+            coords1 = np.array(route1.coordinates)
+            coords2 = np.array(route2.coordinates)
+            
+            if FRECHET_AVAILABLE:
+                try:
+                    frechet_dist = similaritymeasures.frechet_dist(coords1, coords2)
+                    normalized_dist = frechet_dist * 111000
+                    distance_threshold = 200
+                    similarity = 1 / (1 + normalized_dist / distance_threshold)
+                    return similarity
+                except:
+                    pass
+            
+            # Fallback to Hausdorff
+            dist_forward = directed_hausdorff(coords1, coords2)[0]
+            dist_backward = directed_hausdorff(coords2, coords1)[0]
+            max_dist = max(dist_forward, dist_backward)
+            normalized_dist = max_dist * 111000
+            distance_threshold = 200
+            similarity = 1 / (1 + normalized_dist / distance_threshold)
+            return similarity
+        
+        while ungrouped:
+            # Start new group with first ungrouped route
+            current = ungrouped.pop(0)
+            group = [current]
+            
+            # Find similar routes
+            to_remove = []
+            for i, route in enumerate(ungrouped):
+                similarity = calc_similarity(current, route)
+                if similarity >= similarity_threshold:
+                    group.append(route)
+                    to_remove.append(i)
+            
+            # Remove grouped routes
+            for i in reversed(to_remove):
+                ungrouped.pop(i)
+            
+            # Select representative route (median by duration)
+            sorted_routes = sorted(group, key=lambda r: r.duration)
+            representative = sorted_routes[len(sorted_routes) // 2]
+            
+            # Create route group
+            route_id = f"{direction}_{group_id}"
+            route_name = f"Route {group_id}"
+            
+            route_group = RouteGroup(
+                id=route_id,
+                direction=direction,
+                routes=group,
+                representative_route=representative,
+                frequency=len(group),
+                name=route_name
+            )
+            
+            groups.append(route_group)
+            group_id += 1
+        
+        # Sort by frequency
+        groups.sort(key=lambda g: g.frequency, reverse=True)
+        
+        return groups
+    
         return groups
     
     def _select_representative_route(self, routes: List[Route]) -> Route:

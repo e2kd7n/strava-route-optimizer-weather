@@ -108,7 +108,8 @@ class ReportGenerator:
                 'name': route_name,
                 'color': route_colors.get(group.id, '#808080'),  # Default to gray if not found
                 'strava_url': f"https://www.strava.com/activities/{most_recent_activity_id}" if most_recent_activity_id else None,
-                'prevailing_wind': prevailing_wind
+                'prevailing_wind': prevailing_wind,
+                'is_plus_route': group.is_plus_route  # Flag for extended/recreational routes
             })
         
         # Calculate statistics
@@ -238,6 +239,7 @@ class ReportGenerator:
         .route-row.highlighted { background-color: #fff3cd; }
         .route-row.page-hidden { display: none; }
         .route-row.direction-hidden { display: none; }
+        .route-row.plus-hidden { display: none; }
         .comparison-section { display: flex; gap: 20px; }
         .comparison-table { flex: 1; }
         .map-pane { flex: 1; min-width: 500px; }
@@ -501,12 +503,28 @@ class ReportGenerator:
         <div class="card" id="full-map-section">
             <div class="card-header"><h3>📊 Route Comparison & Full Interactive Map</h3></div>
             <div class="card-body">
-                <div class="direction-filter">
-                    <label class="me-2"><strong>Filter by Direction:</strong></label>
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-outline-primary active" data-direction="all">All Routes</button>
-                        <button type="button" class="btn btn-outline-primary" data-direction="home_to_work">🏠 → 🏢 To Work</button>
-                        <button type="button" class="btn btn-outline-primary" data-direction="work_to_home">🏢 → 🏠 To Home</button>
+                <div class="direction-filter" style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px;">
+                    <div>
+                        <label class="me-2"><strong>Filter by Direction:</strong></label>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-primary active" data-direction="all">All Routes</button>
+                            <button type="button" class="btn btn-outline-primary" data-direction="home_to_work">🏠 → 🏢 To Work</button>
+                            <button type="button" class="btn btn-outline-primary" data-direction="work_to_home">🏢 → 🏠 To Home</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="me-2"><strong>Plus Routes:</strong></label>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-success active" id="show-plus-routes" data-plus-filter="show">
+                                ✓ Show
+                            </button>
+                            <button type="button" class="btn btn-outline-danger" id="hide-plus-routes" data-plus-filter="hide">
+                                ✗ Hide
+                            </button>
+                        </div>
+                        <small class="text-muted ms-2" style="font-size: 0.85em;">
+                            (Routes >25% longer than median)
+                        </small>
                     </div>
                 </div>
                 <div class="comparison-section">
@@ -534,6 +552,7 @@ class ReportGenerator:
                                     data-direction="{{ route.group.direction }}"
                                     data-page="{{ ((loop.index - 1) // 10) + 1 }}"
                                     data-strava-url="{{ route.strava_url }}"
+                                    data-is-plus="{{ 'true' if route.is_plus_route else 'false' }}"
                                     {% if loop.index == 1 %}data-optimal="true"{% endif %}>
                                     <td>{{ loop.index }}</td>
                                     <td>
@@ -541,6 +560,11 @@ class ReportGenerator:
                                         <strong class="route-name-link" style="cursor: pointer; color: #667eea;" title="Click to view on Strava">
                                             {{ route.name }}
                                         </strong>
+                                        {% if route.is_plus_route %}
+                                        <span class="badge bg-warning text-dark ms-2" style="font-size: 0.75em;" title="Extended route (>15% longer than median)">
+                                            PLUS
+                                        </span>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         <span class="score-link"
@@ -734,6 +758,78 @@ class ReportGenerator:
             };
         })();
         
+        // Plus route toggle functionality
+        (function() {
+            let showPlusRoutes = true; // Show by default
+            const allRouteRows = document.querySelectorAll('.route-row');
+            const showPlusBtn = document.getElementById('showPlusRoutes');
+            const hidePlusBtn = document.getElementById('hidePlusRoutes');
+            
+            if (!showPlusBtn || !hidePlusBtn) {
+                console.log('Plus route toggle buttons not found');
+                return;
+            }
+            
+            // Set initial button state
+            showPlusBtn.classList.add('active');
+            
+            showPlusBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                showPlusRoutes = true;
+                showPlusBtn.classList.add('active');
+                hidePlusBtn.classList.remove('active');
+                
+                filterPlusRoutesInTable();
+                
+                // Reset pagination to page 1
+                window.paginationController.resetToFirstPage();
+                
+                return false;
+            });
+            
+            hidePlusBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                showPlusRoutes = false;
+                hidePlusBtn.classList.add('active');
+                showPlusBtn.classList.remove('active');
+                
+                filterPlusRoutesInTable();
+                
+                // Reset pagination to page 1
+                window.paginationController.resetToFirstPage();
+                
+                return false;
+            });
+            
+            function filterPlusRoutesInTable() {
+                allRouteRows.forEach(row => {
+                    const isPlus = row.getAttribute('data-is-plus') === 'true';
+                    
+                    if (showPlusRoutes || !isPlus) {
+                        row.classList.remove('plus-hidden');
+                    } else {
+                        row.classList.add('plus-hidden');
+                    }
+                });
+                
+                // Update pagination counts
+                window.paginationController.updateCounts();
+            }
+            
+            // Expose filter function globally
+            window.plusRouteFilter = {
+                isShowingPlus: () => showPlusRoutes,
+                filterRoutes: filterPlusRoutesInTable
+            };
+            
+            // Initialize filter on page load (show all routes by default)
+            filterPlusRoutesInTable();
+        })();
+        
         // Pagination functionality
         (function() {
             const ROUTES_PER_PAGE = 10;
@@ -748,7 +844,8 @@ class ReportGenerator:
             
             function getVisibleRoutes() {
                 return Array.from(allRouteRows).filter(row =>
-                    !row.classList.contains('direction-hidden')
+                    !row.classList.contains('direction-hidden') &&
+                    !row.classList.contains('plus-hidden')
                 );
             }
             

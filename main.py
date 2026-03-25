@@ -16,8 +16,10 @@ import argparse
 import logging
 import sys
 import webbrowser
+import json
 from pathlib import Path
 from datetime import datetime
+from collections import Counter
 
 from tqdm import tqdm
 
@@ -72,16 +74,181 @@ def authenticate(config):
     logger.info(f"Access token expires at: {tokens['expires_at']}")
 
 
-def fetch_activities(config, after_date=None):
+def show_cache_stats():
+    """
+    Display statistics about cached activities.
+    """
+    cache_file = Path('data/cache/activities.json')
+    
+    if not cache_file.exists():
+        print("❌ No cached activities found.")
+        print("   Run: python main.py --fetch")
+        return
+    
+    print("\n" + "="*70)
+    print("📊 CACHED ACTIVITIES STATISTICS")
+    print("="*70 + "\n")
+    
+    # Load cached data
+    with open(cache_file, 'r') as f:
+        data = json.load(f)
+        activities = data.get('activities', [])
+        cache_timestamp = data.get('timestamp', 'Unknown')
+    
+    # Summary table
+    print("┌─────────────────────────────────────────────────────────────────┐")
+    print(f"│ Cache Updated: {cache_timestamp[:19]:<44} │")
+    print(f"│ Total Activities: {len(activities):<47} │")
+    print("└─────────────────────────────────────────────────────────────────┘")
+    print()
+    
+    if not activities:
+        print("No activities in cache.")
+        return
+    
+    # Analyze activities
+    activity_types = Counter()
+    years = Counter()
+    commute_keywords = ['commute', 'to work', 'from work', 'ride to work', 'ride home']
+    commute_count = 0
+    to_work_count = 0
+    from_work_count = 0
+    
+    distances = []
+    durations = []
+    
+    earliest_date = None
+    latest_date = None
+    
+    for activity in activities:
+        # Activity type
+        activity_type = activity.get('type', 'Unknown')
+        activity_types[activity_type] += 1
+        
+        # Date analysis
+        start_date_str = activity.get('start_date', '')
+        if start_date_str:
+            try:
+                start_date = datetime.fromisoformat(start_date_str.replace('Z', '+00:00'))
+                year = start_date.year
+                years[year] += 1
+                
+                if earliest_date is None or start_date < earliest_date:
+                    earliest_date = start_date
+                if latest_date is None or start_date > latest_date:
+                    latest_date = start_date
+            except:
+                pass
+        
+        # Commute detection
+        name = activity.get('name', '').lower()
+        if any(keyword in name for keyword in commute_keywords):
+            commute_count += 1
+            if 'to work' in name or 'morning' in name:
+                to_work_count += 1
+            elif 'from work' in name or 'home' in name or 'evening' in name:
+                from_work_count += 1
+        
+        # Distance and duration
+        distance = activity.get('distance', 0)
+        if distance > 0:
+            distances.append(distance / 1000)  # Convert to km
+        
+        moving_time = activity.get('moving_time', 0)
+        if moving_time > 0:
+            durations.append(moving_time / 60)  # Convert to minutes
+    
+    # Date Range table
+    if earliest_date and latest_date:
+        days_span = (latest_date - earliest_date).days
+        print("📅 DATE RANGE")
+        print("┌──────────────┬────────────────────────────────────────────────┐")
+        print(f"│ Earliest     │ {str(earliest_date.date()):<46} │")
+        print(f"│ Latest       │ {str(latest_date.date()):<46} │")
+        print(f"│ Span         │ {days_span} days ({days_span/365.25:.1f} years){'':<30} │")
+        print("└──────────────┴────────────────────────────────────────────────┘")
+        print()
+    
+    # Activity Types table
+    print("🚴 ACTIVITY TYPES")
+    print("┌─────────────────────────────┬───────────┬────────────┐")
+    print("│ Type                        │ Count     │ Percentage │")
+    print("├─────────────────────────────┼───────────┼────────────┤")
+    for activity_type, count in activity_types.most_common():
+        percentage = (count / len(activities)) * 100
+        print(f"│ {activity_type:<27} │ {count:>9} │ {percentage:>9.1f}% │")
+    print("└─────────────────────────────┴───────────┴────────────┘")
+    print()
+    
+    # Activities by Year table
+    if years:
+        print("📆 ACTIVITIES BY YEAR")
+        print("┌──────────┬───────────┐")
+        print("│ Year     │ Count     │")
+        print("├──────────┼───────────┤")
+        for year in sorted(years.keys()):
+            print(f"│ {year}   │ {years[year]:>9} │")
+        print("└──────────┴───────────┘")
+        print()
+    
+    # Commute Activities table
+    commute_percentage = (commute_count / len(activities)) * 100 if activities else 0
+    print("🏢 COMMUTE ACTIVITIES")
+    print("┌──────────────────┬───────────┬────────────┐")
+    print("│ Category         │ Count     │ Percentage │")
+    print("├──────────────────┼───────────┼────────────┤")
+    print(f"│ Total Commutes   │ {commute_count:>9} │ {commute_percentage:>9.1f}% │")
+    print(f"│ To Work          │ {to_work_count:>9} │ {(to_work_count/len(activities)*100):>9.1f}% │")
+    print(f"│ From Work        │ {from_work_count:>9} │ {(from_work_count/len(activities)*100):>9.1f}% │")
+    print("└──────────────────┴───────────┴────────────┘")
+    print()
+    
+    # Distance Statistics table
+    if distances:
+        print("📏 DISTANCE STATISTICS")
+        print("┌──────────────┬──────────────┐")
+        print("│ Metric       │ Value        │")
+        print("├──────────────┼──────────────┤")
+        print(f"│ Total        │ {sum(distances):>10.1f} km │")
+        print(f"│ Average      │ {sum(distances)/len(distances):>10.2f} km │")
+        print(f"│ Minimum      │ {min(distances):>10.2f} km │")
+        print(f"│ Maximum      │ {max(distances):>10.2f} km │")
+        print("└──────────────┴──────────────┘")
+        print()
+    
+    # Duration Statistics table
+    if durations:
+        print("⏱️  DURATION STATISTICS")
+        print("┌──────────────┬──────────────────┐")
+        print("│ Metric       │ Value            │")
+        print("├──────────────┼──────────────────┤")
+        print(f"│ Total        │ {sum(durations)/60:>12.1f} hrs │")
+        print(f"│ Average      │ {sum(durations)/len(durations):>12.1f} min │")
+        print(f"│ Minimum      │ {min(durations):>12.1f} min │")
+        print(f"│ Maximum      │ {max(durations):>12.1f} min │")
+        print("└──────────────┴──────────────────┘")
+        print()
+    
+    print("="*70 + "\n")
+
+
+def fetch_activities(config, after_date=None, before_date=None, limit=None, replace_cache=False):
     """
     Fetch activities from Strava API.
     
     Args:
         config: Configuration object
         after_date: Optional datetime to fetch activities after this date
+        before_date: Optional datetime to fetch activities before this date
+        limit: Optional maximum number of activities to fetch
+        replace_cache: If True, replace cache instead of merging
     """
-    if after_date:
+    if after_date and before_date:
+        logger.info(f"Fetching activities from {after_date.date()} to {before_date.date()}...")
+    elif after_date:
         logger.info(f"Fetching activities from Strava (after {after_date.date()})...")
+    elif before_date:
+        logger.info(f"Fetching activities from Strava (before {before_date.date()})...")
     else:
         logger.info("Fetching activities from Strava...")
     
@@ -95,12 +262,17 @@ def fetch_activities(config, after_date=None):
         fetcher = StravaDataFetcher(client, config)
         
         # Fetch activities
-        activities = fetcher.fetch_activities(after=after_date)
+        activities = fetcher.fetch_activities(after=after_date, before=before_date, limit=limit)
         
-        # Cache activities
-        fetcher.cache_activities(activities)
+        # Cache activities (merge by default, replace if requested)
+        cache_stats = fetcher.cache_activities(activities, merge=not replace_cache)
         
-        logger.info(f"Successfully fetched and cached {len(activities)} activities")
+        # Log summary
+        if replace_cache:
+            logger.info(f"Successfully fetched and replaced cache with {cache_stats['total']} activities")
+        else:
+            logger.info(f"Successfully fetched and merged: {cache_stats['new']} new, "
+                       f"{cache_stats['updated']} updated, {cache_stats['total']} total")
         
     except Exception as e:
         logger.error(f"Failed to fetch activities: {e}")
@@ -360,17 +532,21 @@ def _open_report_in_browser(report_path):
         logger.info(f"Please open manually: {report_path}")
 
 
-def analyze_routes(config, output_dir):
+def analyze_routes(config, output_dir, n_workers=2):
     """
     Analyze routes and generate report.
     
     Args:
         config: Configuration object
         output_dir: Output directory for reports
+        n_workers: Number of parallel workers for route analysis
     """
     print("\n" + "="*70)
     print("🚴 STRAVA COMMUTE ROUTE ANALYZER")
-    print("="*70 + "\n")
+    print("="*70)
+    if n_workers > 1:
+        print(f"⚡ Parallel processing: {n_workers} workers")
+    print()
     
     # Validate credentials before analysis
     client_id = config.get('strava.client_id')
@@ -405,7 +581,7 @@ def analyze_routes(config, output_dir):
             
             # Step 4: Analyze commute routes
             pbar.set_description("🗺️  Analyzing commute routes")
-            analyzer = RouteAnalyzer(commute_activities, home, work, config)
+            analyzer = RouteAnalyzer(commute_activities, home, work, config, n_workers=n_workers)
             route_groups = analyzer.group_similar_routes()
             
             if not route_groups:
@@ -487,11 +663,29 @@ Examples:
   python main.py --auth
   python main.py --fetch --analyze
   
-  # Update and re-analyze
-  python main.py --fetch --analyze
+  # Show cached activity statistics
+  python main.py --stats
+  
+  # Fetch most recent 100 activities
+  python main.py --fetch --limit 100 --analyze
+  
+  # Fetch activities from a specific date onwards
+  python main.py --fetch --from-date 2023-01-01 --analyze
+  
+  # Fetch activities within a date range
+  python main.py --fetch --from-date 2023-01-01 --to-date 2023-12-31 --analyze
+  
+  # Fetch specific number of activities from a date
+  python main.py --fetch --from-date 2023-01-01 --limit 200 --analyze
+  
+  # Replace cache completely (WARNING: loses existing data)
+  python main.py --fetch --replace-cache --analyze
   
   # Re-analyze with cached data
   python main.py --analyze
+  
+  # Use parallel processing (2-8 workers)
+  python main.py --analyze --parallel 4
         """
     )
     
@@ -501,6 +695,14 @@ Examples:
                        help='Fetch new activities from Strava')
     parser.add_argument('--from-date', type=str,
                        help='Fetch activities from this date (YYYY-MM-DD), e.g., 2023-01-01')
+    parser.add_argument('--to-date', type=str,
+                       help='Fetch activities up to this date (YYYY-MM-DD), e.g., 2024-12-31')
+    parser.add_argument('--limit', type=int,
+                       help='Maximum number of activities to fetch (default: 500)')
+    parser.add_argument('--replace-cache', action='store_true',
+                       help='Replace cache instead of merging (use with --fetch)')
+    parser.add_argument('--stats', action='store_true',
+                       help='Show statistics about cached activities')
     parser.add_argument('--analyze', action='store_true',
                        help='Analyze routes and generate report')
     parser.add_argument('--config', type=str, default='config/config.yaml',
@@ -509,6 +711,8 @@ Examples:
                        help='Output directory for reports (default: output/reports)')
     parser.add_argument('--verbose', '-v', action='store_true',
                        help='Enable verbose logging')
+    parser.add_argument('--parallel', type=int, default=2, choices=range(1, 9),
+                       help='Number of parallel workers for route analysis (1-8, default: 2)')
     
     args = parser.parse_args()
     
@@ -517,7 +721,7 @@ Examples:
         logging.getLogger().setLevel(logging.DEBUG)
     
     # Show help if no arguments
-    if not (args.auth or args.fetch or args.analyze):
+    if not (args.auth or args.fetch or args.stats or args.analyze):
         parser.print_help()
         sys.exit(0)
     
@@ -536,19 +740,48 @@ Examples:
         if args.auth:
             authenticate(config)
         
+        if args.stats:
+            show_cache_stats()
+            return  # Exit after showing stats
+        
         if args.fetch:
             after_date = None
+            before_date = None
+            limit = args.limit
+            
             if args.from_date:
                 try:
                     after_date = datetime.strptime(args.from_date, '%Y-%m-%d')
-                    print(f"Fetching activities from {after_date.date()} onwards...")
                 except ValueError:
-                    print(f"Invalid date format: {args.from_date}. Use YYYY-MM-DD")
+                    print(f"❌ Invalid from-date format: {args.from_date}. Use YYYY-MM-DD")
                     return
-            fetch_activities(config, after_date)
+            
+            if args.to_date:
+                try:
+                    before_date = datetime.strptime(args.to_date, '%Y-%m-%d')
+                except ValueError:
+                    print(f"❌ Invalid to-date format: {args.to_date}. Use YYYY-MM-DD")
+                    return
+            
+            # Validate date range
+            if after_date and before_date and after_date >= before_date:
+                print(f"❌ Invalid date range: from-date must be before to-date")
+                return
+            
+            # If both from and to dates specified, fetch ALL activities in range (no limit)
+            if after_date and before_date:
+                if limit:
+                    print(f"ℹ️  Note: --limit ignored when date range is specified")
+                limit = 2000  # Set reasonable limit to get all activities in range
+                print(f"📅 Fetching ALL activities from {after_date.date()} to {before_date.date()}")
+            
+            if args.replace_cache:
+                print("⚠️  Cache will be REPLACED (not merged)")
+            
+            fetch_activities(config, after_date, before_date, limit, args.replace_cache)
         
         if args.analyze:
-            analyze_routes(config, args.output)
+            analyze_routes(config, args.output, n_workers=args.parallel)
         
     except FileNotFoundError as e:
         logger.error(f"File not found: {e}")

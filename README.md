@@ -106,13 +106,34 @@ Open `output/reports/commute_analysis.html` in your browser.
 
 ## Usage
 
+### Performance Options
+
+**Parallel Processing** (New!)
+The analyzer now supports parallel processing for faster route grouping:
+
+```bash
+# Use default 2 workers
+python main.py --analyze
+
+# Use 4 workers for faster processing
+python main.py --analyze --parallel 4
+
+# Use maximum 8 workers
+python main.py --analyze --parallel 8
+```
+
+Parallel processing provides ~1.5-2x speedup when analyzing large numbers of routes. The `--parallel` flag accepts values from 1-8 (default: 2).
+
 ### Basic Commands
 
 ```bash
 # Authenticate with Strava (first time only)
 python main.py --auth
 
-# Fetch new activities and update cache
+# Show cached activity statistics
+python main.py --stats
+
+# Fetch new activities and update cache (merges with existing)
 python main.py --fetch
 
 # Run full analysis and generate report
@@ -121,6 +142,53 @@ python main.py --analyze
 # Fetch and analyze in one command
 python main.py --fetch --analyze
 ```
+
+### Data Fetching Options
+
+The `--fetch` command now supports flexible data retrieval with automatic cache merging:
+
+```bash
+# Fetch most recent 100 activities
+python main.py --fetch --limit 100
+
+# Fetch activities from a specific date onwards
+python main.py --fetch --from-date 2023-01-01
+
+# Fetch ALL activities within a date range (ignores --limit)
+python main.py --fetch --from-date 2023-01-01 --to-date 2023-12-31
+
+# Fetch specific number from a date
+python main.py --fetch --from-date 2024-01-01 --limit 200
+
+# Replace cache completely (WARNING: loses existing data)
+python main.py --fetch --replace-cache
+```
+
+**Cache Behavior:**
+- By default, `--fetch` **merges** new activities with existing cache
+- Duplicates are automatically detected and updated
+- Historical data is preserved across fetches
+- Use `--replace-cache` only when you want to start fresh
+
+**Smart Limit Handling:**
+- When both `--from-date` and `--to-date` are specified, ALL activities in that range are fetched
+- The `--limit` parameter is ignored for date ranges to ensure complete data
+- Without date range, `--limit` controls how many recent activities to fetch (default: 500)
+
+### Cache Statistics
+
+View detailed statistics about your cached activities:
+
+```bash
+python main.py --stats
+```
+
+Shows:
+- Total activities and cache timestamp
+- Date range (earliest to latest activity)
+- Activity types breakdown
+- Commute activity counts (to work, from work)
+- Distance and duration statistics
 
 ### Advanced Options
 
@@ -132,7 +200,9 @@ python main.py --analyze --config my_config.yaml
 python main.py --analyze --output ~/Desktop/reports
 
 # Combine options
-python main.py --fetch --analyze --output ./my_reports
+python main.py --fetch --from-date 2023-01-01 --analyze --output ./my_reports
+```
+
 ### 📱 Mobile Usage
 
 The generated HTML report is mobile-friendly! You can transfer it to your phone and view it there. Weather data will update automatically when you have an internet connection.
