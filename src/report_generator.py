@@ -868,15 +868,39 @@ class ReportGenerator:
                         
                         // Check if this path belongs to the route
                         if (classes.includes('route-' + routeId)) {
-                            // Highlight this route
+                            // Highlight this route - brightest
                             path.style.strokeWidth = '8';
                             path.style.strokeOpacity = '1';
                             path.style.zIndex = '1000';
+                            // Restore original color if it was stored
+                            if (path.dataset.originalStroke) {
+                                path.style.stroke = path.dataset.originalStroke;
+                            }
                         } else if (classes.includes('route-')) {
-                            // Dim other routes when a route is selected
-                            path.style.strokeWidth = '3';
-                            path.style.strokeOpacity = '0.3';
-                            path.style.zIndex = '100';
+                            // Check if this route is in selected set
+                            const routeMatch = classes.match(/route-((?:home_to_work|work_to_home)_\d+)/);
+                            const thisRouteId = routeMatch ? routeMatch[1] : null;
+                            
+                            if (thisRouteId && selectedRoutes.has(thisRouteId)) {
+                                // Keep selected routes visible but slightly dimmed
+                                path.style.strokeWidth = '5';
+                                path.style.strokeOpacity = '0.7';
+                                path.style.zIndex = '500';
+                                // Restore original color
+                                if (path.dataset.originalStroke) {
+                                    path.style.stroke = path.dataset.originalStroke;
+                                }
+                            } else {
+                                // Grey out unselected routes
+                                path.style.strokeWidth = '3';
+                                path.style.strokeOpacity = '0.3';
+                                path.style.zIndex = '100';
+                                // Store original color and change to grey
+                                if (!path.dataset.originalStroke) {
+                                    path.dataset.originalStroke = path.style.stroke || path.getAttribute('stroke');
+                                }
+                                path.style.stroke = '#808080';  // Grey
+                            }
                         }
                     });
                 } catch (e) {
@@ -903,6 +927,11 @@ class ReportGenerator:
                             path.style.strokeWidth = isOptimal ? '5' : '3';
                             path.style.strokeOpacity = isOptimal ? '0.9' : '0.6';
                             path.style.zIndex = isOptimal ? '500' : '100';
+                            // Restore original color
+                            if (path.dataset.originalStroke) {
+                                path.style.stroke = path.dataset.originalStroke;
+                                delete path.dataset.originalStroke;
+                            }
                         }
                     });
                 } catch (e) {
