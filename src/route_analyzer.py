@@ -390,12 +390,12 @@ class RouteAnalyzer:
         
         if self.n_workers > 1 and home_to_work and work_to_home:
             # Parallel processing for both directions
-            print(f"   🔄 Parallel grouping ({self.n_workers} workers)")
+            print(f"   Parallel ({self.n_workers} workers)")
             with ProcessPoolExecutor(max_workers=self.n_workers) as executor:
                 futures = {}
                 
                 if home_to_work:
-                    print(f"      → Processing {len(home_to_work)} home→work routes")
+                    print(f"   → {len(home_to_work)} home→work")
                     future_htw = executor.submit(
                         self._group_routes_by_similarity_static,
                         home_to_work, 'home_to_work', self.similarity_threshold,
@@ -404,7 +404,7 @@ class RouteAnalyzer:
                     futures[future_htw] = 'home_to_work'
                 
                 if work_to_home:
-                    print(f"      → Processing {len(work_to_home)} work→home routes")
+                    print(f"   → {len(work_to_home)} work→home")
                     future_wth = executor.submit(
                         self._group_routes_by_similarity_static,
                         work_to_home, 'work_to_home', self.similarity_threshold,
@@ -417,22 +417,23 @@ class RouteAnalyzer:
                     direction = futures[future]
                     result_groups = future.result()
                     groups.extend(result_groups)
-                    print(f"      ✓ Found {len(result_groups)} {direction.replace('_', '→')} groups")
+                    dir_label = direction.replace('_', '→')
+                    print(f"   ✓ {len(result_groups)} {dir_label} groups")
         else:
             # Sequential processing
             if home_to_work:
-                print(f"   → Grouping {len(home_to_work)} home→work routes")
+                print(f"   → {len(home_to_work)} home→work")
                 htw_groups = self._group_routes_by_similarity(home_to_work, 'home_to_work')
                 groups.extend(htw_groups)
-                print(f"      ✓ Found {len(htw_groups)} groups")
+                print(f"   ✓ {len(htw_groups)} groups")
             
             if work_to_home:
-                print(f"   → Grouping {len(work_to_home)} work→home routes")
+                print(f"   → {len(work_to_home)} work→home")
                 wth_groups = self._group_routes_by_similarity(work_to_home, 'work_to_home')
                 groups.extend(wth_groups)
-                print(f"      ✓ Found {len(wth_groups)} groups")
+                print(f"   ✓ {len(wth_groups)} groups")
         
-        print(f"   ✓ Total: {len(groups)} route groups")
+        print(f"   Total: {len(groups)} groups")
         logger.info(f"Created {len(groups)} route groups from {len(routes)} routes")
         
         # Mark plus routes (routes >15% longer than median)
@@ -496,8 +497,8 @@ class RouteAnalyzer:
                     plus_count += 1
             
             if plus_count > 0:
-                print(f"   ⭐ Marked {plus_count} {direction_label} groups as PLUS routes "
-                      f"(>{median_distance/1000:.1f}km + 15%)")
+                print(f"   ⭐ {plus_count} {direction_label} PLUS routes")
+                print(f"      (>{median_distance/1000:.1f}km + 15%)")
         
         return groups
     

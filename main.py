@@ -542,11 +542,11 @@ def analyze_routes(config, output_dir, n_workers=2):
         output_dir: Output directory for reports
         n_workers: Number of parallel workers for route analysis
     """
-    print("\n" + "="*70)
+    print("\n" + "="*60)
     print("🚴  STRAVA COMMUTE ROUTE ANALYZER")
-    print("="*70)
+    print("="*60)
     if n_workers > 1:
-        print(f"⚡  Using {n_workers} parallel workers for faster processing")
+        print(f"⚡  Parallel: {n_workers} workers")
     print()
     
     # Validate credentials before analysis
@@ -558,7 +558,8 @@ def analyze_routes(config, output_dir, n_workers=2):
         # Progress tracking
         total_steps = 8
         
-        with tqdm(total=total_steps, desc="Overall Progress", unit="step", ncols=100) as pbar:
+        with tqdm(total=total_steps, desc="Progress", unit="step", ncols=80,
+                 bar_format='{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt}') as pbar:
             # Step 1: Get authenticated client
             pbar.set_description("🔐 Authenticating")
             client = get_authenticated_client(config)
@@ -638,13 +639,13 @@ def analyze_routes(config, output_dir, n_workers=2):
             pbar.update(1)
         
         # Print completion message
-        print("\n" + "="*70)
+        print("\n" + "="*60)
         print("✅  ANALYSIS COMPLETE!")
-        print("="*70)
-        print(f"📄  Report saved: {report_path}")
-        print(f"🚴  Optimal route: {analysis_results['optimal_route'].name}")
-        print(f"⭐  Score: {analysis_results['optimal_score']:.2f}/100")
-        print("="*70 + "\n")
+        print("="*60)
+        print(f"📄  Report: {report_path.name}")
+        print(f"🚴  Route: {analysis_results['optimal_route'].name}")
+        print(f"⭐  Score: {analysis_results['optimal_score']:.1f}/100")
+        print("="*60 + "\n")
         
         _open_report_in_browser(report_path)
         
