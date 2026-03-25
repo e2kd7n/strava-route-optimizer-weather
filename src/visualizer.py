@@ -227,6 +227,11 @@ class RouteVisualizer:
         """
         # Calculate metrics
         routes = route_group.routes
+        
+        # Guard against empty route groups
+        if not routes:
+            return "<div>No route data available</div>"
+        
         durations = [r.duration for r in routes]
         distances = [r.distance for r in routes]
         
@@ -334,6 +339,90 @@ class RouteVisualizer:
         
         # Return HTML
         return self.map._repr_html_()
+    
+    def generate_preview_map(self, optimal_route: RouteGroup) -> str:
+        """
+        Generate a small preview map showing only the optimal route.
+        
+        Args:
+            optimal_route: RouteGroup to display
+            
+        Returns:
+            HTML string of the preview map
+        """
+        # Create a smaller base map
+        center_lat = (self.home.lat + self.work.lat) / 2
+        center_lon = (self.home.lon + self.work.lon) / 2
+        
+        preview_map = folium.Map(
+            location=[center_lat, center_lon],
+            zoom_start=self.config.get('visualization.map.zoom_level', 13),
+            tiles=None,
+            height='200px',  # Small preview pane
+            control_scale=False
+        )
+        
+        # Add CartoDB Positron basemap
+        folium.TileLayer(
+            tiles='CartoDB Positron',
+            name='CartoDB Positron',
+            overlay=False,
+            control=False
+        ).add_to(preview_map)
+        
+        # Add only the optimal route
+        optimal_color = self.config.get('visualization.colors.optimal', '#FF0000')
+        optimal_weight = self.config.get('visualization.route_weight.optimal', 5)
+        
+        if optimal_route.representative_route and optimal_route.representative_route.coordinates:
+            coords = optimal_route.representative_route.coordinates
+            
+            # Add route polyline
+            folium.PolyLine(
+                coords,
+                color=optimal_color,
+                weight=optimal_weight,
+                opacity=0.8,
+                popup=f"<b>Optimal Route</b><br>{self.route_names.get(optimal_route.id, optimal_route.id)}"
+            ).add_to(preview_map)
+            
+            # Fit bounds to route
+            preview_map.fit_bounds(coords)
+        
+        # Add home and work markers
+        folium.Marker(
+            [self.home.lat, self.home.lon],
+            popup='<b>🏠 Home</b>',
+            icon=folium.Icon(color='green', icon='home', prefix='fa')
+        ).add_to(preview_map)
+        
+        folium.Marker(
+            [self.work.lat, self.work.lon],
+            popup='<b>🏢 Work</b>',
+            icon=folium.Icon(color='blue', icon='building', prefix='fa')
+        ).add_to(preview_map)
+        
+        # Add click handler to scroll to full map
+        from folium.elements import Element
+        js_code = """
+        <script>
+        // Add click handler to preview map to scroll to full map
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                var previewMap = document.querySelector('#preview-map-container .folium-map');
+                if (previewMap) {
+                    previewMap.style.cursor = 'pointer';
+                    previewMap.addEventListener('click', function() {
+                        document.getElementById('full-map-section').scrollIntoView({behavior: 'smooth'});
+                    });
+                }
+            }, 500);
+        });
+        </script>
+        """
+        preview_map.get_root().html.add_child(Element(js_code))
+        
+        return preview_map._repr_html_()
     
     def get_route_colors(self) -> Dict[str, str]:
         """
@@ -509,11 +598,11 @@ class RouteVisualizer:
             var html = '<div style="font-family: Arial, sans-serif; min-width: 300px; max-width: 400px;">' +
                        '<h4 style="margin: 0 0 10px 0; color: #8B008B;">🚴 Long Ride Recommendations</h4>' +
                        '<p style="font-size: 11px; color: #666; margin: 5px 0;">Location: ' + lat.toFixed(4) + ', ' + lon.toFixed(4) + '</p>' +
-                       '<p style="font-size: 11px; color: #666; margin: 5px 0;">Search radius: ' + searchRadius + ' km</p>';
+                       '<p style="font-size: 11px; color: #666; margin: 5px 0;">Search radius: ' + searchRadius + ' ' + distanceUnit + '</p>';
             
             if (nearbyRides.length === 0) {{
                 html += '<div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #ffc107;">' +
-                        '<p style="margin: 0; font-size: 12px;">No rides found within ' + searchRadius + ' km of this location.</p>' +
+                        '<p style="margin: 0; font-size: 12px;">No rides found within ' + searchRadius + ' ' + distanceUnit + ' of this location.</p>' +
                         '<p style="margin: 5px 0 0 0; font-size: 11px; color: #666;">Try clicking closer to areas you have ridden before.</p>' +
                         '</div>';
             }} else {{
@@ -529,7 +618,7 @@ class RouteVisualizer:
                             '<div style="font-size: 11px; color: #666;">' +
                             '<span>📏 ' + ride.distance + ' ' + distanceUnit + '</span> | ' +
                             '<span>⏱️ ' + ride.duration_hours.toFixed(1) + ' hrs</span> | ' +
-                            '<span>📍 ' + item.distance.toFixed(1) + ' km away</span>' +
+                            '<span>📍 ' + item.distance.toFixed(1) + ' ' + distanceUnit + ' away</span>' +
                             (ride.is_loop ? ' | <span style="color: #4caf50;">🔄 Loop</span>' : '') +
                             '</div>' +
                             '<a href="' + ride.strava_url + '" target="_blank" style="font-size: 10px; color: #fc4c02; text-decoration: none;">View on Strava →</a>' +

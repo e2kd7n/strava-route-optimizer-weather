@@ -14,6 +14,8 @@ from typing import Dict, Any, List
 
 from jinja2 import Template
 
+from .units import UnitConverter
+
 logger = logging.getLogger(__name__)
 
 
@@ -29,6 +31,11 @@ class ReportGenerator:
         """
         self.results = analysis_results
         self.template_dir = Path("templates")
+        
+        # Initialize unit converter
+        config = analysis_results.get('config')
+        unit_system = config.get('units.system', 'metric') if config else 'metric'
+        self.units = UnitConverter(unit_system)
         
     def generate_report(self, output_path: str) -> None:
         """
@@ -104,42 +111,6 @@ class ReportGenerator:
                 'prevailing_wind': prevailing_wind
             })
         
-        # Add test routes to verify zoom functionality
-        class TestGroup:
-            def __init__(self, id, direction):
-                self.id = id
-                self.direction = direction
-        
-        test_metrics = type('obj', (object,), {
-            'avg_duration': 0,
-            'avg_duration_min': 0,
-            'avg_distance': 0,
-            'avg_distance_m': 0,
-            'use_count': 0
-        })()
-        
-        ranked_routes.insert(0, {
-            'group': TestGroup('test_ferry', 'test'),
-            'score': 999.0,
-            'breakdown': {'time': 100, 'distance': 100, 'safety': 100},
-            'metrics': test_metrics,
-            'name': 'TEST: Four States Ferry (267km)',
-            'color': '#FF0000',
-            'strava_url': 'https://www.strava.com/activities/9458631701',
-            'prevailing_wind': None
-        })
-        
-        ranked_routes.insert(1, {
-            'group': TestGroup('test_unbound', 'test'),
-            'score': 998.0,
-            'breakdown': {'time': 100, 'distance': 100, 'safety': 100},
-            'metrics': test_metrics,
-            'name': 'TEST: Unbound 200 (327km)',
-            'color': '#0000FF',
-            'strava_url': 'https://www.strava.com/activities/11551867398',
-            'prevailing_wind': None
-        })
-        
         # Calculate statistics
         total_activities = len(self.results.get('all_activities', []))
         commute_activities = len(self.results.get('commute_activities', []))
@@ -162,18 +133,19 @@ class ReportGenerator:
             distances = [r.distance_km for r in long_rides]
             loop_count = sum(1 for r in long_rides if r.is_loop)
             
-            # Calculate distance distribution bins (10km intervals)
+            # Calculate distance distribution bins (10 unit intervals)
             min_dist = min(distances)
             max_dist = max(distances)
-            bin_size = 10  # 10km bins
+            bin_size = 10  # 10 unit bins
             num_bins = int((max_dist - min_dist) / bin_size) + 1
             
             # Create bins
             bins = {}
+            dist_unit = self.units.distance_unit()
             for i in range(num_bins):
                 bin_start = int(min_dist / bin_size) * bin_size + i * bin_size
                 bin_end = bin_start + bin_size
-                bin_label = f"{bin_start}-{bin_end}km"
+                bin_label = f"{bin_start}-{bin_end}{dist_unit}"
                 bins[bin_label] = 0
             
             # Count rides in each bin
@@ -181,7 +153,7 @@ class ReportGenerator:
                 bin_index = int((dist - (int(min_dist / bin_size) * bin_size)) / bin_size)
                 bin_start = int(min_dist / bin_size) * bin_size + bin_index * bin_size
                 bin_end = bin_start + bin_size
-                bin_label = f"{bin_start}-{bin_end}km"
+                bin_label = f"{bin_start}-{bin_end}{dist_unit}"
                 if bin_label in bins:
                     bins[bin_label] += 1
             
@@ -189,10 +161,11 @@ class ReportGenerator:
             
             long_rides_stats = {
                 'total_rides': len(long_rides),
-                'total_distance_km': sum(distances),
-                'avg_distance_km': sum(distances) / len(distances),
-                'min_distance_km': min(distances),
-                'max_distance_km': max(distances),
+                'total_distance': sum(distances),
+                'avg_distance': sum(distances) / len(distances),
+                'min_distance': min(distances),
+                'max_distance': max(distances),
+                'distance_unit': dist_unit,
                 'loop_count': loop_count,
                 'loop_percentage': (loop_count / len(long_rides)) * 100,
                 'point_to_point_count': len(long_rides) - loop_count
@@ -204,6 +177,7 @@ class ReportGenerator:
             'alternative': alternative,
             'ranked_routes': ranked_routes,
             'map_html': self.results.get('map_html', ''),
+            'preview_map_html': self.results.get('preview_map_html', ''),
             'home': self.results.get('home'),
             'work': self.results.get('work'),
             'route_names': route_names,
@@ -215,7 +189,8 @@ class ReportGenerator:
             },
             'long_rides': long_rides,
             'long_rides_stats': long_rides_stats,
-            'distance_bins': distance_bins
+            'distance_bins': distance_bins,
+            'units': self.units  # Pass unit converter to template
         }
         
         return context
@@ -419,10 +394,22 @@ class ReportGenerator:
         <div class="card">
             <div class="card-header"><h3>🏆 Recommended Optimal Route</h3></div>
             <div class="card-body">
-                <div class="alert alert-success">
-                    <h4>{{ route_names.get(optimal.id, optimal.id) }}</h4>
-                    <p><strong>Direction:</strong> {{ optimal.direction.replace('_', ' ').title() }}</p>
-                    <p><strong>Reason:</strong> {{ optimal.reason }}</p>
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="alert alert-success">
+                            <h4>{{ route_names.get(optimal.id, optimal.id) }}</h4>
+                            <p><strong>Direction:</strong> {{ optimal.direction.replace('_', ' ').title() }}</p>
+                            <p><strong>Reason:</strong> {{ optimal.reason }}</p>
+                        </div>
+                    </div>
+                    {% if preview_map_html %}
+                    <div class="col-md-4">
+                        <div id="preview-map-container" style="height: 200px; cursor: pointer; border: 2px solid #28a745; border-radius: 8px; overflow: hidden;">
+                            {{ preview_map_html|safe }}
+                        </div>
+                        <p class="text-center text-muted mt-2" style="font-size: 0.85em;">Click to view full map</p>
+                    </div>
+                    {% endif %}
                 </div>
                 <div class="row">
                     <div class="col-md-2">
@@ -433,14 +420,14 @@ class ReportGenerator:
                     </div>
                     <div class="col-md-2">
                         <div class="metric">
-                            <div class="metric-value">{{ "%.2f"|format(optimal.avg_distance_km) }}</div>
-                            <div class="metric-label">Kilometers</div>
+                            <div class="metric-value">{{ "%.2f"|format(optimal.avg_distance) }}</div>
+                            <div class="metric-label">{{ optimal.avg_distance_unit }}</div>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="metric">
-                            <div class="metric-value">{{ "%.1f"|format(optimal.avg_speed_kmh) }}</div>
-                            <div class="metric-label">km/h</div>
+                            <div class="metric-value">{{ "%.1f"|format(optimal.avg_speed) }}</div>
+                            <div class="metric-label">{{ optimal.avg_speed_unit }}</div>
                         </div>
                     </div>
                     <div class="col-md-2">
@@ -476,23 +463,23 @@ class ReportGenerator:
                     <h6>🌤️ Current Weather Conditions</h6>
                     <div class="row">
                         <div class="col-md-4">
-                            <strong>Wind:</strong> {{ "%.1f"|format(wd.wind_speed_kph) }} km/h from {{ "%.0f"|format(wd.wind_direction_deg) }}°
+                            <strong>Wind:</strong> {{ units.wind_speed(wd.wind_speed_kph / 3.6) }} from {{ "%.0f"|format(wd.wind_direction_deg) }}°
                         </div>
                         <div class="col-md-4">
                             <strong>Avg Headwind:</strong>
                             {% if wd.avg_headwind_kph < 0 %}
-                                <span class="text-success">{{ "%.1f"|format(wd.avg_headwind_kph|abs) }} km/h tailwind</span>
+                                <span class="text-success">{{ units.wind_speed((wd.avg_headwind_kph|abs) / 3.6) }} tailwind</span>
                             {% else %}
-                                <span class="text-danger">{{ "%.1f"|format(wd.avg_headwind_kph) }} km/h headwind</span>
+                                <span class="text-danger">{{ units.wind_speed(wd.avg_headwind_kph / 3.6) }} headwind</span>
                             {% endif %}
                         </div>
                         <div class="col-md-4">
-                            <strong>Avg Crosswind:</strong> {{ "%.1f"|format(wd.avg_crosswind_kph) }} km/h
+                            <strong>Avg Crosswind:</strong> {{ units.wind_speed(wd.avg_crosswind_kph / 3.6) }}
                         </div>
                     </div>
                     <div class="row mt-2">
                         <div class="col-md-4">
-                            <strong>Temperature:</strong> {{ "%.1f"|format(wd.temp_c) }}°C
+                            <strong>Temperature:</strong> {{ units.temperature(wd.temp_c) }}
                         </div>
                         <div class="col-md-4">
                             <strong>Time Impact:</strong>
@@ -511,8 +498,8 @@ class ReportGenerator:
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header"><h3>📊 Route Comparison & Map</h3></div>
+        <div class="card" id="full-map-section">
+            <div class="card-header"><h3>📊 Route Comparison & Full Interactive Map</h3></div>
             <div class="card-body">
                 <div class="direction-filter">
                     <label class="me-2"><strong>Filter by Direction:</strong></label>
@@ -565,28 +552,28 @@ class ReportGenerator:
                                         </span>
                                     </td>
                                     <td>{{ "%.1f"|format(route.metrics['avg_duration'] / 60) }} min</td>
-                                    <td>{{ "%.2f"|format(route.metrics['avg_distance'] / 1000) }} km</td>
+                                    <td>{{ units.distance(route.metrics['avg_distance']) }}</td>
                                     <td>{{ route.group.frequency }}</td>
                                     <td>
                                         {% if route.breakdown.get('weather_details') %}
                                             {% set wd = route.breakdown.weather_details %}
                                             {% if wd.wind_favorability == 'favorable' %}
                                                 <div style="background-color: #d4edda; padding: 6px 8px; border-radius: 4px; border-left: 3px solid #28a745;"
-                                                     title="Favorable: Headwind {{ '%.1f'|format(wd.avg_headwind_kph) }} km/h, Crosswind {{ '%.1f'|format(wd.avg_crosswind_kph) }} km/h">
+                                                     title="Favorable: Headwind {{ units.wind_speed(wd.avg_headwind_kph / 3.6) }}, Crosswind {{ units.wind_speed(wd.avg_crosswind_kph / 3.6) }}">
                                                     <span style="font-size: 16px;">🌬️</span>
                                                     <span style="color: #155724; font-weight: 600;">{{ "%.0f"|format(route.breakdown.weather) }}</span>
                                                     <span style="color: #155724; font-size: 11px;">✓ Tailwind</span>
                                                 </div>
                                             {% elif wd.wind_favorability == 'unfavorable' %}
                                                 <div style="background-color: #f8d7da; padding: 6px 8px; border-radius: 4px; border-left: 3px solid #dc3545;"
-                                                     title="Unfavorable: Headwind {{ '%.1f'|format(wd.avg_headwind_kph) }} km/h, Crosswind {{ '%.1f'|format(wd.avg_crosswind_kph) }} km/h">
+                                                     title="Unfavorable: Headwind {{ units.wind_speed(wd.avg_headwind_kph / 3.6) }}, Crosswind {{ units.wind_speed(wd.avg_crosswind_kph / 3.6) }}">
                                                     <span style="font-size: 16px;">💨</span>
                                                     <span style="color: #721c24; font-weight: 600;">{{ "%.0f"|format(route.breakdown.weather) }}</span>
                                                     <span style="color: #721c24; font-size: 11px;">⚠ Headwind</span>
                                                 </div>
                                             {% else %}
                                                 <div style="background-color: #e2e3e5; padding: 6px 8px; border-radius: 4px; border-left: 3px solid #6c757d;"
-                                                     title="Neutral: Headwind {{ '%.1f'|format(wd.avg_headwind_kph) }} km/h, Crosswind {{ '%.1f'|format(wd.avg_crosswind_kph) }} km/h">
+                                                     title="Neutral: Headwind {{ units.wind_speed(wd.avg_headwind_kph / 3.6) }}, Crosswind {{ units.wind_speed(wd.avg_crosswind_kph / 3.6) }}">
                                                     <span style="font-size: 16px;">🌫️</span>
                                                     <span style="color: #383d41; font-weight: 600;">{{ "%.0f"|format(route.breakdown.weather) }}</span>
                                                     <span style="color: #383d41; font-size: 11px;">~ Neutral</span>
@@ -668,7 +655,7 @@ class ReportGenerator:
                 <p><strong>{{ route_names.get(alternative.id, alternative.id) }}</strong> - {{ alternative.direction.replace('_', ' ').title() }}</p>
                 <p>{{ alternative.reason }}</p>
                 <p>Duration: {{ "%.1f"|format(alternative.avg_duration_min) }} min |
-                   Distance: {{ "%.2f"|format(alternative.avg_distance_km) }} km |
+                   Distance: {{ "%.2f"|format(alternative.avg_distance) }} {{ alternative.avg_distance_unit }} |
                    Score: {{ "%.1f"|format(alternative.score) }}</p>
             </div>
         </div>
@@ -1231,7 +1218,7 @@ class ReportGenerator:
                             <div class="card text-center">
                                 <div class="card-body">
                                     <h5 class="card-title">Average Distance</h5>
-                                    <p class="card-text display-6">{{ "%.1f"|format(long_rides_stats.avg_distance_km) }} km</p>
+                                    <p class="card-text display-6">{{ "%.1f"|format(long_rides_stats.avg_distance) }} {{ long_rides_stats.distance_unit }}</p>
                                 </div>
                             </div>
                         </div>
@@ -1328,7 +1315,7 @@ class ReportGenerator:
                         x: {
                             title: {
                                 display: true,
-                                text: 'Distance Range (km)'
+                                text: 'Distance Range ({{ long_rides_stats.distance_unit }})'
                             }
                         }
                     },
@@ -1352,6 +1339,12 @@ class ReportGenerator:
         // Long Ride Recommendations JavaScript
         let longRideMap = null;
         let longRidePolylines = [];
+        
+        // Unit system configuration
+        const unitSystem = '{{ units.system }}';
+        const distanceUnit = '{{ units.distance_unit() }}';
+        const elevationUnit = '{{ units.elevation_unit() }}';
+        const windSpeedUnit = '{{ units.wind_speed_unit() }}';
         
         // Load long rides data from template context
         let cachedRoutes = [
@@ -1573,7 +1566,7 @@ class ReportGenerator:
             
             let html = `
                 <div class="alert alert-primary mb-4">
-                    <strong>🌬️ Current Wind Conditions:</strong> ${windSpeed} km/h from ${windDirection}°
+                    <strong>🌬️ Current Wind Conditions:</strong> ${windSpeed} ${windSpeedUnit} from ${windDirection}°
                     (${getWindDirectionName(windDirection)})
                 </div>
                 <div class="row">
@@ -1596,7 +1589,7 @@ class ReportGenerator:
                             <div class="card-body">
                                 <div class="row mb-3">
                                     <div class="col-4 text-center">
-                                        <strong class="fs-5">${rec.distance.toFixed(1)} km</strong><br>
+                                        <strong class="fs-5">${rec.distance.toFixed(1)} ${distanceUnit}</strong><br>
                                         <small class="text-muted">Distance</small>
                                     </div>
                                     <div class="col-4 text-center">
@@ -1604,7 +1597,7 @@ class ReportGenerator:
                                         <small class="text-muted">Est. Duration</small>
                                     </div>
                                     <div class="col-4 text-center">
-                                        <strong class="fs-5">${rec.elevation.toFixed(0)} m</strong><br>
+                                        <strong class="fs-5">${rec.elevation.toFixed(0)} ${elevationUnit}</strong><br>
                                         <small class="text-muted">Elevation</small>
                                     </div>
                                 </div>
@@ -1659,7 +1652,7 @@ class ReportGenerator:
                 
                 polyline.bindPopup(`
                     <strong>${rec.name}</strong><br>
-                    Distance: ${rec.distance.toFixed(1)} km<br>
+                    Distance: ${rec.distance.toFixed(1)} ${distanceUnit}<br>
                     Wind Score: ${rec.windScore.toFixed(3)}
                 `);
                 

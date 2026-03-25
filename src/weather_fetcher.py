@@ -341,12 +341,12 @@ class WeatherFetcher:
         # Average the weather conditions
         avg_conditions = {
             'timestamp': weather_samples[0]['timestamp'],
-            'temp_c': np.mean([w['temp_c'] for w in weather_samples if w['temp_c']]),
-            'wind_speed_kph': np.mean([w['wind_speed_kph'] for w in weather_samples if w['wind_speed_kph']]),
-            'wind_gust_kph': np.mean([w['wind_gust_kph'] for w in weather_samples if w['wind_gust_kph']]),
-            'wind_direction_deg': np.mean([w['wind_direction_deg'] for w in weather_samples if w['wind_direction_deg']]),
-            'humidity': np.mean([w['humidity'] for w in weather_samples if w['humidity']]),
-            'precipitation_mm': np.mean([w['precipitation_mm'] for w in weather_samples if w['precipitation_mm']]),
+            'temp_c': np.mean([w['temp_c'] for w in weather_samples if w.get('temp_c') is not None]) if any(w.get('temp_c') is not None for w in weather_samples) else 0,
+            'wind_speed_kph': np.mean([w['wind_speed_kph'] for w in weather_samples if w.get('wind_speed_kph') is not None]) if any(w.get('wind_speed_kph') is not None for w in weather_samples) else 0,
+            'wind_gust_kph': np.mean([w['wind_gust_kph'] for w in weather_samples if w.get('wind_gust_kph') is not None]) if any(w.get('wind_gust_kph') is not None for w in weather_samples) else 0,
+            'wind_direction_deg': np.mean([w['wind_direction_deg'] for w in weather_samples if w.get('wind_direction_deg') is not None]) if any(w.get('wind_direction_deg') is not None for w in weather_samples) else 0,
+            'humidity': np.mean([w['humidity'] for w in weather_samples if w.get('humidity') is not None]) if any(w.get('humidity') is not None for w in weather_samples) else 0,
+            'precipitation_mm': np.mean([w['precipitation_mm'] for w in weather_samples if w.get('precipitation_mm') is not None]) if any(w.get('precipitation_mm') is not None for w in weather_samples) else 0,
             'samples': len(weather_samples)
         }
         

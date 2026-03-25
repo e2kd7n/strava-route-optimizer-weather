@@ -14,6 +14,7 @@ import numpy as np
 
 from .route_analyzer import RouteGroup, RouteMetrics
 from .weather_fetcher import WeatherFetcher, WindImpactCalculator
+from .units import UnitConverter
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,10 @@ class RouteOptimizer:
         self.route_groups = route_groups
         self.config = config
         self.enable_weather = enable_weather
+        
+        # Initialize unit converter
+        unit_system = config.get('units.system', 'metric')
+        self.units = UnitConverter(unit_system)
         
         # Get weights from config
         self.weights = {
@@ -67,16 +72,23 @@ class RouteOptimizer:
         for group in self.route_groups:
             # Calculate metrics inline
             routes = group.routes
-            durations = [r.duration for r in routes]
-            distances = [r.distance for r in routes]
-            speeds = [r.average_speed for r in routes]
-            elevations = [r.elevation_gain for r in routes]
             
-            avg_duration = np.mean(durations)
-            std_duration = np.std(durations)
-            avg_distance = np.mean(distances)
-            avg_speed = np.mean(speeds)
-            avg_elevation = np.mean(elevations)
+            # Skip empty route groups
+            if not routes:
+                logger.warning(f"Skipping empty route group: {group.id}")
+                continue
+            
+            durations = [r.duration for r in routes if r.duration]
+            distances = [r.distance for r in routes if r.distance]
+            speeds = [r.average_speed for r in routes if r.average_speed]
+            elevations = [r.elevation_gain for r in routes if r.elevation_gain]
+            
+            # Use 0 as default if no valid data
+            avg_duration = np.mean(durations) if durations else 0
+            std_duration = np.std(durations) if durations else 0
+            avg_distance = np.mean(distances) if distances else 0
+            avg_speed = np.mean(speeds) if speeds else 0
+            avg_elevation = np.mean(elevations) if elevations else 0
             
             if avg_duration > 0:
                 cv = std_duration / avg_duration
@@ -139,8 +151,11 @@ class RouteOptimizer:
                         **wind_impact
                     }
                     
+                    # Convert wind speed for logging
+                    headwind_ms = wind_impact['avg_headwind_kph'] / 3.6  # Convert km/h to m/s
+                    headwind_display = self.units.wind_speed(headwind_ms)
                     logger.info(f"Route {group.id}: {wind_impact['wind_favorability']} wind "
-                               f"({wind_impact['avg_headwind_kph']:.1f} km/h headwind)")
+                               f"({headwind_display} headwind)")
                 else:
                     logger.warning(f"Incomplete weather data for route {group.id}")
                     
@@ -388,8 +403,10 @@ class RouteOptimizer:
                 'breakdown': optimal_breakdown,
                 'frequency': optimal_group.frequency,
                 'avg_duration_min': optimal_metrics.avg_duration / 60,
-                'avg_distance_km': optimal_metrics.avg_distance / 1000,
-                'avg_speed_kmh': optimal_metrics.avg_speed * 3.6,
+                'avg_distance': self.units.distance_value(optimal_metrics.avg_distance),
+                'avg_distance_unit': self.units.distance_unit(),
+                'avg_speed': self.units.speed_value(optimal_metrics.avg_speed),
+                'avg_speed_unit': self.units.speed_unit(),
                 'consistency': optimal_metrics.consistency_score,
                 'reason': self._generate_recommendation_reason(optimal_breakdown)
             }
@@ -405,8 +422,10 @@ class RouteOptimizer:
                 'breakdown': alt_breakdown,
                 'frequency': alt_group.frequency,
                 'avg_duration_min': alt_metrics.avg_duration / 60,
-                'avg_distance_km': alt_metrics.avg_distance / 1000,
-                'avg_speed_kmh': alt_metrics.avg_speed * 3.6,
+                'avg_distance': self.units.distance_value(alt_metrics.avg_distance),
+                'avg_distance_unit': self.units.distance_unit(),
+                'avg_speed': self.units.speed_value(alt_metrics.avg_speed),
+                'avg_speed_unit': self.units.speed_unit(),
                 'reason': 'Good alternative for variety'
             }
         

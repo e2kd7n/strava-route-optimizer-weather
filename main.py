@@ -294,7 +294,12 @@ def _generate_visualization(route_groups, home, work, config, long_rides,
         optimal_route=optimal_route,
         ranked_routes=ranked_routes
     )
-    return map_html, visualizer
+    
+    # Generate preview map for optimal route
+    logger.info("Generating optimal route preview map...")
+    preview_map_html = visualizer.generate_preview_map(optimal_route)
+    
+    return map_html, preview_map_html, visualizer
 
 
 def _save_report(analysis_results, output_dir):
@@ -420,7 +425,7 @@ def analyze_routes(config, output_dir):
             
             # Step 7: Generate visualization
             pbar.set_description("🗺️  Generating map")
-            map_html, visualizer = _generate_visualization(
+            map_html, preview_map_html, visualizer = _generate_visualization(
                 route_groups, home, work, config,
                 long_rides, long_ride_analyzer,
                 optimization_results['optimal_route'],
@@ -438,11 +443,13 @@ def analyze_routes(config, output_dir):
                 'home': home,
                 'work': work,
                 'map_html': map_html,
+                'preview_map_html': preview_map_html,
                 'all_activities': all_activities,
                 'commute_activities': commute_activities,
                 'visualizer': visualizer,
                 'long_rides': long_rides,
-                'long_ride_analyzer': long_ride_analyzer
+                'long_ride_analyzer': long_ride_analyzer,
+                'config': config
             }
             
             # Save and open report

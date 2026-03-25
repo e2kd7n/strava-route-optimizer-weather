@@ -18,6 +18,7 @@ from scipy.spatial.distance import directed_hausdorff
 from .data_fetcher import Activity
 from .route_namer import RouteNamer
 from .weather_fetcher import WeatherFetcher
+from .units import UnitConverter
 
 logger = logging.getLogger(__name__)
 

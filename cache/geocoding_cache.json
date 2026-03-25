@@ -3568,5 +3568,26 @@
   "41.9012,-87.6194": "Lakefront Trail",
   "41.9211,-87.6294": "Lakefront Trail",
   "41.9637,-87.6385": "West Montrose Harbor Drive",
-  "41.9711,-87.6464": "North Simonds Drive"
+  "41.9711,-87.6464": "North Simonds Drive",
+  "details_41.8781,-87.6298": {
+    "street": "South Federal Street",
+    "is_major": false,
+    "neighborhood": "Printer's Row",
+    "landmark": null,
+    "feature": null
+  },
+  "details_41.8920,-87.6100": {
+    "street": "North Streeter Drive",
+    "is_major": false,
+    "neighborhood": "Near North Side",
+    "landmark": null,
+    "feature": null
+  },
+  "details_41.8850,-87.6200": {
+    "street": "East Randolph Street",
+    "is_major": false,
+    "neighborhood": "New East Side",
+    "landmark": null,
+    "feature": null
+  }
 }
