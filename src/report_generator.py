@@ -691,15 +691,67 @@ class ReportGenerator:
     </div>
 
     <script>
-        // Direction filter functionality
+        // Unified filter system with boolean AND logic
         (function() {
+            // Filter state
             let currentDirection = 'all';
-            const directionButtons = document.querySelectorAll('.direction-filter button');
-            const allRouteRows = document.querySelectorAll('.route-row');
+            let showPlusRoutes = true;
             
+            const allRouteRows = document.querySelectorAll('.route-row');
+            const directionButtons = document.querySelectorAll('.direction-filter button');
+            const showPlusBtn = document.getElementById('show-plus-routes');
+            const hidePlusBtn = document.getElementById('hide-plus-routes');
+            
+            // Unified filter function - applies both filters with AND logic
+            function applyFilters() {
+                allRouteRows.forEach(row => {
+                    const rowDirection = row.getAttribute('data-direction');
+                    const isPlus = row.getAttribute('data-is-plus') === 'true';
+                    
+                    // Boolean AND: show only if BOTH conditions are met
+                    const matchesDirection = (currentDirection === 'all' || rowDirection === currentDirection);
+                    const matchesPlusFilter = (showPlusRoutes || !isPlus);
+                    
+                    if (matchesDirection && matchesPlusFilter) {
+                        row.classList.remove('direction-hidden', 'plus-hidden');
+                    } else {
+                        // Add appropriate hidden class
+                        if (!matchesDirection) {
+                            row.classList.add('direction-hidden');
+                        } else {
+                            row.classList.remove('direction-hidden');
+                        }
+                        
+                        if (!matchesPlusFilter) {
+                            row.classList.add('plus-hidden');
+                        } else {
+                            row.classList.remove('plus-hidden');
+                        }
+                    }
+                });
+                
+                // Update pagination counts
+                if (window.paginationController) {
+                    window.paginationController.updateCounts();
+                }
+                
+                // Update map if available
+                try {
+                    const fullMapContainer = document.querySelector('#full-map-container');
+                    if (fullMapContainer) {
+                        const mapIframe = fullMapContainer.querySelector('iframe');
+                        if (mapIframe && mapIframe.contentWindow && typeof mapIframe.contentWindow.filterRoutes === 'function') {
+                            mapIframe.contentWindow.filterRoutes(currentDirection);
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error calling map filterRoutes:', err);
+                }
+            }
+            
+            // Direction filter setup
             directionButtons.forEach(button => {
                 button.addEventListener('click', function(e) {
-                    // Prevent default scroll behavior
                     e.preventDefault();
                     e.stopPropagation();
                     
@@ -707,127 +759,74 @@ class ReportGenerator:
                     directionButtons.forEach(btn => btn.classList.remove('active'));
                     this.classList.add('active');
                     
-                    // Get selected direction
+                    // Update direction
                     currentDirection = this.getAttribute('data-direction');
                     
-                    // Filter routes in table
-                    filterRoutesInTable();
+                    // Apply unified filters
+                    applyFilters();
                     
-                    // Filter routes in map iframe (full map only, not preview)
-                    try {
-                        const fullMapContainer = document.querySelector('#full-map-container');
-                        if (fullMapContainer) {
-                            const mapIframe = fullMapContainer.querySelector('iframe');
-                            if (mapIframe && mapIframe.contentWindow && typeof mapIframe.contentWindow.filterRoutes === 'function') {
-                                mapIframe.contentWindow.filterRoutes(currentDirection);
-                            } else {
-                                console.log('Map iframe or filterRoutes function not found');
-                            }
-                        }
-                    } catch (err) {
-                        console.error('Error calling map filterRoutes:', err);
+                    // Reset pagination
+                    if (window.paginationController) {
+                        window.paginationController.resetToFirstPage();
                     }
                     
-                    // Reset pagination to page 1 (without scrolling)
-                    window.paginationController.resetToFirstPage();
-                    
-                    // Return false to prevent any default behavior
                     return false;
                 });
             });
             
-            function filterRoutesInTable() {
-                allRouteRows.forEach(row => {
-                    const rowDirection = row.getAttribute('data-direction');
-                    
-                    if (currentDirection === 'all' || rowDirection === currentDirection) {
-                        row.classList.remove('direction-hidden');
-                    } else {
-                        row.classList.add('direction-hidden');
-                    }
-                });
-                
-                // Update pagination counts
-                window.paginationController.updateCounts();
-            }
-            
-            // Expose filter function globally
-            window.directionFilter = {
-                getCurrentDirection: () => currentDirection,
-                filterRoutes: filterRoutesInTable
-            };
-        })();
-        
-        // Plus route toggle functionality
-        (function() {
-            let showPlusRoutes = true; // Show by default
-            const allRouteRows = document.querySelectorAll('.route-row');
-            const showPlusBtn = document.getElementById('showPlusRoutes');
-            const hidePlusBtn = document.getElementById('hidePlusRoutes');
-            
-            if (!showPlusBtn || !hidePlusBtn) {
-                console.log('Plus route toggle buttons not found');
-                return;
-            }
-            
-            // Set initial button state
-            showPlusBtn.classList.add('active');
-            
-            showPlusBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                showPlusRoutes = true;
+            // Plus route filter setup
+            if (showPlusBtn && hidePlusBtn) {
+                // Set initial button state
                 showPlusBtn.classList.add('active');
-                hidePlusBtn.classList.remove('active');
                 
-                filterPlusRoutesInTable();
-                
-                // Reset pagination to page 1
-                window.paginationController.resetToFirstPage();
-                
-                return false;
-            });
-            
-            hidePlusBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                showPlusRoutes = false;
-                hidePlusBtn.classList.add('active');
-                showPlusBtn.classList.remove('active');
-                
-                filterPlusRoutesInTable();
-                
-                // Reset pagination to page 1
-                window.paginationController.resetToFirstPage();
-                
-                return false;
-            });
-            
-            function filterPlusRoutesInTable() {
-                allRouteRows.forEach(row => {
-                    const isPlus = row.getAttribute('data-is-plus') === 'true';
+                showPlusBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     
-                    if (showPlusRoutes || !isPlus) {
-                        row.classList.remove('plus-hidden');
-                    } else {
-                        row.classList.add('plus-hidden');
+                    showPlusRoutes = true;
+                    showPlusBtn.classList.add('active');
+                    hidePlusBtn.classList.remove('active');
+                    
+                    // Apply unified filters
+                    applyFilters();
+                    
+                    // Reset pagination
+                    if (window.paginationController) {
+                        window.paginationController.resetToFirstPage();
                     }
+                    
+                    return false;
                 });
                 
-                // Update pagination counts
-                window.paginationController.updateCounts();
+                hidePlusBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    showPlusRoutes = false;
+                    hidePlusBtn.classList.add('active');
+                    showPlusBtn.classList.remove('active');
+                    
+                    // Apply unified filters
+                    applyFilters();
+                    
+                    // Reset pagination
+                    if (window.paginationController) {
+                        window.paginationController.resetToFirstPage();
+                    }
+                    
+                    return false;
+                });
             }
             
-            // Expose filter function globally
-            window.plusRouteFilter = {
+            // Expose filter state globally
+            window.routeFilters = {
+                getCurrentDirection: () => currentDirection,
                 isShowingPlus: () => showPlusRoutes,
-                filterRoutes: filterPlusRoutesInTable
+                applyFilters: applyFilters
             };
             
-            // Initialize filter on page load (show all routes by default)
-            filterPlusRoutesInTable();
+            // Initialize filters on page load
+            applyFilters();
         })();
         
         // Pagination functionality
