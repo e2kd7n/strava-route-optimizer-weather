@@ -689,11 +689,16 @@ class ReportGenerator:
                     // Filter routes in table
                     filterRoutesInTable();
                     
-                    // Filter routes in map iframe
+                    // Filter routes in map iframe (full map only, not preview)
                     try {
-                        const mapIframe = document.querySelector('iframe');
-                        if (mapIframe && mapIframe.contentWindow && typeof mapIframe.contentWindow.filterRoutes === 'function') {
-                            mapIframe.contentWindow.filterRoutes(currentDirection);
+                        const fullMapContainer = document.querySelector('#full-map-container');
+                        if (fullMapContainer) {
+                            const mapIframe = fullMapContainer.querySelector('iframe');
+                            if (mapIframe && mapIframe.contentWindow && typeof mapIframe.contentWindow.filterRoutes === 'function') {
+                                mapIframe.contentWindow.filterRoutes(currentDirection);
+                            } else {
+                                console.log('Map iframe or filterRoutes function not found');
+                            }
                         }
                     } catch (err) {
                         console.error('Error calling map filterRoutes:', err);
