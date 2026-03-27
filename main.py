@@ -46,11 +46,6 @@ from src.visualizer import RouteVisualizer
 from src.report_generator import ReportGenerator
 from src.long_ride_analyzer import LongRideAnalyzer
 
-# Suppress stravalib refresh_token warning
-warnings.filterwarnings('ignore', message='.*refresh_token.*auto.*', category=Warning)
-# Suppress ResourceWarning for background geocoding subprocess
-warnings.filterwarnings('ignore', message='.*subprocess.*still running.*', category=ResourceWarning)
-
 # Configure logging - suppress timestamps for cleaner output during analysis
 logging.basicConfig(
     level=logging.WARNING,  # Only show warnings and errors by default

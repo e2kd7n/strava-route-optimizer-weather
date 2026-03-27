@@ -67,8 +67,8 @@
         .uses-count:hover { color: #764ba2; }
         
         /* Modal styles */
-        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1040; }
-        .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 1050; max-width: 800px; width: 90%; max-height: 80vh; overflow: hidden; }
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9998; display: flex; align-items: center; justify-content: center; }
+        .modal { position: relative; background: white; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); max-width: 800px; width: 90%; max-height: 80vh; overflow: hidden; display: block; }
         .modal-header { padding: 20px; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center; }
         .modal-body { padding: 20px; overflow-y: auto; max-height: 60vh; }
         .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #6c757d; }
@@ -357,7 +357,7 @@
         <div class="header">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <h1>🚴 Strava Commute Analysis</h1>
+                    <h1>🚴 Ride Optimizer</h1>
                     <p>Generated on {{ timestamp }}</p>
                     <button onclick="refreshReport()" class="btn btn-light" style="margin-top: 10px;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: text-bottom;">
@@ -650,7 +650,9 @@
                                     <td>{{ units.distance(route['metrics']['avg_distance']) }}</td>
                                     <td>
                                         <span class="uses-count" style="cursor: pointer; color: #667eea; text-decoration: underline; font-weight: 600;"
-                                              onclick="showMatchedRoutes('{{ route['group'].id }}', '{{ route['name'] }}', {{ route['routes_data'] | tojson | safe }})"
+                                              data-route-id="{{ route['group'].id }}"
+                                              data-route-name="{{ route['name'] }}"
+                                              data-routes='{{ route['routes_data'] | tojson | safe }}'
                                               title="Click to view matched activities">
                                             {{ route['group'].frequency }}
                                         </span>
@@ -1160,7 +1162,6 @@
                 // Create modal backdrop
                 const backdrop = document.createElement('div');
                 backdrop.className = 'modal-backdrop';
-                backdrop.onclick = closeModal;
                 
                 // Create modal
                 const modal = document.createElement('div');
@@ -1171,6 +1172,7 @@
                 let activitiesHtml = '';
                 if (routes && routes.length > 0) {
                     routes.forEach(route => {
+                        const activityName = route.name || 'Unnamed Activity';
                         const date = new Date(route.start_date).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'short',
@@ -1182,11 +1184,11 @@
                         activitiesHtml += `
                             <div class="activity-item">
                                 <div>
-                                    <strong>${date}</strong><br>
-                                    <small>${distance} km • ${duration}</small>
+                                    <strong>${activityName}</strong><br>
+                                    <small>${date} • ${distance} km • ${duration}</small>
                                 </div>
-                                <a href="https://www.strava.com/activities/${route.id}" 
-                                   target="_blank" 
+                                <a href="https://www.strava.com/activities/${route.id}"
+                                   target="_blank"
                                    class="btn btn-sm btn-outline-primary">
                                     View on Strava
                                 </a>
@@ -1207,17 +1209,23 @@
                     </div>
                 `;
                 
-                // Add to page
+                // Prevent clicks on modal from closing it
+                modal.onclick = function(e) {
+                    e.stopPropagation();
+                };
+                
+                // Close modal when clicking backdrop
+                backdrop.onclick = closeModal;
+                
+                // Add modal inside backdrop
+                backdrop.appendChild(modal);
                 document.body.appendChild(backdrop);
-                document.body.appendChild(modal);
                 
                 console.log('✅ Modal displayed with', routes ? routes.length : 0, 'activities');
             }
             
             function closeModal() {
-                const modal = document.getElementById('matchedRoutesModal');
                 const backdrop = document.querySelector('.modal-backdrop');
-                if (modal) modal.remove();
                 if (backdrop) backdrop.remove();
             }
             
@@ -1671,6 +1679,34 @@
             }, 1000);
         })();
         
+        // Attach click handlers to uses-count spans
+        (function() {
+            console.log('Setting up uses-count click handlers...');
+            document.querySelectorAll('.uses-count').forEach(span => {
+                span.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Prevent row click
+                    
+                    const routeId = this.getAttribute('data-route-id');
+                    const routeName = this.getAttribute('data-route-name');
+                    const routesJson = this.getAttribute('data-routes');
+                    
+                    console.log('Uses-count clicked:', routeName);
+                    
+                    try {
+                        const routes = JSON.parse(routesJson);
+                        if (typeof window.showMatchedRoutes === 'function') {
+                            window.showMatchedRoutes(routeId, routeName, routes);
+                        } else {
+                            console.error('showMatchedRoutes function not found');
+                        }
+                    } catch (error) {
+                        console.error('Error parsing routes data:', error);
+                    }
+                });
+            });
+            console.log('✅ Uses-count handlers attached');
+        })();
+        
         // Refresh report functionality
         function refreshReport() {
             const projectPath = window.location.pathname.includes('/commute/') ?
@@ -1963,6 +1999,16 @@
                 }
                 
                 return tooltip;
+            });
+            
+            // Initialize table sorting
+            document.querySelectorAll('.sortable').forEach(header => {
+                header.addEventListener('click', function() {
+                    const sortColumn = this.getAttribute('data-sort');
+                    if (sortColumn && typeof window.sortTable === 'function') {
+                        window.sortTable(sortColumn);
+                    }
+                });
             });
             
             // Add touch feedback to all interactive elements

@@ -5521,5 +5521,40 @@
     "neighborhood": "Financial District",
     "landmark": null,
     "feature": null
+  },
+  "details_41.9715,-87.6458": {
+    "street": "North Simonds Drive",
+    "is_major": false,
+    "neighborhood": "Margate Park",
+    "landmark": null,
+    "feature": null
+  },
+  "details_41.9323,-87.6359": {
+    "street": "Lincoln Park Fitness Course",
+    "is_major": false,
+    "neighborhood": "Park West",
+    "landmark": null,
+    "feature": null
+  },
+  "details_41.9875,-87.6545": {
+    "street": "North Sheridan Road",
+    "is_major": false,
+    "neighborhood": "Edgewater Beach",
+    "landmark": null,
+    "feature": null
+  },
+  "details_41.9875,-87.6544": {
+    "street": "North Sheridan Road",
+    "is_major": false,
+    "neighborhood": "Edgewater Beach",
+    "landmark": null,
+    "feature": null
+  },
+  "details_41.9726,-87.6464": {
+    "street": "North Simonds Drive",
+    "is_major": false,
+    "neighborhood": "Margate Park",
+    "landmark": null,
+    "feature": null
   }
 }

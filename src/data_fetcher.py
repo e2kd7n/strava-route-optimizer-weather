@@ -9,9 +9,7 @@ Licensed under the MIT License - see LICENSE file for details.
 
 import json
 import logging
-import sys
 import os
-import contextlib
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Optional, Dict, Any
@@ -21,18 +19,6 @@ from stravalib.client import Client
 import polyline
 
 logger = logging.getLogger(__name__)
-
-
-@contextlib.contextmanager
-def suppress_stderr():
-    """Context manager to temporarily suppress stderr output."""
-    with open(os.devnull, 'w') as devnull:
-        old_stderr = sys.stderr
-        sys.stderr = devnull
-        try:
-            yield
-        finally:
-            sys.stderr = old_stderr
 
 
 @dataclass
@@ -155,7 +141,8 @@ class StravaDataFetcher:
         
     def fetch_activities(self, limit: Optional[int] = None,
                         after: Optional[datetime] = None,
-                        before: Optional[datetime] = None) -> List[Activity]:
+                        before: Optional[datetime] = None,
+                        use_cache: bool = True) -> List[Activity]:
         """
         Fetch activities from Strava API.
         
@@ -163,12 +150,38 @@ class StravaDataFetcher:
             limit: Maximum number of activities to fetch (default from config or 500)
             after: Only fetch activities after this date
             before: Only fetch activities before this date
+            use_cache: If True, check cache first and return cached data if valid (default: True)
             
         Returns:
             List of Activity objects
         """
         if limit is None:
             limit = self.config.get('data_fetching.max_activities', 500)
+        
+        # Check cache first if enabled and no date filters specified
+        if use_cache and not after and not before:
+            if self.is_cache_valid():
+                print("\n" + "="*70)
+                print("💾 USING CACHED ACTIVITIES")
+                print("="*70)
+                cached_activities = self.load_cached_activities()
+                cache_age_days = self._get_cache_age_days()
+                print(f"Cache age: {cache_age_days:.1f} days")
+                print(f"Total activities in cache: {len(cached_activities)}")
+                print("="*70 + "\n")
+                logger.info(f"Using valid cache with {len(cached_activities)} activities (age: {cache_age_days:.1f} days)")
+                return cached_activities
+            else:
+                if self.cache_path.exists():
+                    cache_age_days = self._get_cache_age_days()
+                    print("\n" + "="*70)
+                    print("⚠️  CACHE EXPIRED")
+                    print("="*70)
+                    print(f"Cache age: {cache_age_days:.1f} days")
+                    print(f"Max cache age: {self.config.get('data_fetching.cache_duration_days', 7)} days")
+                    print("Fetching fresh data from Strava...")
+                    print("="*70 + "\n")
+                    logger.info(f"Cache expired (age: {cache_age_days:.1f} days), fetching from Strava")
         
         # Print fetch parameters
         print("\n" + "="*70)
@@ -192,46 +205,44 @@ class StravaDataFetcher:
         latest_date = None
         
         try:
-            # Suppress stravalib's refresh_token warning during iteration
-            with suppress_stderr():
-                strava_activities = self.client.get_activities(limit=limit, after=after, before=before)
+            strava_activities = self.client.get_activities(limit=limit, after=after, before=before)
             
             processed_count = 0
             for activity in strava_activities:
-                try:
-                    act = Activity.from_strava_activity(activity)
-                    
-                    # If before date specified, filter activities (make before timezone-aware for comparison)
-                    if before and act.start_date:
-                        act_date = datetime.fromisoformat(act.start_date.replace('Z', '+00:00'))
-                        # Make before date timezone-aware (UTC) for comparison
-                        from datetime import timezone
-                        before_aware = before.replace(tzinfo=timezone.utc)
-                        if act_date > before_aware:
-                            continue  # Skip activities after the before date
-                    
-                    activities.append(act)
-                    processed_count += 1
-                    
-                    # Show progress every 100 activities
-                    if processed_count % 100 == 0:
-                        print(f"  Fetched {processed_count} activities so far...")
-                    
-                    # Track date range
-                    if act.start_date:
-                        try:
+                    try:
+                        act = Activity.from_strava_activity(activity)
+                        
+                        # If before date specified, filter activities (make before timezone-aware for comparison)
+                        if before and act.start_date:
                             act_date = datetime.fromisoformat(act.start_date.replace('Z', '+00:00'))
-                            if earliest_date is None or act_date < earliest_date:
-                                earliest_date = act_date
-                            if latest_date is None or act_date > latest_date:
-                                latest_date = act_date
-                        except (ValueError, AttributeError) as e:
-                            logger.debug(f"Failed to parse activity date: {e}")
-                            pass
-                            
-                except Exception as e:
-                    logger.warning(f"Failed to process activity {activity.id}: {e}")
-                    continue
+                            # Make before date timezone-aware (UTC) for comparison
+                            from datetime import timezone
+                            before_aware = before.replace(tzinfo=timezone.utc)
+                            if act_date > before_aware:
+                                continue  # Skip activities after the before date
+                        
+                        activities.append(act)
+                        processed_count += 1
+                        
+                        # Show progress every 100 activities
+                        if processed_count % 100 == 0:
+                            print(f"  Fetched {processed_count} activities so far...")
+                        
+                        # Track date range
+                        if act.start_date:
+                            try:
+                                act_date = datetime.fromisoformat(act.start_date.replace('Z', '+00:00'))
+                                if earliest_date is None or act_date < earliest_date:
+                                    earliest_date = act_date
+                                if latest_date is None or act_date > latest_date:
+                                    latest_date = act_date
+                            except (ValueError, AttributeError) as e:
+                                logger.debug(f"Failed to parse activity date: {e}")
+                                pass
+                                
+                    except Exception as e:
+                        logger.warning(f"Failed to process activity {activity.id}: {e}")
+                        continue
             
             # Print fetch results
             print(f"✓ Fetched {len(activities)} activities from Strava")
@@ -426,6 +437,26 @@ class StravaDataFetcher:
         cache_duration = timedelta(days=self.config.get('data_fetching.cache_duration_days', 7))
         
         return datetime.now() - cache_time < cache_duration
+    
+    def _get_cache_age_days(self) -> float:
+        """
+        Get the age of the cache in days.
+        
+        Returns:
+            Age of cache in days, or 0 if cache doesn't exist
+        """
+        if not self.cache_path.exists():
+            return 0.0
+        
+        try:
+            with open(self.cache_path, 'r') as f:
+                cache_data = json.load(f)
+            cache_time = datetime.fromisoformat(cache_data['timestamp'])
+            age = datetime.now() - cache_time
+            return age.total_seconds() / 86400  # Convert to days
+        except Exception as e:
+            logger.warning(f"Failed to get cache age: {e}")
+            return 0.0
     
     def filter_commute_activities(self, activities: List[Activity]) -> List[Activity]:
         """

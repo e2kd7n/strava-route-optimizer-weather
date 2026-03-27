@@ -20,7 +20,6 @@ import sys
 import os
 import secrets
 import hashlib
-import contextlib
 from pathlib import Path
 from typing import Dict, Optional
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -38,17 +37,6 @@ logger = logging.getLogger(__name__)
 security_logger = logging.getLogger('security_audit')
 security_handler = None
 
-
-@contextlib.contextmanager
-def suppress_stderr():
-    """Context manager to temporarily suppress stderr output."""
-    with open(os.devnull, 'w') as devnull:
-        old_stderr = sys.stderr
-        sys.stderr = devnull
-        try:
-            yield
-        finally:
-            sys.stderr = old_stderr
 
 def setup_security_logging():
     """Setup security audit logging."""
@@ -559,9 +547,14 @@ class SecureStravaAuthenticator:
             tokens = self.refresh_access_token(tokens['refresh_token'])
             self.save_tokens(tokens)
         
-        # Suppress stravalib's refresh_token warning
-        with suppress_stderr():
-            client = Client(access_token=tokens['access_token'])
+        # Create client with full token info for auto-refresh feature
+        # This eliminates warnings about missing refresh_token and token_expires
+        client = Client(
+            access_token=tokens['access_token'],
+            refresh_token=tokens['refresh_token']
+        )
+        # Set token expiration time as an attribute (not a constructor parameter)
+        client.token_expires_at = tokens['expires_at']
         return client
 
 

@@ -1,93 +1,115 @@
 🌐 Route Geocoding Progress
 ============================================================
-Total routes: 180
-Progress: 0/180
+Total routes: 201
+Progress: 0/201
 ============================================================
 
 Starting geocoding...
-[1/180] ✓ home_to_work_15: Lakefront Trail → Lakefront Trail → North Wells Street
-[2/180] ✓ home_to_work_1: Lakefront Trail → Lakefront Trail → West Monroe Street
-[3/180] ✓ home_to_work_3: Lakefront Trail → Lakefront Trail → North Wells Street
-[4/180] ✓ home_to_work_13: Lakefront Trail → North Simonds Drive → North Wells Street
-[5/180] ✓ home_to_work_0: North Sheridan Road → Lakefront Trail → North Wells Street
-[6/180] ✓ home_to_work_4: Lakefront Trail → Lakefront Trail → North Wells Street
-[7/180] ✓ home_to_work_31: Lakefront Trail → North State Street → West Washington Street
-[8/180] ✓ home_to_work_2: Lakefront Trail → West Randolph Street → West Washington Street
-[9/180] ✓ home_to_work_5: Lakefront Trail → North Recreation Drive → South Franklin Street
-[10/180] ✓ home_to_work_6: North Sheridan Road → Lakefront Trail → South Franklin Street
-[11/180] ✓ home_to_work_7: Lakefront Trail → North Simonds Drive → North Wells Street
-[12/180] ✓ home_to_work_8: North Sheridan Road → Lakefront Trail → West Monroe Street
-[13/180] ✓ home_to_work_9: Lakefront Trail → West Lawrence Drive → North Wells Street
-[14/180] ✓ home_to_work_10: Lakefront Trail → Navy Pier Flyover → West Monroe Street
-[15/180] ✓ home_to_work_11: Lakefront Trail → North Simonds Drive → South Franklin Street
-[16/180] ✓ home_to_work_12: Lakefront Trail → West Lawrence Drive → North Wells Street
-[17/180] ✓ home_to_work_14: Lakefront Trail → North Wells Street → West Washington Street
-[18/180] ✓ home_to_work_16: Lakefront Trail → East Solidarity Drive → West Monroe Street
-[19/180] ✓ home_to_work_17: Lakefront Trail → South Special Olympics Drive → South Franklin Street
-[20/180] ✓ home_to_work_18: Lakefront Trail → South Franklin Street → West Monroe Street
-[21/180] ✓ home_to_work_19: Lakefront Trail → East Solidarity Drive → South Franklin Street
-[22/180] ✓ home_to_work_20: Lakefront Trail → West Addison Drive → South Franklin Street
-[23/180] ✓ home_to_work_21: Lakefront Trail → West Montrose Drive → North Wells Street
-[24/180] ✓ home_to_work_22: Lakefront Trail → Lincoln Park Fitness Course → West Monroe Street
-[25/180] ✓ home_to_work_23: Lakefront Trail → North Belmont Harbor Drive → West Washington Street
-[26/180] ✓ home_to_work_24: Lakefront Trail → Lincoln Park Fitness Course → North Wells Street
-[27/180] ✓ home_to_work_25: North Sheridan Road → Lakefront Trail → South Franklin Street
-[28/180] ✓ home_to_work_26: Lakefront Trail → West Lawrence Drive → North Wells Street
-[29/180] ✓ home_to_work_27: Lakefront Trail → North Belmont Harbor Drive → North Wells Street
-[30/180] ✓ home_to_work_28: North Broadway → Lakefront Trail → North Wells Street
-[31/180] ✓ home_to_work_29: Lakefront Trail → North Wells Street → West Washington Street
-[32/180] ✓ home_to_work_30: Lakefront Trail → North Wells Street → West Madison Street
-[33/180] ✓ home_to_work_32: Lakefront Trail → Lincoln Park Fitness Course → North Wells Street
-[34/180] ✓ home_to_work_33: Lakefront Trail → North Simonds Drive → North Wells Street
-[35/180] ✓ home_to_work_34: Lakefront Trail → Lakefront Trail → South Wacker Drive
-[36/180] ✓ home_to_work_35: North Sheridan Road → Lakefront Trail → Randolph Street Bikeway
-[37/180] ✓ home_to_work_36: Lakefront Trail → Lakefront Trail → West Randolph Street
-[38/180] ✓ home_to_work_37: Lakefront Trail → West Delaware Place → West Randolph Street
-[39/180] ✓ home_to_work_38: Lakefront Trail → Lakefront Trail → West Washington Street
-[40/180] ✓ home_to_work_39: North Sheridan Road → Lakefront Trail → North Wells Street
-[41/180] ✓ home_to_work_40: Lakefront Trail → Lakefront Trail → West Washington Street
-[42/180] ✓ home_to_work_41: West Bryn Mawr Avenue → Lakefront Trail → Washington Street Bikeway
-[43/180] ✓ home_to_work_42: Lakefront Trail → Lakefront Trail → North Lower Wacker Drive
-[44/180] ✓ home_to_work_43: Lakefront Trail → South Franklin Street → West Monroe Street
-[45/180] ✓ home_to_work_44: Lakefront Trail via North Wells Street
-[46/180] ✓ home_to_work_45: Lakefront Trail → West Montrose Drive → West Madison Street
-[47/180] ✓ home_to_work_46: Lakefront Trail → North Simonds Drive → North Wells Street
-[48/180] ✓ home_to_work_47: West Bryn Mawr Avenue → Lakefront Trail → North Wells Street
-[49/180] ✓ home_to_work_48: Lakefront Trail → West Randolph Street → West Washington Street
-[50/180] ✓ home_to_work_49: Lakefront Trail → North Simonds Drive → North Wells Street
-[51/180] ✓ home_to_work_50: Lakefront Trail → Lincoln Park Fitness Course → West Randolph Street
-[52/180] ✓ home_to_work_51: Lakefront Trail → South Franklin Street → West Monroe Street
-[53/180] ✓ home_to_work_52: Lakefront Trail → Lakefront Trail → North Wells Street
-[54/180] ✓ home_to_work_53: Lakefront Trail → North Wells Street → West Washington Street
-[55/180] ✓ home_to_work_54: Lakefront Trail → Lakefront Trail → South Franklin Street
-[56/180] ✓ home_to_work_55: Lakefront Trail → North Simonds Drive → West Randolph Street
-[57/180] ✓ home_to_work_56: Lakefront Trail → Lakefront Trail → West Madison Street
-[58/180] ✓ home_to_work_57: Lakefront Trail → South Franklin Street → West Monroe Street
-[59/180] ✓ home_to_work_58: North Sheridan Road → Lakefront Trail → West Madison Street
-[60/180] ✓ home_to_work_59: Lakefront Trail → Lincoln Park Fitness Course → South Franklin Street
-[61/180] ✓ home_to_work_60: Lakefront Trail → North Simonds Drive → South Franklin Street
-[62/180] ✓ home_to_work_61: Lakefront Trail → West Addison Drive → West Monroe Street
-[63/180] ✓ home_to_work_62: Lakefront Trail → North Belmont Harbor Drive → West Monroe Street
-[64/180] ✓ home_to_work_63: Lakefront Trail → Lincoln Park Fitness Course → West Randolph Street
-[65/180] ✓ home_to_work_64: Lakefront Trail → Lincoln Park Fitness Course → North Wells Street
-[66/180] ✓ home_to_work_65: Lakefront Trail → Lakefront Trail → West Washington Street
-[67/180] ✓ home_to_work_66: Lakefront Trail → North Jean Baptiste Point DuSable Lake Shore Drive → South Franklin Street
-[68/180] ✓ home_to_work_67: Lakefront Trail → Lincoln Park Fitness Course → West Washington Street
-[69/180] ✓ home_to_work_68: Lakefront Trail → Lakefront Trail → West Madison Street
-[70/180] ✓ home_to_work_69: Lakefront Trail → Lincoln Park Fitness Course → North LaSalle Street
-[71/180] ✓ home_to_work_70: Lakefront Trail → Lakefront Trail → West Randolph Street
-[72/180] ✓ home_to_work_71: Lakefront Trail → West Montrose Drive → North Wells Street
-[73/180] ✓ home_to_work_72: Lakefront Trail → Lakefront Trail → North Lower Wacker Drive
-[74/180] ✓ home_to_work_73: North Sheridan Road → Lakefront Trail → West Washington Street
-[75/180] ✓ home_to_work_74: Lakefront Trail → Oak Street Access Path → North Wells Street
-[76/180] ✓ home_to_work_75: Lakefront Trail → Lincoln Park Fitness Course → West Monroe Street
-[77/180] ✓ home_to_work_76: Lakefront Trail → North Simonds Drive → West Randolph Street
-[78/180] ✓ home_to_work_77: Lakefront Trail → Lakefront Trail → North Upper Wacker Drive
-[79/180] ✓ home_to_work_78: Lakefront Trail → Lakefront Trail → North Lower Wacker Service Drive
-[80/180] ✓ home_to_work_79: Lakefront Trail → North Recreation Drive → West Adams Street
-[81/180] ✓ home_to_work_80: North Sheridan Road → Lakefront Trail → West Madison Street
-[82/180] ✓ home_to_work_81: North Sheridan Road → Lakefront Trail → North LaSalle Street
-[83/180] ✓ home_to_work_82: North Sheridan Road → Lakefront Trail → North Lower Wacker Drive
-[84/180] ✓ home_to_work_83: North Sheridan Road → Lakefront Trail → West Madison Street
-[85/180] ✓ home_to_work_84: Lakefront Trail → North Simonds Drive → North Upper Wacker Drive
-[86/180] ✓ home_to_work_85: Lakefront Trail → Lakefront Trail → South Franklin Street
+====================================
+
+Phase 1/2: Geocoding route names
+------------------------------------------------------------
+[░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 0% (1/201) - home_to_work_16
+[░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 1% (2/201) - home_to_work_2
+[░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 1% (3/201) - home_to_work_4
+[░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 2% (4/201) - home_to_work_14
+[░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 2% (5/201) - home_to_work_1
+  ✓ Latest: North Sheridan Road → Lakefront Trail → North Wells Street
+[█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 3% (6/201) - home_to_work_5
+[█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 3% (7/201) - home_to_work_32
+[█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 4% (8/201) - home_to_work_0
+[█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 4% (9/201) - home_to_work_3
+[█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 5% (10/201) - home_to_work_6
+  ✓ Latest: Lakefront Trail → North Recreation Drive → South Franklin Street
+[██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 5% (11/201) - home_to_work_7
+[██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 6% (12/201) - home_to_work_8
+[██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 6% (13/201) - home_to_work_9
+[██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 7% (14/201) - home_to_work_10
+[██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 7% (15/201) - home_to_work_11
+  ✓ Latest: Lakefront Trail → Navy Pier Flyover → West Monroe Street
+[███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 8% (16/201) - home_to_work_12
+[███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 8% (17/201) - home_to_work_13
+[███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 9% (18/201) - home_to_work_15
+[███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 9% (19/201) - home_to_work_17
+[███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 10% (20/201) - home_to_work_18
+  ✓ Latest: Lakefront Trail → South Special Olympics Drive → South Franklin Street
+[████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 10% (21/201) - home_to_work_19
+[████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 11% (22/201) - home_to_work_20
+[████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 11% (23/201) - home_to_work_21
+[████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 12% (24/201) - home_to_work_22
+[████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 12% (25/201) - home_to_work_23
+  ✓ Latest: Lakefront Trail → Lincoln Park Fitness Course → West Monroe Street
+[█████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 13% (26/201) - home_to_work_24
+[█████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 13% (27/201) - home_to_work_25
+[█████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 14% (28/201) - home_to_work_26
+[█████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 14% (29/201) - home_to_work_27
+[█████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 15% (30/201) - home_to_work_28
+  ✓ Latest: Lakefront Trail → North Belmont Harbor Drive → North Wells Street
+[██████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 15% (31/201) - home_to_work_29
+[██████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 16% (32/201) - home_to_work_30
+[██████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 16% (33/201) - home_to_work_31
+[██████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 17% (34/201) - home_to_work_33
+[██████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 17% (35/201) - home_to_work_34
+  ✓ Latest: Lakefront Trail → North Simonds Drive → North Wells Street
+[███████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 18% (36/201) - home_to_work_35
+[███████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 18% (37/201) - home_to_work_36
+[███████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 19% (38/201) - home_to_work_37
+[███████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 19% (39/201) - home_to_work_38
+[███████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 20% (40/201) - home_to_work_39
+  ✓ Latest: Lakefront Trail → Lakefront Trail → West Washington Street
+[████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 20% (41/201) - home_to_work_40
+[████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 21% (42/201) - home_to_work_41
+[████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 21% (43/201) - home_to_work_42
+[████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 22% (44/201) - home_to_work_43
+[████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 22% (45/201) - home_to_work_44
+  ✓ Latest: Lakefront Trail → South Franklin Street → West Monroe Street
+[█████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 23% (46/201) - home_to_work_45
+[█████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 23% (47/201) - home_to_work_46
+[█████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 24% (48/201) - home_to_work_47
+[█████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 24% (49/201) - home_to_work_48
+[█████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 25% (50/201) - home_to_work_49
+  ✓ Latest: Lakefront Trail → West Randolph Street → West Washington Street
+[██████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 25% (51/201) - home_to_work_50
+[██████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 26% (52/201) - home_to_work_51
+[██████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 26% (53/201) - home_to_work_52
+[██████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 27% (54/201) - home_to_work_53
+[██████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 27% (55/201) - home_to_work_54
+  ✓ Latest: Lakefront Trail → North Wells Street → West Washington Street
+[███████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 28% (56/201) - home_to_work_55
+[███████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 28% (57/201) - home_to_work_56
+[███████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 29% (58/201) - home_to_work_57
+[███████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 29% (59/201) - home_to_work_58
+[███████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 30% (60/201) - home_to_work_59
+  ✓ Latest: North Sheridan Road → Lakefront Trail → West Madison Street
+[████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 30% (61/201) - home_to_work_60
+[████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 31% (62/201) - home_to_work_61
+[████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 31% (63/201) - home_to_work_62
+[████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 32% (64/201) - home_to_work_63
+[████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 32% (65/201) - home_to_work_64
+  ✓ Latest: Lakefront Trail → Lincoln Park Fitness Course → West Randolph Street
+[█████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░] 33% (66/201) - home_to_work_65
+[█████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░] 33% (67/201) - home_to_work_66
+[█████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░] 34% (68/201) - home_to_work_67
+[█████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░] 34% (69/201) - home_to_work_68
+[█████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░] 35% (70/201) - home_to_work_69
+  ✓ Latest: Lakefront Trail → Lakefront Trail → West Madison Street
+[██████████████░░░░░░░░░░░░░░░░░░░░░░░░░░] 35% (71/201) - home_to_work_70
+[██████████████░░░░░░░░░░░░░░░░░░░░░░░░░░] 36% (72/201) - home_to_work_71
+[██████████████░░░░░░░░░░░░░░░░░░░░░░░░░░] 36% (73/201) - home_to_work_72
+[██████████████░░░░░░░░░░░░░░░░░░░░░░░░░░] 37% (74/201) - home_to_work_73
+[██████████████░░░░░░░░░░░░░░░░░░░░░░░░░░] 37% (75/201) - home_to_work_74
+  ✓ Latest: North Sheridan Road → Lakefront Trail → West Washington Street
+[███████████████░░░░░░░░░░░░░░░░░░░░░░░░░] 38% (76/201) - home_to_work_75
+[███████████████░░░░░░░░░░░░░░░░░░░░░░░░░] 38% (77/201) - home_to_work_76
+[███████████████░░░░░░░░░░░░░░░░░░░░░░░░░] 39% (78/201) - home_to_work_77
+[███████████████░░░░░░░░░░░░░░░░░░░░░░░░░] 39% (79/201) - home_to_work_78
+[███████████████░░░░░░░░░░░░░░░░░░░░░░░░░] 40% (80/201) - home_to_work_79
+  ✓ Latest: Lakefront Trail → Lakefront Trail → North Lower Wacker Service Drive
+[████████████████░░░░░░░░░░░░░░░░░░░░░░░░] 40% (81/201) - home_to_work_80
+[████████████████░░░░░░░░░░░░░░░░░░░░░░░░] 41% (82/201) - home_to_work_81
+[████████████████░░░░░░░░░░░░░░░░░░░░░░░░] 41% (83/201) - home_to_work_82
+[████████████████░░░░░░░░░░░░░░░░░░░░░░░░] 42% (84/201) - home_to_work_83
+[████████████████░░░░░░░░░░░░░░░░░░░░░░░░] 42% (85/201) - home_to_work_84
+  ✓ Latest: North Sheridan Road → Lakefront Trail → West Madison Street
+[█████████████████░░░░░░░░░░░░░░░░░░░░░░░] 43% (86/201) - home_to_work_85
+[█████████████████░░░░░░░░░░░░░░░░░░░░░░░] 43% (87/201) - home_to_work_86

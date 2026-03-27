@@ -103,15 +103,6 @@ class ReportGenerator:
             except Exception as e:
                 print(f"\n\033[93m⚠️  WARNING\033[0m - Failed to generate PDF: {e}\n")
                 logger.warning(f"Failed to generate PDF: {e}")
-        
-        # Generate data exports
-        base_path = str(output_file).replace('.html', '')
-        try:
-            self.export_data(base_path)
-            logger.info(f"Data exports saved to {base_path}_*.{{json,csv,gpx}}")
-        except Exception as e:
-            print(f"\n\033[93m⚠️  WARNING\033[0m - Failed to generate data exports: {e}\n")
-            logger.warning(f"Failed to generate data exports: {e}")
     
     def _generate_qr_code(self, report_path: str) -> str | None:
         """
@@ -170,6 +161,7 @@ class ReportGenerator:
         """
         return {
             'id': route.activity_id,
+            'name': route.activity_name,
             'start_date': route.timestamp,
             'distance': route.distance,
             'moving_time': route.duration

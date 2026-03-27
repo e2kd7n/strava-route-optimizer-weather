@@ -48,6 +48,7 @@ class Route:
     elevation_gain: float  # meters
     timestamp: str  # ISO format
     average_speed: float  # m/s
+    activity_name: str = ""  # Name of the activity from Strava
     is_plus_route: bool = False  # True if distance is >25% above median
 
 
@@ -372,7 +373,8 @@ class RouteAnalyzer:
                 duration=activity.moving_time,
                 elevation_gain=activity.total_elevation_gain,
                 timestamp=activity.start_date,
-                average_speed=activity.average_speed
+                average_speed=activity.average_speed,
+                activity_name=activity.name
             )
             
             routes.append(route)
@@ -1203,7 +1205,7 @@ end tell
         """
         Background worker that geocodes route names and updates the cache.
         Runs in a separate thread to not block the main analysis.
-        Writes progress to a file that can be monitored in a terminal.
+        Writes progress to a file with phase-centric progress bars.
         
         Args:
             groups: List of RouteGroup objects to geocode
@@ -1212,10 +1214,31 @@ end tell
         
         try:
             logger.info(f"Background geocoding started for {len(groups)} groups")
-            geocoded_count = 0
             
             # Filter groups that need geocoding (have temporary names)
             groups_to_geocode = [g for g in groups if g.name and ("Route" in g.name and ("to Work" in g.name or "to Home" in g.name))]
+            
+            # Write header to progress file
+            try:
+                with open(progress_file, 'w') as f:
+                    f.write(f"{'='*60}\n")
+                    f.write(f"🌐 ROUTE GEOCODING IN PROGRESS\n")
+                    f.write(f"{'='*60}\n\n")
+                    f.write(f"Total routes to geocode: {len(groups_to_geocode)}\n")
+                    f.write(f"{'='*60}\n\n")
+            except:
+                pass
+            
+            geocoded_count = 0
+            failed_count = 0
+            
+            # Phase 1: Geocode routes with progress bar
+            try:
+                with open(progress_file, 'a') as f:
+                    f.write(f"Phase 1/2: Geocoding route names\n")
+                    f.write(f"{'-'*60}\n")
+            except:
+                pass
             
             for i, group in enumerate(groups_to_geocode, 1):
                 try:
@@ -1232,10 +1255,16 @@ end tell
                     
                     geocoded_count += 1
                     
-                    # Update progress file
+                    # Update progress file with progress bar
                     try:
                         with open(progress_file, 'a') as f:
-                            f.write(f"[{i}/{len(groups_to_geocode)}] ✓ {group.id}: {route_name}\n")
+                            progress_pct = (i / len(groups_to_geocode)) * 100
+                            bar_length = 40
+                            filled = int(bar_length * i / len(groups_to_geocode))
+                            bar = '█' * filled + '░' * (bar_length - filled)
+                            f.write(f"\r[{bar}] {progress_pct:.0f}% ({i}/{len(groups_to_geocode)}) - {group.id[:20]}\n")
+                            if i % 5 == 0 or i == len(groups_to_geocode):
+                                f.write(f"  ✓ Latest: {route_name}\n")
                     except:
                         pass
                     
@@ -1243,30 +1272,47 @@ end tell
                         logger.info(f"Background geocoding progress: {geocoded_count}/{len(groups_to_geocode)} routes named")
                 
                 except Exception as e:
+                    failed_count += 1
                     logger.warning(f"Failed to geocode route {group.id} in background: {e}")
                     try:
                         with open(progress_file, 'a') as f:
-                            f.write(f"[{i}/{len(groups_to_geocode)}] ✗ {group.id}: Failed - {str(e)[:50]}\n")
+                            f.write(f"  ✗ {group.id}: Failed - {str(e)[:50]}\n")
                     except:
                         pass
             
+            # Phase 2: Saving cache
+            try:
+                with open(progress_file, 'a') as f:
+                    f.write(f"\n{'-'*60}\n")
+                    f.write(f"Phase 2/2: Saving geocoding cache\n")
+                    f.write(f"{'-'*60}\n")
+            except:
+                pass
+            
+            self.route_namer._save_cache()
+            logger.info("Geocoding cache saved to disk")
+            
+            try:
+                with open(progress_file, 'a') as f:
+                    f.write(f"✓ Cache saved successfully\n")
+            except:
+                pass
+            
             logger.info(f"Background geocoding completed: {geocoded_count}/{len(groups_to_geocode)} routes successfully named")
             
-            # Write completion message to progress file
+            # Write completion summary
             try:
                 with open(progress_file, 'a') as f:
                     f.write(f"\n{'='*60}\n")
                     f.write(f"✅ GEOCODING COMPLETE!\n")
                     f.write(f"{'='*60}\n")
                     f.write(f"Successfully named: {geocoded_count}/{len(groups_to_geocode)} routes\n")
+                    if failed_count > 0:
+                        f.write(f"Failed: {failed_count} routes\n")
                     f.write(f"\n💡 Re-run the analysis to see updated route names in the report.\n")
                     f.write(f"{'='*60}\n")
             except:
                 pass
-            
-            # Save the geocoding cache after all geocoding is done
-            self.route_namer._save_cache()
-            logger.info("Geocoding cache saved to disk")
             
         except Exception as e:
             logger.error(f"Background geocoding thread failed: {e}", exc_info=True)
