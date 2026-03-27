@@ -9,6 +9,9 @@ Licensed under the MIT License - see LICENSE file for details.
 
 import json
 import logging
+import sys
+import os
+import contextlib
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Optional, Dict, Any
@@ -18,6 +21,18 @@ from stravalib.client import Client
 import polyline
 
 logger = logging.getLogger(__name__)
+
+
+@contextlib.contextmanager
+def suppress_stderr():
+    """Context manager to temporarily suppress stderr output."""
+    with open(os.devnull, 'w') as devnull:
+        old_stderr = sys.stderr
+        sys.stderr = devnull
+        try:
+            yield
+        finally:
+            sys.stderr = old_stderr
 
 
 @dataclass
@@ -177,7 +192,9 @@ class StravaDataFetcher:
         latest_date = None
         
         try:
-            strava_activities = self.client.get_activities(limit=limit, after=after, before=before)
+            # Suppress stravalib's refresh_token warning during iteration
+            with suppress_stderr():
+                strava_activities = self.client.get_activities(limit=limit, after=after, before=before)
             
             processed_count = 0
             for activity in strava_activities:

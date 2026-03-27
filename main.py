@@ -642,7 +642,7 @@ def analyze_routes(config, output_dir, n_workers=2, generate_pdf=False, force_re
         total_steps = 8
         
         with tqdm(total=total_steps, desc="Progress", unit="step", ncols=80,
-                 bar_format='{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt}', leave=True) as pbar:
+                 bar_format='{desc}: {percentage:3.0f}%|{bar}|', leave=True) as pbar:
             # Step 1: Get authenticated client
             step_start = time.time()
             pbar.set_description("🔐 Authenticating")
