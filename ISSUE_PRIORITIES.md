@@ -1,6 +1,6 @@
 # Issue Prioritization
 
-**Last Updated:** 2026-03-27 01:57 UTC
+**Last Updated:** 2026-03-27 02:14 UTC
 
 This file reflects the current state of GitHub issues by priority. Issues are managed via GitHub labels (P0-critical, P1-high, P2-medium, P3-low, P4-future).
 
@@ -16,11 +16,11 @@ Issues that significantly impact core functionality or user experience.
 
 ### Active P1 Issues
 
-- #58 - Show time-aware next commute recommendations (to work & to home)
 - #71 - UI/UX Improvements for Route Comparison Table and Map (NEW - 2026-03-27)
+- #58 - Show time-aware next commute recommendations (to work & to home)
+- #21 - Update TECHNICAL_SPEC.md with comprehensive implementation details (moved from P2 - 2026-03-27)
 - #41 - Create unit tests for core modules (moved from P3 - 2026-03-27)
 - #42 - Write integration tests for full workflow (moved from P3 - 2026-03-27)
-- #21 - Update TECHNICAL_SPEC.md with comprehensive implementation details (moved from P2 - 2026-03-27)
 
 ## 🟡 P2 - MEDIUM (Next Sprint)
 Important improvements that enhance functionality but don't block core workflows.
