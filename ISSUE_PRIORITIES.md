@@ -1,11 +1,24 @@
 # Issue Prioritization
 
-**Last Updated:** 2026-03-27 02:47 UTC
+**Last Updated:** 2026-03-27 13:00 UTC
 
 This file reflects the current state of GitHub issues by priority. Issues are managed via GitHub labels (P0-critical, P1-high, P2-medium, P3-low, P4-future).
 ## 🎉 Recently Completed (2026-03-27)
 
 ### v2.3.0 Implementations
+- **#75 - Add current weather conditions display to map** - Shows real-time weather on interactive map (COMPLETED 2026-03-27)
+  - Temperature with unit conversion
+  - Wind speed and direction (cardinal + degrees)
+  - Precipitation amount
+  - Integrates with WeatherFetcher and Open-Meteo API
+  - Commit: 131a6fb
+
+- **Progress Bar Improvements** - Enhanced terminal output visibility (COMPLETED 2026-03-27)
+  - Updated bar format to show step counts (2/8 format)
+  - Added user prompt for background geocoding approval
+  - Documented in FUTURE_TODOS.md as RESOLVED
+  - Commit: 131a6fb
+
 - **#21 - Update TECHNICAL_SPEC.md** - Updated 3 major sections with comprehensive implementation details
   - Route naming algorithm documentation
   - Security improvements (MD5 → SHA256)
