@@ -280,7 +280,7 @@ class CommuteForecastGenerator:
         # for each route and select the one with least headwind
         
         # For now, return the most frequent route
-        # TODO: Implement wind-aware route selection using WindImpactCalculator
+        # TODO (#70): Implement wind-aware route selection using WindImpactCalculator
         most_frequent = max(routes, key=lambda r: r.get('frequency', 0))
         return most_frequent.get('id'), most_frequent.get('name', 'Primary Route')
     

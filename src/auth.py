@@ -209,7 +209,7 @@ class StravaAuthenticator:
         tokens = self.load_tokens()
         if tokens:
             logger.info("Found existing tokens")
-            # TODO: Check if token is expired and refresh if needed
+            # TODO (#25): Check if token is expired and refresh if needed
             return tokens
         
         # Start OAuth flow

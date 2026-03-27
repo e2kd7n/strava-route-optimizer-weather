@@ -18,7 +18,7 @@ from typing import Dict, Any, List
 from xml.etree import ElementTree as ET
 
 # QR code temporarily disabled - needs debugging before re-enabling
-# TODO: Debug QR code generation and scanning functionality
+# TODO (#45): Debug QR code generation and scanning functionality
 try:
     import qrcode
     QRCODE_AVAILABLE = True
