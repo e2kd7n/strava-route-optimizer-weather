@@ -73,7 +73,13 @@ class RouteNamer:
             logger.warning(f"Failed to save geocoding cache: {e}")
     
     def _check_rate_limit_status(self):
-        """Check if we're currently rate limited and wait if necessary."""
+        """
+        Check if we're currently rate limited.
+        
+        Note: This method does NOT wait - it just logs the status.
+        The route_analyzer checks the rate limit file before starting geocoding.
+        This method is only called when RouteNamer is instantiated for actual geocoding work.
+        """
         if not os.path.exists(self.rate_limit_file):
             return
         
@@ -89,8 +95,7 @@ class RouteNamer:
             now = datetime.now()
             
             if now < blocked_until:
-                wait_seconds = (blocked_until - now).total_seconds()
-                wait_hours = wait_seconds / 3600
+                wait_hours = (blocked_until - now).total_seconds() / 3600
                 
                 # Format with timezone info
                 blocked_until_formatted = blocked_until.strftime('%Y-%m-%d %H:%M:%S %Z').strip()
@@ -101,16 +106,11 @@ class RouteNamer:
                     blocked_until_formatted = f"{blocked_until.strftime('%Y-%m-%d %H:%M:%S')} {tz_name}"
                 
                 logger.warning(f"Geocoding rate limit detected. Self-imposed 4-hour block until {blocked_until_formatted}")
-                logger.warning(f"Waiting {wait_hours:.1f} hours before attempting geocoding...")
-                print(f"\n⚠️  RATE LIMIT PROTECTION ACTIVE")
-                print(f"This system detected Nominatim rate limiting and imposed a 4-hour pause.")
-                print(f"Self-imposed block until: {blocked_until_formatted}")
-                print(f"Waiting {wait_hours:.1f} hours before continuing...")
-                print(f"(This prevents further rate limiting and potential IP blocks)\n")
-                time.sleep(wait_seconds)
-                # Clear the rate limit file after waiting
+                logger.info(f"Rate limit will expire in {wait_hours:.1f} hours")
+            else:
+                # Rate limit has expired, remove the file
+                logger.info("Rate limit period has expired, removing block file")
                 os.remove(self.rate_limit_file)
-                logger.info("Rate limit wait period completed, resuming geocoding")
         except Exception as e:
             logger.warning(f"Failed to check rate limit status: {e}")
     
