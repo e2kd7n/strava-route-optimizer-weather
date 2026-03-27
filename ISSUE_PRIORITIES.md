@@ -1,6 +1,6 @@
 # Issue Prioritization
 
-**Last Updated:** 2026-03-27 16:14 UTC
+**Last Updated:** 2026-03-27 16:35 UTC
 
 This file reflects the current state of GitHub issues by priority. Issues are managed via GitHub labels (P0-critical, P1-high, P2-medium, P3-low, P4-future).
 
@@ -16,9 +16,9 @@ Issues that significantly impact core functionality or user experience.
 
 ### Active P1 Issues
 
-- #71 - UI/UX Improvements for Route Comparison Table and Map (NEW - 2026-03-27)
-- #41 - Create unit tests for core modules (moved from P3 - 2026-03-27)
-- #42 - Write integration tests for full workflow (moved from P3 - 2026-03-27)
+- #71 - UI/UX Improvements for Route Comparison Table and Map
+- #41 - Create unit tests for core modules
+- #42 - Write integration tests for full workflow
 
 ## 🟡 P2 - MEDIUM (Next Sprint)
 Important improvements that enhance functionality but don't block core workflows.
@@ -51,6 +51,7 @@ Feature requests and enhancements for future releases.
   - #9 - Add interactive map showing all long ride routes
 - #54 - Weather Dashboard Implementation (Epic)
 - #33 - Add traffic pattern analysis
+
 
 ## ⚠️ Unprioritized Issues
 Issues without priority labels that need to be triaged.
@@ -111,32 +112,27 @@ Issues without priority labels that need to be triaged.
 
 ## Summary Statistics
 
-- **Total Open Issues:** 31
+- **Total Open Issues:** 30
 - **P0 (Critical):** 0 ✅
 - **P1 (High):** 3
 - **P2 (Medium):** 2
 - **P3 (Low):** 1
-- **P4 (Future):** 6
+- **P4 (Future):** 9
 - **Unprioritized:** 15
 
 **Note:** Completed issues are documented in release notes (RELEASE_NOTES.md) and version-specific plans (plans/v2.x.0/).
 
 ## Recommended Next Actions
 
-All recommended actions have been prioritized to P1-high:
+Focus on P1 issues for next sprint:
 
-1. **#71** - UI/UX Improvements for Route Comparison Table and Map (P1-high) ⭐ NEW
-2. **#41** - Create unit tests for core modules (P1-high) ⬆️ Moved from P3
-3. **#42** - Write integration tests for full workflow (P1-high) ⬆️ Moved from P3
+1. **#71** - UI/UX Improvements for Route Comparison Table and Map (P1-high)
+2. **#41** - Create unit tests for core modules (P1-high)
+3. **#42** - Write integration tests for full workflow (P1-high)
 
 ### Additional Actions (Not Issues)
-- **Create GitHub issues** - Create 2 new P2 issues from `plans/v2.2.0/GITHUB_ISSUES_FROM_FUTURE_TODOS.md`
-- **Test v2.2.0 fixes** - Verify JSON serialization fix and performance improvements
-- **Run performance profiling** - Measure actual improvements from Phase 1 optimizations
-- **Test with real data** - Validate segment-based route naming with actual Strava routes
-- **CI/CD Integration** - Set up GitHub Actions with the now-working test suite
 - **Triage unprioritized issues** - Assign priority labels to remaining 15 issues
-- **Prepare v2.3.0 release** - Route naming epic complete, ready for next release
+- **CI/CD Integration** - Set up GitHub Actions with test suite
 
 ---
 
@@ -151,7 +147,7 @@ All recommended actions have been prioritized to P1-high:
   - Click handlers to highlight and zoom to specific routes
   - Responsive design with mobile breakpoints
   - Files: templates/report_template.html
-  - Commit: pending
+  - Commit: b48c7c3
 
 ### v2.3.0 Implementations
 - **#75 - Add current weather conditions display to map** - Shows real-time weather on interactive map (COMPLETED 2026-03-27)
