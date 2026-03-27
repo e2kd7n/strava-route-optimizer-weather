@@ -59,6 +59,7 @@ Nice-to-have improvements and minor UX enhancements.
 ## 📋 P4 - FUTURE ENHANCEMENTS
 Feature requests and enhancements for future releases.
 
+- #70 - Implement wind-aware route selection in forecast generator
 - #62 - 🎨 EPIC: Mobile-First UI/UX Redesign & Accessibility
   - #63 - Mobile-First Responsive Layout (in progress)
   - #64 - Progressive Disclosure for Metrics
@@ -134,11 +135,11 @@ Issues without priority labels that need to be triaged.
 
 ## Summary Statistics
 
-- **Total Open Issues:** 27
+- **Total Open Issues:** 28
 - **P0 (Critical):** 0 ✅ (All resolved!)
 - **P1 (High):** 1 (down from 7 - Route Naming Epic completed!)
 - **P2 (Medium):** 1
-- **P3 (Low):** 2 (down from 4)
+- **P3 (Low):** 3 (includes new #70)
 - **P4 (Future):** 6
 - **Unprioritized:** 15
 
