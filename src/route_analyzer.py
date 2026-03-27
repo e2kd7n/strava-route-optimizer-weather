@@ -842,9 +842,19 @@ class RouteAnalyzer:
             # Create route group
             representative = self._select_representative_route(group)
             
-            # Generate simple route ID without geocoding (skip naming for speed)
+            # Generate route ID
             route_id = f"{direction}_{group_id}"
-            route_name = f"Route {group_id}"  # Simple name, skip geocoding
+            
+            # Generate descriptive route name using RouteNamer
+            try:
+                route_name = self.route_namer.name_route(
+                    representative.coordinates,
+                    route_id,
+                    direction
+                )
+            except Exception as e:
+                logger.warning(f"Failed to generate name for {route_id}, using fallback: {e}")
+                route_name = f"Route {group_id}"
             
             route_group = RouteGroup(
                 id=route_id,

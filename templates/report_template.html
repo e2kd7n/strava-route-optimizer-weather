@@ -47,6 +47,34 @@
         .score-link { cursor: pointer; color: #667eea; text-decoration: underline; }
         .score-link:hover { color: #764ba2; }
         [data-bs-toggle="tooltip"] { cursor: help; border-bottom: 1px dotted #667eea; }
+        
+        /* Table sorting styles */
+        .sortable { cursor: pointer; user-select: none; position: relative; padding-right: 20px; }
+        .sortable:hover { background-color: #f0f0f0; }
+        .sort-indicator { position: absolute; right: 8px; opacity: 0.3; }
+        .sort-indicator::after { content: '⇅'; }
+        .sortable.sort-asc .sort-indicator { opacity: 1; }
+        .sortable.sort-asc .sort-indicator::after { content: '↑'; }
+        .sortable.sort-desc .sort-indicator { opacity: 1; }
+        .sortable.sort-desc .sort-indicator::after { content: '↓'; }
+        
+        /* Route name link styles */
+        .route-name-link { transition: color 0.2s; }
+        .route-name-link:hover { color: #764ba2 !important; text-decoration: underline !important; }
+        
+        /* Uses count styles */
+        .uses-count { transition: color 0.2s; }
+        .uses-count:hover { color: #764ba2; }
+        
+        /* Modal styles */
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1040; }
+        .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 1050; max-width: 800px; width: 90%; max-height: 80vh; overflow: hidden; }
+        .modal-header { padding: 20px; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 20px; overflow-y: auto; max-height: 60vh; }
+        .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #6c757d; }
+        .modal-close:hover { color: #000; }
+        .activity-item { padding: 12px; border: 1px solid #dee2e6; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .activity-item:hover { background-color: #f8f9fa; }
 
         /* Mobile-First Responsive Design */
         /* Mobile: < 768px */
@@ -571,7 +599,13 @@
                         <table class="table table-hover" id="routesTable">
                             <thead>
                                 <tr>
-                                    <th>Rank</th><th>Route Name</th><th>Score</th><th>Duration</th><th>Distance</th><th>Uses</th><th>Wind</th><th>View on Strava</th>
+                                    <th class="sortable" data-sort="rank">Rank <span class="sort-indicator"></span></th>
+                                    <th class="sortable" data-sort="name">Route Name <span class="sort-indicator"></span></th>
+                                    <th class="sortable" data-sort="score">Score <span class="sort-indicator"></span></th>
+                                    <th class="sortable" data-sort="duration">Duration <span class="sort-indicator"></span></th>
+                                    <th class="sortable" data-sort="distance">Distance <span class="sort-indicator"></span></th>
+                                    <th class="sortable" data-sort="uses">Uses <span class="sort-indicator"></span></th>
+                                    <th class="sortable" data-sort="wind">Wind <span class="sort-indicator"></span></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -586,9 +620,17 @@
                                     <td>{{ loop.index }}</td>
                                     <td>
                                         <span class="route-color-indicator" style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: {{ route['color'] }}; margin-right: 8px; border: 1px solid #ddd;"></span>
-                                        <strong class="route-name-link" style="cursor: pointer; color: #667eea;" title="Click to view on Strava">
+                                        {% if route['strava_url'] %}
+                                        <a href="{{ route['strava_url'] }}" target="_blank" class="route-name-link" style="color: #667eea; text-decoration: none; font-weight: 600;" title="View on Strava">
                                             {{ route['name'] }}
-                                        </strong>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style="margin-left: 4px; vertical-align: baseline;">
+                                                <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z"/>
+                                                <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z"/>
+                                            </svg>
+                                        </a>
+                                        {% else %}
+                                        <strong style="font-weight: 600;">{{ route['name'] }}</strong>
+                                        {% endif %}
                                         {% if route['is_plus_route'] %}
                                         <span class="badge bg-warning text-dark ms-2" style="font-size: 0.75em;" title="Extended route (>15% longer than median)">
                                             PLUS
@@ -606,7 +648,13 @@
                                     </td>
                                     <td>{{ "%.1f"|format(route['metrics']['avg_duration'] / 60) }} min</td>
                                     <td>{{ units.distance(route['metrics']['avg_distance']) }}</td>
-                                    <td>{{ route['group'].frequency }}</td>
+                                    <td>
+                                        <span class="uses-count" style="cursor: pointer; color: #667eea; text-decoration: underline; font-weight: 600;"
+                                              onclick="showMatchedRoutes('{{ route['group'].id }}', '{{ route['name'] }}', {{ route['group'].routes | tojson | safe }})"
+                                              title="Click to view matched activities">
+                                            {{ route['group'].frequency }}
+                                        </span>
+                                    </td>
                                     <td>
                                         {% if route['breakdown'].get('weather_details') %}
                                             {% set wd = route['breakdown']['weather_details'] %}
@@ -636,18 +684,6 @@
                                             <div style="background-color: #f8f9fa; padding: 6px 8px; border-radius: 4px; text-align: center;" title="No weather data available">
                                                 <span class="text-muted">-</span>
                                             </div>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if route['strava_url'] %}
-                                        <a href="{{ route['strava_url'] }}" target="_blank" class="btn btn-sm btn-outline-primary" title="View most recent activity on Strava">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM5.5 7.5l2.5 5 2.5-5h-1.5l-1 2-1-2H5.5z"/>
-                                            </svg>
-                                            View
-                                        </a>
-                                        {% else %}
-                                        <span class="text-muted">N/A</span>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -1013,6 +1049,193 @@
             };
             
             // Don't initialize here - wait for unified initialization
+            
+            // ============================================================================
+            // TABLE SORTING FUNCTIONALITY
+            // ============================================================================
+            let currentSortColumn = null;
+            let currentSortDirection = 'asc';
+            
+            function sortTable(column) {
+                console.log('🔄 Sorting table by:', column);
+                
+                const table = document.getElementById('routesTable');
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('.route-row'));
+                
+                // Toggle sort direction if clicking same column
+                if (currentSortColumn === column) {
+                    currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSortColumn = column;
+                    currentSortDirection = 'asc';
+                }
+                
+                // Update header indicators
+                document.querySelectorAll('.sortable').forEach(th => {
+                    th.classList.remove('sort-asc', 'sort-desc');
+                });
+                const activeHeader = document.querySelector(`[data-sort="${column}"]`);
+                activeHeader.classList.add(`sort-${currentSortDirection}`);
+                
+                // Sort rows based on column
+                rows.sort((a, b) => {
+                    let aVal, bVal;
+                    
+                    switch(column) {
+                        case 'rank':
+                            aVal = parseInt(a.querySelector('td:nth-child(1)').textContent);
+                            bVal = parseInt(b.querySelector('td:nth-child(1)').textContent);
+                            break;
+                        case 'name':
+                            aVal = a.querySelector('.route-name-link').textContent.trim().toLowerCase();
+                            bVal = b.querySelector('.route-name-link').textContent.trim().toLowerCase();
+                            break;
+                        case 'distance':
+                            aVal = parseFloat(a.querySelector('td:nth-child(3)').textContent);
+                            bVal = parseFloat(b.querySelector('td:nth-child(3)').textContent);
+                            break;
+                        case 'duration':
+                            // Parse duration in format "HH:MM:SS" or "MM:SS"
+                            const aDur = a.querySelector('td:nth-child(4)').textContent.trim();
+                            const bDur = b.querySelector('td:nth-child(4)').textContent.trim();
+                            aVal = parseDuration(aDur);
+                            bVal = parseDuration(bDur);
+                            break;
+                        case 'uses':
+                            aVal = parseInt(a.querySelector('.uses-count').textContent);
+                            bVal = parseInt(b.querySelector('.uses-count').textContent);
+                            break;
+                        case 'score':
+                            aVal = parseFloat(a.querySelector('td:nth-child(6)').textContent);
+                            bVal = parseFloat(b.querySelector('td:nth-child(6)').textContent);
+                            break;
+                        default:
+                            return 0;
+                    }
+                    
+                    // Handle NaN values
+                    if (isNaN(aVal)) aVal = 0;
+                    if (isNaN(bVal)) bVal = 0;
+                    
+                    // Compare values
+                    if (currentSortDirection === 'asc') {
+                        return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                    } else {
+                        return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+                    }
+                });
+                
+                // Re-append rows in sorted order
+                rows.forEach(row => tbody.appendChild(row));
+                
+                // Maintain pagination after sorting
+                if (window.paginationController) {
+                    window.paginationController.showPage(1);
+                }
+                
+                console.log('✅ Table sorted by', column, currentSortDirection);
+            }
+            
+            function parseDuration(durationStr) {
+                // Parse "HH:MM:SS" or "MM:SS" to seconds
+                const parts = durationStr.split(':').map(p => parseInt(p));
+                if (parts.length === 3) {
+                    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+                } else if (parts.length === 2) {
+                    return parts[0] * 60 + parts[1];
+                }
+                return 0;
+            }
+            
+            // Expose sorting function globally
+            window.sortTable = sortTable;
+            
+            // ============================================================================
+            // MATCHED ROUTES MODAL
+            // ============================================================================
+            function showMatchedRoutes(routeId, routeName, routes) {
+                console.log('📋 Showing matched routes for:', routeName);
+                
+                // Create modal backdrop
+                const backdrop = document.createElement('div');
+                backdrop.className = 'modal-backdrop';
+                backdrop.onclick = closeModal;
+                
+                // Create modal
+                const modal = document.createElement('div');
+                modal.className = 'modal';
+                modal.id = 'matchedRoutesModal';
+                
+                // Build activity list HTML
+                let activitiesHtml = '';
+                if (routes && routes.length > 0) {
+                    routes.forEach(route => {
+                        const date = new Date(route.start_date).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                        });
+                        const distance = route.distance ? (route.distance / 1000).toFixed(1) : '0.0';
+                        const duration = route.moving_time ? formatDuration(route.moving_time) : '0:00';
+                        
+                        activitiesHtml += `
+                            <div class="activity-item">
+                                <div>
+                                    <strong>${date}</strong><br>
+                                    <small>${distance} km • ${duration}</small>
+                                </div>
+                                <a href="https://www.strava.com/activities/${route.id}" 
+                                   target="_blank" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    View on Strava
+                                </a>
+                            </div>
+                        `;
+                    });
+                } else {
+                    activitiesHtml = '<p class="text-muted">No matched activities found.</p>';
+                }
+                
+                modal.innerHTML = `
+                    <div class="modal-header">
+                        <h5 class="modal-title">Matched Activities: ${routeName}</h5>
+                        <button class="modal-close" onclick="closeModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        ${activitiesHtml}
+                    </div>
+                `;
+                
+                // Add to page
+                document.body.appendChild(backdrop);
+                document.body.appendChild(modal);
+                
+                console.log('✅ Modal displayed with', routes ? routes.length : 0, 'activities');
+            }
+            
+            function closeModal() {
+                const modal = document.getElementById('matchedRoutesModal');
+                const backdrop = document.querySelector('.modal-backdrop');
+                if (modal) modal.remove();
+                if (backdrop) backdrop.remove();
+            }
+            
+            function formatDuration(seconds) {
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                const secs = seconds % 60;
+                
+                if (hours > 0) {
+                    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                } else {
+                    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+                }
+            }
+            
+            // Expose modal functions globally
+            window.showMatchedRoutes = showMatchedRoutes;
+            window.closeModal = closeModal;
         })();
         
         // ============================================================================

@@ -54,8 +54,8 @@ visualization:
     zoom_level: 13
     tile_layer: "CartoDB Positron"
   colors:
-    optimal: "#FF0000"
-    alternative: ["#00FF00", "#0000FF", "#FFA500", "#800080"]
+    optimal: "#28a745"  # Green - semantic color for optimal/success
+    alternative: ["#dc3545", "#007bff", "#ffc107", "#6f42c1"]  # Red, Blue, Yellow, Purple
   route_weight:
     optimal: 5
     alternative: 3
