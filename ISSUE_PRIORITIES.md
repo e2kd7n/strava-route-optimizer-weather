@@ -3,46 +3,6 @@
 **Last Updated:** 2026-03-27 13:00 UTC
 
 This file reflects the current state of GitHub issues by priority. Issues are managed via GitHub labels (P0-critical, P1-high, P2-medium, P3-low, P4-future).
-## 🎉 Recently Completed (2026-03-27)
-
-### v2.3.0 Implementations
-- **#75 - Add current weather conditions display to map** - Shows real-time weather on interactive map (COMPLETED 2026-03-27)
-  - Temperature with unit conversion
-  - Wind speed and direction (cardinal + degrees)
-  - Precipitation amount
-  - Integrates with WeatherFetcher and Open-Meteo API
-  - Commit: 131a6fb
-
-- **Progress Bar Improvements** - Enhanced terminal output visibility (COMPLETED 2026-03-27)
-  - Updated bar format to show step counts (2/8 format)
-  - Added user prompt for background geocoding approval
-  - Documented in FUTURE_TODOS.md as RESOLVED
-  - Commit: 131a6fb
-
-- **#21 - Update TECHNICAL_SPEC.md** - Updated 3 major sections with comprehensive implementation details
-  - Route naming algorithm documentation
-  - Security improvements (MD5 → SHA256)
-  - Exception handling enhancements
-
-### v2.0.0 Implementations
-- **#58 - Time-aware next commute recommendations** - Shows separate "to work" and "to home" recommendations
-  - Intelligent time-based logic (morning/midday/evening)
-  - Forecast weather for specific time windows
-  - Wind favorability assessment
-  - See NEXT_COMMUTE_FEATURE.md for details
-
-### v2.2.0 Implementations
-- **JSON Serialization Fix** - Fixed `TypeError: Object of type Route is not JSON serializable` in matched routes modal
-  - Added `_route_to_dict()` helper method in ReportGenerator
-  - Updated template to use serialized route data
-  - Files: src/report_generator.py, templates/report_template.html
-
-- **Performance Optimizations (Phase 1)** - Implemented quick-win optimizations for ~48% performance improvement
-  - Non-blocking browser opening (saves ~6 seconds)
-  - Wind analysis coordinate sampling with 10x reduction in calculations (saves ~2 seconds)
-  - Files: main.py, src/weather_fetcher.py
-  - Expected: 16.8s → 8.8s runtime
-
 
 ## 🔴 P0 - CRITICAL (Drop Everything)
 Issues that make the application unusable or cause data loss.
@@ -178,3 +138,45 @@ All recommended actions have been prioritized to P1-high:
 - **CI/CD Integration** - Set up GitHub Actions with the now-working test suite
 - **Triage unprioritized issues** - Assign priority labels to remaining 15 issues
 - **Prepare v2.3.0 release** - Route naming epic complete, ready for next release
+
+---
+
+## 🎉 Recently Completed (2026-03-27)
+
+### v2.3.0 Implementations
+- **#75 - Add current weather conditions display to map** - Shows real-time weather on interactive map (COMPLETED 2026-03-27)
+  - Temperature with unit conversion
+  - Wind speed and direction (cardinal + degrees)
+  - Precipitation amount
+  - Integrates with WeatherFetcher and Open-Meteo API
+  - Commit: 131a6fb
+
+- **Progress Bar Improvements** - Enhanced terminal output visibility (COMPLETED 2026-03-27)
+  - Updated bar format to show step counts (2/8 format)
+  - Added user prompt for background geocoding approval
+  - Documented in FUTURE_TODOS.md as RESOLVED
+  - Commit: 131a6fb
+
+- **#21 - Update TECHNICAL_SPEC.md** - Updated 3 major sections with comprehensive implementation details
+  - Route naming algorithm documentation
+  - Security improvements (MD5 → SHA256)
+  - Exception handling enhancements
+
+### v2.0.0 Implementations
+- **#58 - Time-aware next commute recommendations** - Shows separate "to work" and "to home" recommendations
+  - Intelligent time-based logic (morning/midday/evening)
+  - Forecast weather for specific time windows
+  - Wind favorability assessment
+  - See NEXT_COMMUTE_FEATURE.md for details
+
+### v2.2.0 Implementations
+- **JSON Serialization Fix** - Fixed `TypeError: Object of type Route is not JSON serializable` in matched routes modal
+  - Added `_route_to_dict()` helper method in ReportGenerator
+  - Updated template to use serialized route data
+  - Files: src/report_generator.py, templates/report_template.html
+
+- **Performance Optimizations (Phase 1)** - Implemented quick-win optimizations for ~48% performance improvement
+  - Non-blocking browser opening (saves ~6 seconds)
+  - Wind analysis coordinate sampling with 10x reduction in calculations (saves ~2 seconds)
+  - Files: main.py, src/weather_fetcher.py
+  - Expected: 16.8s → 8.8s runtime
