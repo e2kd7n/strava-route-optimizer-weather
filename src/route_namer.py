@@ -35,6 +35,15 @@ class RouteNamer:
         self.min_segment_length_pct = self.config.get('route_naming.min_segment_length_pct', 10) if config else 10
         self.enable_segment_naming = self.config.get('route_naming.enable_segment_naming', True) if config else True
         
+        # Define equivalent streets (parallel routes that should be treated as the same)
+        # These are streets that run parallel to each other and serve the same route purpose
+        self.equivalent_streets = {
+            'North Simonds Drive': 'Lakefront Trail',
+            'South Simonds Drive': 'Lakefront Trail',
+            'Simonds Drive': 'Lakefront Trail',
+            # Add more equivalent streets as needed
+        }
+        
         # Initialize with 10-second timeout to handle slow Nominatim responses
         self.geolocator = Nominatim(user_agent="strava_commute_analyzer", timeout=10)
         
@@ -342,12 +351,28 @@ class RouteNamer:
         
         return bearing
     
+    def _normalize_street_name(self, street: str) -> str:
+        """
+        Normalize street name by replacing with equivalent if defined.
+        
+        Args:
+            street: Original street name
+            
+        Returns:
+            Normalized street name (or original if no equivalent defined)
+        """
+        if not street:
+            return street
+        
+        # Check if this street has an equivalent
+        return self.equivalent_streets.get(street, street)
+    
     def _identify_route_segments(self, coordinates: List[Tuple[float, float]]) -> List[Dict]:
         """
         Identify distinct route segments based on street changes.
         
         Returns list of segments with:
-        - street: Street name
+        - street: Street name (normalized to handle equivalents)
         - length_pct: Percentage of route on this street
         - position: 'start', 'middle', or 'end'
         - sample_points: Number of sample points on this street
@@ -360,7 +385,9 @@ class RouteNamer:
         
         for i, point in enumerate(sample_points):
             location_info = self._get_location_details(point)
-            street = location_info.get('street') if location_info else None
+            raw_street = location_info.get('street') if location_info else None
+            # Normalize street name to handle equivalents (e.g., Simonds Drive → Lakefront Trail)
+            street = self._normalize_street_name(raw_street)
             
             if street != current_street:
                 # Street changed - start new segment
@@ -533,6 +560,47 @@ class RouteNamer:
         
         return top_streets
     
+    def _is_access_path(self, street_name: str) -> bool:
+        """
+        Determine if a street is likely an access path/ramp rather than a main street.
+        
+        Args:
+            street_name: Street name to check
+            
+        Returns:
+            True if likely an access path
+        """
+        if not street_name:
+            return False
+        
+        street_lower = street_name.lower()
+        
+        # Access path indicators
+        access_indicators = [
+            'access',
+            'path',
+            'ramp',
+            'entrance',
+            'exit'
+        ]
+        
+        # Check for access indicators
+        if any(indicator in street_lower for indicator in access_indicators):
+            return True
+        
+        # Check for short "Drive" streets that are likely access roads
+        # (but not major streets like "Lake Shore Drive")
+        if 'drive' in street_lower:
+            # If it has directional prefix (West/East/North/South) and "Drive",
+            # it's likely an access road unless it's a known major street
+            if any(direction in street_lower for direction in ['west ', 'east ', 'north ', 'south ']):
+                # Known major drives that should NOT be filtered
+                major_drives = ['lake shore', 'lakeshore', 'martin luther king']
+                if not any(major in street_lower for major in major_drives):
+                    return True
+        
+        return False
+    
     def _generate_descriptive_name(self, route_info: Dict, route_id: str, direction: str) -> str:
         """
         Generate descriptive name from route segments.
@@ -547,9 +615,14 @@ class RouteNamer:
         
         # Try segment-based naming first (if enabled)
         if self.enable_segment_naming and segments:
-            # Filter out segments that are too short or have no street name
+            # Filter out segments that are:
+            # 1. Too short (< min_segment_length_pct)
+            # 2. Have no street name
+            # 3. Are access paths/ramps
             significant_segments = [s for s in segments
-                                   if s.get('street') and s.get('length_pct', 0) >= self.min_segment_length_pct]
+                                   if s.get('street')
+                                   and s.get('length_pct', 0) >= self.min_segment_length_pct
+                                   and not self._is_access_path(s.get('street', ''))]
             
             if len(significant_segments) >= 3:
                 # Strategy 1: Full path - but avoid duplicates
