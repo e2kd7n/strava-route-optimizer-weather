@@ -1,6 +1,6 @@
 # Issue Prioritization
 
-**Last Updated:** 2026-03-27 01:30 UTC
+**Last Updated:** 2026-03-27 01:57 UTC
 
 This file reflects the current state of GitHub issues by priority. Issues are managed via GitHub labels (P0-critical, P1-high, P2-medium, P3-low, P4-future).
 
@@ -9,14 +9,7 @@ Issues that make the application unusable or cause data loss.
 
 ### Active P0 Issues
 
-**None** - All critical issues resolved! ✅
-
-### Recently Resolved P0 Issues
-
-- **✅ Test Suite Failures (16/43 tests failing)** - RESOLVED 2026-03-27
-  - All 43 tests now passing (100% pass rate)
-  - Fixed type mismatches, mock configurations, and edge cases
-  - Test suite ready for CI/CD integration
+**None** ✅
 
 ## 🔴 P1 - HIGH (Current Sprint)
 Issues that significantly impact core functionality or user experience.
@@ -24,37 +17,22 @@ Issues that significantly impact core functionality or user experience.
 ### Active P1 Issues
 
 - #58 - Show time-aware next commute recommendations (to work & to home)
-
-### Recently Completed P1 Issues
-
-- **✅ EPIC: Segment-Based Route Naming** - COMPLETED 2026-03-27
-  - ✅ Sub-issue 1: Increase route sampling density (10 points instead of 5)
-  - ✅ Sub-issue 2: Implement route segment identification
-  - ✅ Sub-issue 3: Implement segment-based name generation
-  - ✅ Sub-issue 4: Update route analysis integration
-  - ✅ Sub-issue 5: Add configuration options to config.yaml
-  - ✅ Sub-issue 6: Clear cache and validate with real data
-  - Route names now show: "Start St → Main St → End St"
+- #71 - UI/UX Improvements for Route Comparison Table and Map (NEW - 2026-03-27)
+- #41 - Create unit tests for core modules (moved from P3 - 2026-03-27)
+- #42 - Write integration tests for full workflow (moved from P3 - 2026-03-27)
+- #21 - Update TECHNICAL_SPEC.md with comprehensive implementation details (moved from P2 - 2026-03-27)
 
 ## 🟡 P2 - MEDIUM (Next Sprint)
 Important improvements that enhance functionality but don't block core workflows.
 
-- #21 - Update TECHNICAL_SPEC.md with comprehensive implementation details
+**None**
 
 
 
 ## 🟢 P3 - LOW (Backlog)
 Nice-to-have improvements and minor UX enhancements.
 
-- #41 - Create unit tests for core modules (in progress - tests created, need more coverage)
-- #42 - Write integration tests for full workflow (in progress - tests created, need more coverage)
 - #22 - Debug and fix Bootstrap tab switching functionality
-
-### Recently Completed P3 Issues
-
-- **✅ #61** - Code Quality: Improve exception handling - COMPLETED 2026-03-27
-  - All bare `except:` statements replaced with specific exception types
-  - Added debug logging for troubleshooting
 
 ## 📋 P4 - FUTURE ENHANCEMENTS
 Feature requests and enhancements for future releases.
@@ -135,65 +113,28 @@ Issues without priority labels that need to be triaged.
 
 ## Summary Statistics
 
-- **Total Open Issues:** 28
-- **P0 (Critical):** 0 ✅ (All resolved!)
-- **P1 (High):** 1 (down from 7 - Route Naming Epic completed!)
-- **P2 (Medium):** 1
-- **P3 (Low):** 3 (includes new #70)
+- **Total Open Issues:** 29
+- **P0 (Critical):** 0 ✅
+- **P1 (High):** 5
+- **P2 (Medium):** 0
+- **P3 (Low):** 1
 - **P4 (Future):** 6
 - **Unprioritized:** 15
 
-## Completed Issues (v2.2.0 - 2026-03-27)
-
-### v2.1.0 Completed (2026-03-26)
-1. **✅ #55** - Closed as superseded by #56 (Fréchet algorithm already working)
-2. **✅ #53** - Code Cleanup and Performance Optimization
-3. **✅ #52** - Remove Test Routes from Production Code
-4. **✅ #51** - Significantly Improve Route Naming Mechanism
-5. **✅ #50** - Show Optimal Route Map Preview at Top of Page
-6. **✅ #43** - Add caching for Fréchet distance calculations
-
-### v2.2.0 In Progress (2026-03-27)
-1. **✅ Test Infrastructure** - Created pytest configuration, test runner, and documentation
-2. **✅ Cache Separation Implementation** - Separated test and production cache files
-   - Added `use_test_cache` parameter to StravaDataFetcher
-   - Created `data/cache/activities_test.json` for test data
-   - Protected production cache (`data/cache/activities.json`) from test overwrites
-   - Created `tests/setup_test_data.py` for synthetic test data generation
-   - Documented in `tests/TEST_DATA_README.md` and `CACHE_SEPARATION_IMPLEMENTATION.md`
-   - Prevents data loss incidents (recovered from March 26 incident where 2,408 activities were overwritten)
-3. **✅ Test Suite Remediation** - Fixed all 16 failing tests (100% pass rate achieved)
-   - Fixed Activity dataclass 'commute' parameter issues (6 tests)
-   - Fixed datetime vs string type mismatches (3 tests)
-   - Fixed tuple vs Location object mismatches (5 tests)
-   - Fixed mock configuration issues (2 tests)
-   - Fixed edge case handling and assertions (2 tests)
-   - Implemented all fixes from TEST_REMEDIATION_PLAN.md (Phases 1-3)
-   - Test suite now fully operational: **43/43 tests passing** ✅
-4. **✅ #61** - Code Quality: Improve exception handling (COMPLETED 2026-03-27)
-   - Replaced all bare `except:` statements with specific exception types
-   - Added debug logging for better troubleshooting
-5. **✅ Route Naming Epic** - Segment-Based Route Naming (COMPLETED 2026-03-27)
-   - Increased route sampling density from 5 to 10 points
-   - Implemented route segment identification algorithm
-   - Added segment-based name generation: "Start St → Main St → End St"
-   - Integrated segments into route analysis workflow
-   - Added configuration options to config.yaml
-   - Cleared geocoding cache for fresh analysis
-6. **✅ Security: Replace MD5 with SHA256** - (COMPLETED 2026-03-27)
-   - Updated cache key generation in route_analyzer.py and weather_fetcher.py
-   - Cleared route_similarity_cache.json for regeneration
-7. **🔄 #41** - Unit tests for core modules (in progress - 4 test files created, need more coverage)
-8. **🔄 #42** - Integration tests for full workflow (in progress - end-to-end tests created)
-9. **🔄 #63** - Mobile-first responsive layout (in progress - part of #62 epic)
-10. **🔄 #65** - Touch-optimized interactions (in progress - part of #62 epic)
+**Note:** Completed issues are documented in release notes (RELEASE_NOTES.md) and version-specific plans (plans/v2.x.0/).
 
 ## Recommended Next Actions
 
-1. **#58** - Time-aware next commute recommendations (P1-high) - ONLY REMAINING P1 ISSUE
-2. **#21** - Update TECHNICAL_SPEC.md with comprehensive implementation details (P2-medium)
-3. **Test with real data** - Validate segment-based route naming with actual Strava routes
-4. **CI/CD Integration** - Set up GitHub Actions with the now-working test suite
-5. **Increase test coverage** - Expand #41 and #42 to cover more modules
-6. **Triage unprioritized issues** - Assign priority labels to remaining 15 issues
-7. **Prepare v2.3.0 release** - Route naming epic complete, ready for next release
+All recommended actions have been prioritized to P1-high:
+
+1. **#71** - UI/UX Improvements for Route Comparison Table and Map (P1-high) ⭐ NEW
+2. **#58** - Time-aware next commute recommendations (P1-high)
+3. **#21** - Update TECHNICAL_SPEC.md with comprehensive implementation details (P1-high) ⬆️ Moved from P2
+4. **#41** - Create unit tests for core modules (P1-high) ⬆️ Moved from P3
+5. **#42** - Write integration tests for full workflow (P1-high) ⬆️ Moved from P3
+
+### Additional Actions (Not Issues)
+- **Test with real data** - Validate segment-based route naming with actual Strava routes
+- **CI/CD Integration** - Set up GitHub Actions with the now-working test suite
+- **Triage unprioritized issues** - Assign priority labels to remaining 15 issues
+- **Prepare v2.3.0 release** - Route naming epic complete, ready for next release

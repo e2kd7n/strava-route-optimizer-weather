@@ -122,6 +122,136 @@ Created 7 sub-issues (#63-#69):
 
 ---
 
+## Release v2.3.0 (March 27, 2026)
+
+### 🎯 Release Highlights
+
+Segment-based route naming with street-level detail and incremental analysis performance improvements.
+
+### 🏷️ Route Naming Epic (Completed)
+
+#### Segment-Based Route Naming
+**Completed:** March 27, 2026
+**Priority:** P1-high
+
+Implemented comprehensive route naming system that shows complete journey with connection streets.
+
+**Features:**
+- Increased route sampling density from 5 to 10 points
+- Route segment identification (start → middle → end)
+- Street-level name generation: "Wells St → Lakefront Trail → North Ave"
+- Integration with route analysis workflow
+- Configuration options in config.yaml
+
+**Benefits:**
+- Shows connection streets at start and end
+- Identifies main route used for majority of journey
+- Better context for route selection
+- More descriptive route names
+
+**Documentation:**
+- `plans/v2.3.0/ROUTE_NAMING_EPIC.md` - Epic planning and implementation
+- `plans/v2.3.0/INCREMENTAL_ANALYSIS_GUIDE.md` - Performance guide
+
+### ⚡ Performance Improvements
+
+#### Incremental Analysis & Caching
+**Completed:** March 27, 2026
+
+Intelligent caching system for dramatic performance improvements.
+
+**Performance Metrics:**
+- First run: ~10 seconds (down from 213s)
+- Subsequent runs: <1 second (instant!)
+- Incremental updates: 2-5 seconds
+
+**Features:**
+- Route grouping cache with automatic invalidation
+- Similarity calculation cache
+- Incremental processing of new routes
+- `--force-reanalysis` flag for cache clearing
+
+**Benefits:**
+- 20x faster subsequent runs
+- Efficient handling of new activities
+- Smart cache invalidation on config changes
+
+---
+
+## Release v2.2.0 (March 27, 2026)
+
+### 🎯 Release Highlights
+
+Test infrastructure establishment, cache separation, and 100% test pass rate achievement.
+
+### 🧪 Test Infrastructure
+
+#### Test Suite Remediation (Completed)
+**Completed:** March 27, 2026
+**Priority:** P0-critical
+
+Fixed all 16 failing tests to achieve 100% pass rate (43/43 tests passing).
+
+**Issues Fixed:**
+- Activity dataclass 'commute' parameter issues (6 tests)
+- Datetime vs string type mismatches (3 tests)
+- Tuple vs Location object mismatches (5 tests)
+- Mock configuration issues (2 tests)
+- Edge case handling and assertions (2 tests)
+
+**Test Files:**
+- `tests/test_units.py` - Unit tests for core modules
+- `tests/test_route_analyzer.py` - Route analysis tests
+- `tests/test_data_fetcher.py` - Data fetching tests
+- `tests/test_integration.py` - End-to-end workflow tests
+
+**Documentation:**
+- `plans/v2.2.0/TEST_REMEDIATION_PLAN.md` - Remediation strategy
+- `tests/TEST_DATA_README.md` - Test data guide
+- `tests/README.md` - Test suite documentation
+
+### 🔒 Cache Separation
+
+#### Test/Production Cache Isolation
+**Completed:** March 27, 2026
+**Priority:** P0-critical
+
+Separated test and production cache files to prevent data loss.
+
+**Implementation:**
+- Added `use_test_cache` parameter to StravaDataFetcher
+- Created `data/cache/activities_test.json` for test data
+- Protected production cache from test overwrites
+- Synthetic test data generation script
+
+**Benefits:**
+- Prevents accidental production data loss
+- Safe test execution
+- Isolated test environment
+
+**Documentation:**
+- `CACHE_SEPARATION_IMPLEMENTATION.md` - Implementation details
+- `tests/setup_test_data.py` - Test data generator
+
+### 🔒 Security Enhancement
+
+#### Replace MD5 with SHA256
+**Completed:** March 27, 2026
+**Priority:** P1-high
+
+Replaced MD5 hash with SHA256 for cache key generation.
+
+**Changes:**
+- `src/route_analyzer.py` - Route similarity cache keys
+- `src/weather_fetcher.py` - Wind analysis cache keys
+
+**Benefits:**
+- Better collision resistance
+- Security best practices compliance
+- Eliminated security scan warnings
+
+---
+
 ## Release v0.1.0 (March 2026)
 
 ### Bug Fixes
@@ -147,4 +277,4 @@ Fixed a critical bug where the `logger` variable was being referenced in an exce
 
 ---
 
-*Last Updated: 2026-03-26*
+*Last Updated: 2026-03-27*
