@@ -5584,5 +5584,26 @@
     "neighborhood": "Loop",
     "landmark": null,
     "feature": null
+  },
+  "details_41.8781,-87.6298": {
+    "street": "South Federal Street",
+    "is_major": false,
+    "neighborhood": "Printer's Row",
+    "landmark": null,
+    "feature": null
+  },
+  "details_41.8847,-87.6370": {
+    "street": "North Lower Wacker Drive",
+    "is_major": false,
+    "neighborhood": "Loop",
+    "landmark": null,
+    "feature": null
+  },
+  "details_41.9200,-87.6400": {
+    "street": "West Dickens Avenue",
+    "is_major": false,
+    "neighborhood": "Mid-North District",
+    "landmark": null,
+    "feature": null
   }
 }

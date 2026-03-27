@@ -325,9 +325,10 @@ class RouteNamer:
             logger.debug(f"Cache hit for {cache_key}")
             return self.cache[cache_key]
         
-        # Rate limiting for API requests - enforce 1 req/sec minimum
+        # Rate limiting for API requests - Nominatim requires max 1 req/sec
+        # Use 1.1 seconds to provide small safety margin
         logger.debug(f"Cache miss for {cache_key}, making API request")
-        time.sleep(1.0)
+        time.sleep(1.1)
         
         try:
             location = self.geolocator.reverse(point, exactly_one=True, language='en', timeout=10)

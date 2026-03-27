@@ -1,7 +1,192 @@
 🌐 Route Geocoding Progress
 ============================================================
-Total routes: 1
-Progress: 0/1
+Total routes: 201
+Progress: 0/201
 ============================================================
 
 Starting geocoding...
+otal routes to geocode: 201
+
+⚠️  RATE LIMITING INFO:
+• Nominatim enforces 1 request/second maximum
+• Retries with exponential backoff on timeouts
+• If rate limited, system will self-impose 4-hour pause
+• This prevents IP blocks and allows Nominatim to reset
+======================================================================
+
+[11:53:45] Phase 1/2: Geocoding route names
+----------------------------------------------------------------------
+[11:53:45] [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   0.5% (1/201)
+  ✓ Lakefront Trail → Lakefront Trail → North Wells Street
+[11:53:45] [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   1.0% (2/201)
+  ✓ Lakefront Trail → Lakefront Trail → West Monroe Street
+[11:53:45] [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   1.5% (3/201)
+  ✓ Lakefront Trail → Lakefront Trail → North Wells Street
+[11:53:45] [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   2.0% (4/201)
+  ✓ Lakefront Trail → North Simonds Drive → North Wells Street
+[11:53:45] [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   2.5% (5/201)
+  ✓ North Sheridan Road → Lakefront Trail → North Wells Street
+[11:53:45] [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   3.0% (6/201)
+  ✓ Lakefront Trail → Lakefront Trail → North Wells Street
+[11:53:45] [█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   3.5% (7/201)
+  ✓ Lakefront Trail → North State Street → West Washington Street
+[11:53:45] [█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   4.0% (8/201)
+  ✓ Lakefront Trail → West Monroe Street → West Adams Street
+[11:53:45] [█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   4.5% (9/201)
+  ✓ Lakefront Trail → West Randolph Street → West Washington Street
+[11:53:45] [█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   5.0% (10/201)
+  ✓ Lakefront Trail → North Recreation Drive → South Franklin Street
+[11:53:45] [█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   5.5% (11/201)
+  ✓ North Sheridan Road → Lakefront Trail → South Franklin Street
+[11:53:45] [█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   6.0% (12/201)
+  ✓ Lakefront Trail → North Simonds Drive → North Wells Street
+[11:53:45] [█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   6.5% (13/201)
+  ✓ North Sheridan Road → Lakefront Trail → West Monroe Street
+[11:53:45] [██░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   7.0% (14/201)
+  ✓ Lakefront Trail → West Lawrence Drive → North Wells Street
+[11:53:45] [██░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   7.5% (15/201)
+  ✓ Lakefront Trail → Navy Pier Flyover → West Monroe Street
+[11:53:45] [██░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   8.0% (16/201)
+  ✓ Lakefront Trail → North Simonds Drive → South Franklin Street
+[11:53:45] [██░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   8.5% (17/201)
+  ✓ Lakefront Trail → West Lawrence Drive → North Wells Street
+[11:53:45] [██░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   9.0% (18/201)
+  ✓ Lakefront Trail → North Wells Street → West Washington Street
+[11:53:45] [██░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   9.5% (19/201)
+  ✓ Lakefront Trail → East Solidarity Drive → West Monroe Street
+[11:53:45] [██░░░░░░░░░░░░░░░░░░░░░░░░░░░░]  10.0% (20/201)
+  ✓ Lakefront Trail → South Special Olympics Drive → South Franklin Street
+[11:53:45] [███░░░░░░░░░░░░░░░░░░░░░░░░░░░]  10.4% (21/201)
+  ✓ Lakefront Trail → South Franklin Street → West Monroe Street
+[11:53:45] [███░░░░░░░░░░░░░░░░░░░░░░░░░░░]  10.9% (22/201)
+  ✓ Lakefront Trail → East Solidarity Drive → South Franklin Street
+[11:53:45] [███░░░░░░░░░░░░░░░░░░░░░░░░░░░]  11.4% (23/201)
+  ✓ Lakefront Trail → West Addison Drive → South Franklin Street
+[11:53:45] [███░░░░░░░░░░░░░░░░░░░░░░░░░░░]  11.9% (24/201)
+  ✓ Lakefront Trail → West Montrose Drive → North Wells Street
+[11:53:45] [███░░░░░░░░░░░░░░░░░░░░░░░░░░░]  12.4% (25/201)
+  ✓ Lakefront Trail → Lincoln Park Fitness Course → West Monroe Street
+[11:53:45] [███░░░░░░░░░░░░░░░░░░░░░░░░░░░]  12.9% (26/201)
+  ✓ Lakefront Trail → North Belmont Harbor Drive → West Washington Street
+[11:53:45] [████░░░░░░░░░░░░░░░░░░░░░░░░░░]  13.4% (27/201)
+  ✓ Lakefront Trail → Lincoln Park Fitness Course → North Wells Street
+[11:53:45] [████░░░░░░░░░░░░░░░░░░░░░░░░░░]  13.9% (28/201)
+  ✓ North Sheridan Road → Lakefront Trail → South Franklin Street
+[11:53:45] [████░░░░░░░░░░░░░░░░░░░░░░░░░░]  14.4% (29/201)
+  ✓ Lakefront Trail → West Lawrence Drive → North Wells Street
+[11:53:45] [████░░░░░░░░░░░░░░░░░░░░░░░░░░]  14.9% (30/201)
+  ✓ Lakefront Trail → North Belmont Harbor Drive → North Wells Street
+[11:53:45] [████░░░░░░░░░░░░░░░░░░░░░░░░░░]  15.4% (31/201)
+  ✓ North Broadway → Lakefront Trail → North Wells Street
+[11:53:45] [████░░░░░░░░░░░░░░░░░░░░░░░░░░]  15.9% (32/201)
+  ✓ Lakefront Trail → North Wells Street → West Washington Street
+[11:53:45] [████░░░░░░░░░░░░░░░░░░░░░░░░░░]  16.4% (33/201)
+  ✓ Lakefront Trail → North Wells Street → West Madison Street
+[11:53:45] [█████░░░░░░░░░░░░░░░░░░░░░░░░░]  16.9% (34/201)
+  ✓ Lakefront Trail → Lincoln Park Fitness Course → North Wells Street
+[11:53:45] [█████░░░░░░░░░░░░░░░░░░░░░░░░░]  17.4% (35/201)
+  ✓ Lakefront Trail → North Simonds Drive → North Wells Street
+[11:53:45] [█████░░░░░░░░░░░░░░░░░░░░░░░░░]  17.9% (36/201)
+  ✓ Lakefront Trail → Lakefront Trail → South Wacker Drive
+[11:53:45] [█████░░░░░░░░░░░░░░░░░░░░░░░░░]  18.4% (37/201)
+  ✓ North Sheridan Road → Lakefront Trail → Randolph Street Bikeway
+[11:53:45] [█████░░░░░░░░░░░░░░░░░░░░░░░░░]  18.9% (38/201)
+  ✓ Lakefront Trail → Lakefront Trail → West Randolph Street
+[11:53:45] [█████░░░░░░░░░░░░░░░░░░░░░░░░░]  19.4% (39/201)
+  ✓ Lakefront Trail → West Delaware Place → West Randolph Street
+[11:53:45] [█████░░░░░░░░░░░░░░░░░░░░░░░░░]  19.9% (40/201)
+  ✓ Lakefront Trail → Lakefront Trail → West Washington Street
+[11:53:45] [██████░░░░░░░░░░░░░░░░░░░░░░░░]  20.4% (41/201)
+  ✓ North Sheridan Road → Lakefront Trail → North Wells Street
+[11:53:45] [██████░░░░░░░░░░░░░░░░░░░░░░░░]  20.9% (42/201)
+  ✓ Lakefront Trail → Lakefront Trail → West Washington Street
+[11:53:45] [██████░░░░░░░░░░░░░░░░░░░░░░░░]  21.4% (43/201)
+  ✓ West Bryn Mawr Avenue → Lakefront Trail → Washington Street Bikeway
+[11:53:45] [██████░░░░░░░░░░░░░░░░░░░░░░░░]  21.9% (44/201)
+  ✓ Lakefront Trail → Lakefront Trail → North Lower Wacker Drive
+[11:53:45] [██████░░░░░░░░░░░░░░░░░░░░░░░░]  22.4% (45/201)
+  ✓ Lakefront Trail → South Franklin Street → West Monroe Street
+[11:53:45] [██████░░░░░░░░░░░░░░░░░░░░░░░░]  22.9% (46/201)
+  ✓ Lakefront Trail via North Wells Street
+[11:53:45] [███████░░░░░░░░░░░░░░░░░░░░░░░]  23.4% (47/201)
+  ✓ Lakefront Trail → West Montrose Drive → West Madison Street
+[11:53:45] [███████░░░░░░░░░░░░░░░░░░░░░░░]  23.9% (48/201)
+  ✓ Lakefront Trail → North Simonds Drive → North Wells Street
+[11:53:45] [███████░░░░░░░░░░░░░░░░░░░░░░░]  24.4% (49/201)
+  ✓ West Bryn Mawr Avenue → Lakefront Trail → North Wells Street
+[11:53:45] [███████░░░░░░░░░░░░░░░░░░░░░░░]  24.9% (50/201)
+  ✓ Lakefront Trail → West Randolph Street → West Washington Street
+[11:53:45] [███████░░░░░░░░░░░░░░░░░░░░░░░]  25.4% (51/201)
+  ✓ Lakefront Trail → North Simonds Drive → North Wells Street
+[11:53:45] [███████░░░░░░░░░░░░░░░░░░░░░░░]  25.9% (52/201)
+  ✓ Lakefront Trail → Lincoln Park Fitness Course → West Randolph Street
+[11:53:45] [███████░░░░░░░░░░░░░░░░░░░░░░░]  26.4% (53/201)
+  ✓ Lakefront Trail → South Franklin Street → West Monroe Street
+[11:53:45] [████████░░░░░░░░░░░░░░░░░░░░░░]  26.9% (54/201)
+  ✓ Lakefront Trail → Lakefront Trail → North Wells Street
+[11:53:45] [████████░░░░░░░░░░░░░░░░░░░░░░]  27.4% (55/201)
+  ✓ Lakefront Trail → North Wells Street → West Washington Street
+[11:53:45] [████████░░░░░░░░░░░░░░░░░░░░░░]  27.9% (56/201)
+  ✓ Lakefront Trail → Lakefront Trail → South Franklin Street
+[11:53:45] [████████░░░░░░░░░░░░░░░░░░░░░░]  28.4% (57/201)
+  ✓ Lakefront Trail → North Simonds Drive → West Randolph Street
+[11:53:45] [████████░░░░░░░░░░░░░░░░░░░░░░]  28.9% (58/201)
+  ✓ Lakefront Trail → Lakefront Trail → West Madison Street
+[11:53:45] [████████░░░░░░░░░░░░░░░░░░░░░░]  29.4% (59/201)
+  ✓ Lakefront Trail → South Franklin Street → West Monroe Street
+[11:53:45] [████████░░░░░░░░░░░░░░░░░░░░░░]  29.9% (60/201)
+  ✓ North Sheridan Road → Lakefront Trail → West Madison Street
+[11:53:45] [█████████░░░░░░░░░░░░░░░░░░░░░]  30.3% (61/201)
+  ✓ Lakefront Trail → Lincoln Park Fitness Course → South Franklin Street
+[11:53:45] [█████████░░░░░░░░░░░░░░░░░░░░░]  30.8% (62/201)
+  ✓ Lakefront Trail → North Simonds Drive → South Franklin Street
+[11:53:45] [█████████░░░░░░░░░░░░░░░░░░░░░]  31.3% (63/201)
+  ✓ Lakefront Trail → West Addison Drive → West Monroe Street
+[11:53:45] [█████████░░░░░░░░░░░░░░░░░░░░░]  31.8% (64/201)
+  ✓ Lakefront Trail → North Belmont Harbor Drive → West Monroe Street
+[11:53:45] [█████████░░░░░░░░░░░░░░░░░░░░░]  32.3% (65/201)
+  ✓ Lakefront Trail → Lincoln Park Fitness Course → West Randolph Street
+[11:53:45] [█████████░░░░░░░░░░░░░░░░░░░░░]  32.8% (66/201)
+  ✓ Lakefront Trail → Lincoln Park Fitness Course → North Wells Street
+[11:53:45] [██████████░░░░░░░░░░░░░░░░░░░░]  33.3% (67/201)
+  ✓ Lakefront Trail → Lakefront Trail → West Washington Street
+[11:53:45] [██████████░░░░░░░░░░░░░░░░░░░░]  33.8% (68/201)
+  ✓ Lakefront Trail → North Jean Baptiste Point DuSable Lake Shore Drive → South Franklin Street
+[11:53:45] [██████████░░░░░░░░░░░░░░░░░░░░]  34.3% (69/201)
+  ✓ Lakefront Trail → Lincoln Park Fitness Course → West Washington Street
+[11:53:45] [██████████░░░░░░░░░░░░░░░░░░░░]  34.8% (70/201)
+  ✓ Lakefront Trail → Lakefront Trail → West Madison Street
+[11:53:45] [██████████░░░░░░░░░░░░░░░░░░░░]  35.3% (71/201)
+  ✓ Lakefront Trail → Lincoln Park Fitness Course → North LaSalle Street
+[11:53:45] [██████████░░░░░░░░░░░░░░░░░░░░]  35.8% (72/201)
+  ✓ Lakefront Trail → Lakefront Trail → West Randolph Street
+[11:53:45] [██████████░░░░░░░░░░░░░░░░░░░░]  36.3% (73/201)
+  ✓ Lakefront Trail → West Montrose Drive → North Wells Street
+[11:53:45] [███████████░░░░░░░░░░░░░░░░░░░]  36.8% (74/201)
+  ✓ Lakefront Trail → Lakefront Trail → North Lower Wacker Drive
+[11:53:45] [███████████░░░░░░░░░░░░░░░░░░░]  37.3% (75/201)
+  ✓ North Sheridan Road → Lakefront Trail → West Washington Street
+[11:53:45] [███████████░░░░░░░░░░░░░░░░░░░]  37.8% (76/201)
+  ✓ Lakefront Trail → Oak Street Access Path → North Wells Street
+[11:53:45] [███████████░░░░░░░░░░░░░░░░░░░]  38.3% (77/201)
+  ✓ Lakefront Trail → Lincoln Park Fitness Course → West Monroe Street
+[11:53:45] [███████████░░░░░░░░░░░░░░░░░░░]  38.8% (78/201)
+  ✓ Lakefront Trail → North Simonds Drive → West Randolph Street
+[11:53:45] [███████████░░░░░░░░░░░░░░░░░░░]  39.3% (79/201)
+  ✓ Lakefront Trail → Lakefront Trail → North Upper Wacker Drive
+[11:53:45] [███████████░░░░░░░░░░░░░░░░░░░]  39.8% (80/201)
+  ✓ Lakefront Trail → Lakefront Trail → North Lower Wacker Service Drive
+[11:53:45] [████████████░░░░░░░░░░░░░░░░░░]  40.3% (81/201)
+  ✓ Lakefront Trail → North Recreation Drive → West Adams Street
+[11:53:45] [████████████░░░░░░░░░░░░░░░░░░]  40.8% (82/201)
+  ✓ North Sheridan Road → Lakefront Trail → West Madison Street
+[11:53:45] [████████████░░░░░░░░░░░░░░░░░░]  41.3% (83/201)
+  ✓ North Sheridan Road → Lakefront Trail → North LaSalle Street
+[11:53:45] [████████████░░░░░░░░░░░░░░░░░░]  41.8% (84/201)
+  ✓ North Sheridan Road → Lakefront Trail → North Lower Wacker Drive
+[11:53:45] [████████████░░░░░░░░░░░░░░░░░░]  42.3% (85/201)
+  ✓ North Sheridan Road → Lakefront Trail → West Madison Street
+[11:53:45] [████████████░░░░░░░░░░░░░░░░░░]  42.8% (86/201)
+  ✓ Lakefront Trail → North Simonds Drive → North Upper Wacker Drive
+[11:53:45] [████████████░░░░░░░░░░░░░░░░░░]  43.3% (87/201)
+  ✓ Lakefront Trail → Lakefront Trail → South Franklin Street

@@ -14,6 +14,7 @@ plans/
 ├── v2.1.0/          # Code Quality & Design System (March 26, 2026)
 ├── v2.2.0/          # Test Suite & Cache (March 26, 2026)
 ├── v2.3.0/          # Segment-Based Route Naming (March 26, 2026)
+├── v2.4.0/          # ⛔ BLOCKED - Awaiting Geocoding Completion
 └── README.md        # This file
 ```
 
@@ -133,6 +134,45 @@ plans/
 
 ---
 
+## Release v2.4.0 - P1 Sprint: Testing, Long Rides & Core Features
+
+**Date:** TBD (⛔ BLOCKED - Awaiting Geocoding Completion)
+**Tag:** v2.4.0 (Draft)
+**Status:** 🔴 BLOCKED
+
+### Planning Documents
+- **BLOCKED_UNTIL_GEOCODING_COMPLETE.md** - Release blocker documentation
+- **README.md** - Quick reference guide
+
+### Blocker Details
+This release is **BLOCKED** until background geocoding completes. Background geocoding (implemented 2026-03-27) must finish populating the geocoding cache before v2.4.0 work can begin.
+
+**Reason:** Route naming affects test data, test scenarios, and integration tests.
+
+**How to Check:** Run `cat cache/geocoding_progress.txt` and look for "✅ GEOCODING COMPLETE!"
+
+### Planned Features (When Unblocked)
+
+#### Testing & Quality Assurance
+- Issue #41: Create unit tests for core modules (31% → 80% coverage)
+- Issue #42: Write integration tests for full workflow (expand scenarios)
+
+#### Long Rides Feature (Epic #57)
+- Issue #6: Add top 10 longest rides table with Strava links
+- Issue #7: Add monthly ride statistics breakdown
+- Issue #8: Add average speed and elevation gain metrics
+- Issue #9: Add interactive map showing all long ride routes
+
+#### Core Features
+- Issue #70: Implement wind-aware route selection in forecast generator
+- Issue #54: Weather Dashboard Implementation (Epic)
+- Issue #33: Add traffic pattern analysis
+- Issue #34: Add carbon footprint calculations
+- Issue #25: Implement automatic token refresh for expired Strava tokens
+- Issue #47: Add Side-by-Side Route Comparison Feature
+
+---
+
 ## Document Index by Type
 
 ### Architecture & Design
@@ -156,6 +196,7 @@ plans/
 ### Project Management
 - v0.1.0/PLAN.md - Original project plan
 - v0.1.0/WORKFLOW.md - Development workflow
+- v2.4.0/BLOCKED_UNTIL_GEOCODING_COMPLETE.md - Release blocker documentation
 
 ---
 
@@ -183,8 +224,9 @@ plans/
 | v2.1.0 | Mar 26 | Minor | 3 docs | Code Quality & Design |
 | v2.2.0 | Mar 26 | Minor | 2 docs | Testing & Architecture |
 | v2.3.0 | Mar 26 | Minor | 2 docs | Route Naming & Organization |
+| v2.4.0 | TBD | Minor | 2 docs | ⛔ BLOCKED - P1 Sprint (Testing, Long Rides, Core Features) |
 
-**Total Planning Documents:** 12 documents across 6 releases
+**Total Planning Documents:** 13 documents across 7 releases
 
 ---
 
