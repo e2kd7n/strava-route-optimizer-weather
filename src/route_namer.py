@@ -161,16 +161,20 @@ class RouteNamer:
             return f"Route {route_num} {direction_label}"
         
         try:
+            print(f"  Naming route {route_id} ({direction})...", end='', flush=True)
+            
             # Multi-strategy naming approach
             route_info = self._analyze_route_geography(coordinates)
             
             # Generate name based on available information
             name = self._generate_descriptive_name(route_info, route_id, direction)
             
+            print(f" → {name}")
             logger.info(f"Named route {route_id}: {name}")
             return name
             
         except Exception as e:
+            print(f" [FAILED: {e}]")
             logger.warning(f"Failed to name route {route_id}: {e}")
             # Fallback to generic name
             direction_label = "to Work" if direction == "home_to_work" else "to Home"
@@ -232,28 +236,111 @@ class RouteNamer:
     
     def _get_strategic_sample_points(self, coordinates: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
         """
-        Sample points to capture route structure.
+        Sample points to capture route structure, focusing on direction changes (turns).
         Returns points based on sampling_density config (default ~10 points).
         """
-        target_points = self.sampling_density
-        
-        if len(coordinates) < target_points:
+        if len(coordinates) < 10:
             return coordinates
         
-        points = []
+        # Calculate bearing changes to find turns
+        turn_points = self._find_significant_turns(coordinates)
         
-        # First 3 points (start street)
-        points.extend(coordinates[:3])
+        # Always include start and end
+        points = [coordinates[0]]
         
-        # Middle points at key percentages
-        for pct in [0.2, 0.4, 0.6, 0.8]:
-            idx = int(len(coordinates) * pct)
-            points.append(coordinates[idx])
+        # Add turn points (these are the key decision points)
+        points.extend(turn_points)
         
-        # Last 3 points (end street)
-        points.extend(coordinates[-3:])
+        # Add end point
+        points.append(coordinates[-1])
         
-        return points
+        # If we don't have enough points, add some evenly spaced ones
+        target_points = self.sampling_density
+        if len(points) < target_points:
+            # Fill in with evenly spaced points
+            step = len(coordinates) // (target_points - len(points) + 1)
+            for i in range(step, len(coordinates) - step, step):
+                if coordinates[i] not in points:
+                    points.append(coordinates[i])
+                if len(points) >= target_points:
+                    break
+        
+        # Sort by original order in coordinates
+        points_with_idx = [(coordinates.index(p), p) for p in points if p in coordinates]
+        points_with_idx.sort(key=lambda x: x[0])
+        
+        return [p for _, p in points_with_idx[:target_points]]
+    
+    def _find_significant_turns(self, coordinates: List[Tuple[float, float]],
+                                min_angle: float = 30.0) -> List[Tuple[float, float]]:
+        """
+        Find points where the route makes significant direction changes.
+        
+        Args:
+            coordinates: List of (lat, lon) tuples
+            min_angle: Minimum angle change (degrees) to consider a significant turn
+            
+        Returns:
+            List of coordinates at turn points
+        """
+        import math
+        
+        if len(coordinates) < 3:
+            return []
+        
+        turn_points = []
+        
+        # Use a sliding window to detect bearing changes
+        window_size = min(10, len(coordinates) // 10)  # Adaptive window size
+        
+        for i in range(window_size, len(coordinates) - window_size, window_size):
+            # Calculate bearing before and after this point
+            before_bearing = self._calculate_bearing(
+                coordinates[i - window_size], coordinates[i]
+            )
+            after_bearing = self._calculate_bearing(
+                coordinates[i], coordinates[i + window_size]
+            )
+            
+            # Calculate angle change
+            angle_change = abs(after_bearing - before_bearing)
+            # Normalize to 0-180 range
+            if angle_change > 180:
+                angle_change = 360 - angle_change
+            
+            # If significant turn, add this point
+            if angle_change >= min_angle:
+                turn_points.append(coordinates[i])
+        
+        return turn_points
+    
+    def _calculate_bearing(self, point1: Tuple[float, float],
+                          point2: Tuple[float, float]) -> float:
+        """
+        Calculate bearing between two points in degrees.
+        
+        Args:
+            point1: (lat, lon) tuple
+            point2: (lat, lon) tuple
+            
+        Returns:
+            Bearing in degrees (0-360)
+        """
+        import math
+        
+        lat1, lon1 = math.radians(point1[0]), math.radians(point1[1])
+        lat2, lon2 = math.radians(point2[0]), math.radians(point2[1])
+        
+        dlon = lon2 - lon1
+        
+        x = math.sin(dlon) * math.cos(lat2)
+        y = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(dlon)
+        
+        bearing = math.atan2(x, y)
+        bearing = math.degrees(bearing)
+        bearing = (bearing + 360) % 360
+        
+        return bearing
     
     def _identify_route_segments(self, coordinates: List[Tuple[float, float]]) -> List[Dict]:
         """
@@ -327,6 +414,7 @@ class RouteNamer:
         
         # Rate limiting for API requests - Nominatim requires max 1 req/sec
         # Use 1.1 seconds to provide small safety margin
+        print(".", end='', flush=True)  # Show progress dot for each API call
         logger.debug(f"Cache miss for {cache_key}, making API request")
         time.sleep(1.1)
         
@@ -464,14 +552,36 @@ class RouteNamer:
                                    if s.get('street') and s.get('length_pct', 0) >= self.min_segment_length_pct]
             
             if len(significant_segments) >= 3:
-                # Strategy 1: Full path
-                start = significant_segments[0]['street']
-                main = max(significant_segments[1:-1], key=lambda s: s['length_pct'])['street']
-                end = significant_segments[-1]['street']
-                return f"{start} → {main} → {end}"
+                # Strategy 1: Full path - but avoid duplicates
+                # Get unique streets in order, preserving the path
+                unique_streets = []
+                seen = set()
+                for seg in significant_segments:
+                    street = seg['street']
+                    if street not in seen:
+                        unique_streets.append(seg)
+                        seen.add(street)
+                
+                # If we have 3+ unique streets, show start → middle → end
+                if len(unique_streets) >= 3:
+                    start = unique_streets[0]['street']
+                    # Pick the longest middle segment
+                    main = max(unique_streets[1:-1], key=lambda s: s['length_pct'])['street']
+                    end = unique_streets[-1]['street']
+                    return f"{start} → {main} → {end}"
+                elif len(unique_streets) == 2:
+                    # Only 2 unique streets, use simpler format
+                    return f"{unique_streets[0]['street']} → {unique_streets[1]['street']}"
+                else:
+                    # Only 1 unique street
+                    return f"Via {unique_streets[0]['street']}"
             
             elif len(significant_segments) == 2:
                 # Strategy 2: Main + connection
+                # Check if they're the same street (duplicate)
+                if significant_segments[0]['street'] == significant_segments[1]['street']:
+                    return f"Via {significant_segments[0]['street']}"
+                
                 main = max(significant_segments, key=lambda s: s['length_pct'])
                 connection = min(significant_segments, key=lambda s: s['length_pct'])
                 

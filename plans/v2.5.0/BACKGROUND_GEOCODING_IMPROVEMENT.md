@@ -83,10 +83,32 @@ Add to HTML template when geocoding is active:
 - Implement circuit breaker if too many failures
 
 ### User Experience
-- Show progress in terminal if user is still watching
+- **Show total request count upfront**: Display "Geocoding X routes (Y API calls needed)" at start
+- **Progress counter**: Show "Geocoding route 5/20..." with running count
+- **Time estimates**: Calculate and display estimated time remaining based on 1.1s per call
+- **Cache hit reporting**: Show "Using X cached names, geocoding Y new routes"
+- **Clear completion message**: "Geocoding complete! Generated report with updated route names"
 - Desktop notification when geocoding completes (optional)
-- Clear messaging about what's happening
 - Don't regenerate report if user has closed terminal
+
+#### Visibility Requirements (from user feedback)
+1. **Before geocoding starts**: Tell user total number of API requests needed
+2. **During geocoding**: Show progress as "X/Y routes" or "X/Y API calls"
+3. **Time estimation**: Show estimated completion time (e.g., "~3 minutes remaining")
+4. **Cache efficiency**: Report how many names were cached vs need geocoding
+5. **Completion confirmation**: Clear message when done
+
+Example output:
+```
+Geocoding route names...
+  Found 15 routes: 8 cached, 7 need geocoding (~77 API calls, ~85 seconds)
+  
+  Naming route route_123 (home_to_work) [1/7]........... → Lakefront Trail → Randolph → Wells
+  Naming route route_456 (work_to_home) [2/7]........ → Wells → State → Lakefront Trail
+  ...
+  
+✓ Geocoding complete! All route names updated.
+```
 
 ## Priority
 **P2** - Enhancement for better UX, but current synchronous approach works

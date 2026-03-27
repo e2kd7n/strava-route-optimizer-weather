@@ -394,12 +394,21 @@ class RouteVisualizer:
         optimal_weight = self.config.get('visualization.route_weight.optimal', 5)
         alternative_weight = self.config.get('visualization.route_weight.alternative', 3)
         
-        # Generate route names
+        # Generate route names using geocoding
         if ranked_routes:
             for rank, (group, score, breakdown) in enumerate(ranked_routes, 1):
-                route_name = self.route_namer.generate_simple_name(
-                    group.id, group.direction, rank
-                )
+                # Use name_route() to get geocoded street names if available
+                if group.representative_route and group.representative_route.coordinates:
+                    route_name = self.route_namer.name_route(
+                        group.representative_route.coordinates,
+                        group.id,
+                        group.direction
+                    )
+                else:
+                    # Fallback to simple name if no coordinates available
+                    route_name = self.route_namer.generate_simple_name(
+                        group.id, group.direction, rank
+                    )
                 self.route_names[group.id] = route_name
         
         # Add route layers
