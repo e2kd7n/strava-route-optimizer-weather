@@ -737,6 +737,621 @@ requests>=2.28.0
 ```
 pytest>=7.2.0
 pytest-cov>=4.0.0
+pytest-mock>=3.11.0
 black>=22.10.0
 flake8>=5.0.0
 mypy>=0.991
+
+---
+
+## 8. Weather Fetcher Module (`weather_fetcher.py`)
+
+### Purpose
+Fetch real-time weather data and analyze wind impact on cycling routes.
+
+### Key Functions
+
+```python
+class WeatherFetcher:
+    def __init__(self, cache_radius_km: float = 2.0, cache_duration_hours: float = 1.5)
+    def get_weather(self, lat: float, lon: float) -> Dict[str, Any]
+    def get_route_weather(self, coordinates: List[Tuple[float, float]]) -> Dict[str, Any]
+    def calculate_wind_impact(self, route_coords: List[Tuple[float, float]], 
+                             wind_speed: float, wind_direction: float) -> Dict[str, float]
+    def _calculate_bearing(self, coord1: Tuple[float, float], 
+                          coord2: Tuple[float, float]) -> float
+```
+
+### Weather Data Structure
+
+```python
+{
+    'temperature': float,  # Celsius
+    'wind_speed': float,   # km/h
+    'wind_direction': float,  # degrees (0-360, direction FROM)
+    'wind_gusts': float,   # km/h
+    'humidity': float,     # percentage
+    'precipitation': float,  # mm/h
+    'timestamp': str       # ISO format
+}
+```
+
+### Wind Impact Calculation
+
+**Algorithm:**
+1. Sample weather at 3 points along route (start, middle, end)
+2. Calculate route bearing for each segment
+3. Determine relative wind angle
+4. Calculate headwind/tailwind component: `wind_speed × cos(angle)`
+5. Calculate crosswind component: `wind_speed × |sin(angle)|`
+6. Estimate time impact based on research coefficients
+
+**Impact Coefficients:**
+- Headwind: +1.5% time per 1 km/h
+- Tailwind: -1.0% time per 1 km/h  
+- Crosswind: +0.5% time per 1 km/h
+
+**Weather Score (0-100):**
+```python
+base_score = 50
+tailwind_bonus = min(40, avg_tailwind * 2)  # Up to +40
+headwind_penalty = min(40, avg_headwind * 2)  # Up to -40
+crosswind_penalty = min(10, avg_crosswind)  # Up to -10
+score = base_score + tailwind_bonus - headwind_penalty - crosswind_penalty
+```
+
+### Caching Strategy
+
+- **Spatial Cache**: Locations within 2km share cached data
+- **Temporal Cache**: Data valid for 90 minutes
+- **Cache Key**: SHA256 hash of rounded coordinates + timestamp
+- **Cache File**: `cache/weather_cache.json`
+
+### API Integration
+
+**Provider:** Open-Meteo (free, no API key required)
+- **Endpoint:** `https://api.open-meteo.com/v1/forecast`
+- **Rate Limit:** None (reasonable use)
+- **Data Freshness:** Updated hourly
+
+---
+
+## 9. Route Namer Module (`route_namer.py`)
+
+### Purpose
+Generate human-readable route names based on streets, neighborhoods, and landmarks.
+
+### Key Functions
+
+```python
+class RouteNamer:
+    def __init__(self, config=None)
+    def generate_route_name(self, coordinates: List[Tuple[float, float]]) -> str
+    def _get_strategic_sample_points(self, coordinates: List[Tuple[float, float]]) -> List
+    def _reverse_geocode_batch(self, points: List[Tuple[float, float]]) -> List[Dict]
+    def _extract_street_names(self, geocode_results: List[Dict]) -> List[str]
+    def _select_representative_name(self, street_names: List[str]) -> str
+```
+
+### Naming Algorithm
+
+**Current Implementation (v2.1.0):**
+1. Sample 5 strategic points along route (start, 25%, 50%, 75%, end)
+2. Reverse geocode each point to get street/path names
+3. Count frequency of each street name
+4. Select most common street as route name
+5. Format as "Via [Street Name]"
+
+**Planned Enhancement (Route Naming Epic):**
+1. Sample 10-12 points to capture transitions
+2. Identify route segments (start → middle → end)
+3. Detect connection streets vs main route
+4. Format as "[Start St] → [Main Route] → [End St]"
+
+### Geocoding
+
+**Provider:** Nominatim (OpenStreetMap)
+- **Rate Limit:** 1 request per second
+- **Timeout:** 10 seconds per request
+- **User Agent:** "strava_commute_analyzer"
+
+**Cache Strategy:**
+- Persistent cache in `cache/geocoding_cache.json`
+- Key: Rounded coordinates (4 decimal places ≈ 11m precision)
+- Never expires (street names rarely change)
+
+### Name Selection Logic
+
+```python
+def _select_representative_name(self, street_names):
+    # Filter out generic names
+    filtered = [n for n in street_names if n not in 
+                ['Road', 'Path', 'Trail', 'Street']]
+    
+    # Count frequency
+    counter = Counter(filtered)
+    
+    # Return most common, or 'Unknown Route' if none
+    if counter:
+        return counter.most_common(1)[0][0]
+    return 'Unknown Route'
+```
+
+### Error Handling
+
+- **Geocoding Timeout**: Use cached data or skip point
+- **Rate Limit**: Automatic 1-second delay between requests
+- **No Results**: Mark as "Unknown Street"
+- **Network Error**: Graceful degradation with generic names
+
+---
+
+## 10. Long Ride Analyzer Module (`long_ride_analyzer.py`)
+
+### Purpose
+Analyze and recommend long recreational rides separate from commute analysis.
+
+### Key Functions
+
+```python
+class LongRideAnalyzer:
+    def __init__(self, activities: List[Activity], config)
+    def identify_long_rides(self, min_distance_km: float = 40) -> List[Activity]
+    def analyze_long_rides(self) -> Dict[str, Any]
+    def get_top_rides(self, n: int = 10) -> List[Dict]
+    def calculate_monthly_stats(self) -> Dict[str, Dict]
+```
+
+### Long Ride Criteria
+
+- **Minimum Distance**: 40 km (configurable)
+- **Activity Type**: Ride, EBikeRide
+- **Exclude**: Commutes, virtual rides
+- **Sort By**: Distance (longest first)
+
+### Analysis Metrics
+
+```python
+{
+    'total_rides': int,
+    'total_distance': float,  # km
+    'total_time': int,  # hours
+    'avg_distance': float,  # km
+    'avg_speed': float,  # km/h
+    'avg_elevation': float,  # meters
+    'longest_ride': Activity,
+    'fastest_ride': Activity,
+    'monthly_breakdown': Dict[str, Dict]
+}
+```
+
+### Monthly Statistics
+
+For each month:
+- Ride count
+- Total distance
+- Average distance
+- Total elevation gain
+- Average speed
+
+---
+
+## 11. Units Module (`units.py`)
+
+### Purpose
+Handle unit conversions and formatting for international users.
+
+### Key Functions
+
+```python
+class UnitConverter:
+    def __init__(self, system: str = 'metric')  # 'metric' or 'imperial'
+    def distance(self, meters: float) -> str
+    def speed(self, meters_per_second: float) -> str
+    def elevation(self, meters: float) -> str
+    def temperature(self, celsius: float) -> str
+    def wind_speed(self, meters_per_second: float) -> str
+```
+
+### Conversion Factors
+
+**Metric System:**
+- Distance: meters → kilometers (÷ 1000)
+- Speed: m/s → km/h (× 3.6)
+- Elevation: meters (no conversion)
+- Temperature: Celsius (no conversion)
+- Wind: m/s (no conversion)
+
+**Imperial System:**
+- Distance: meters → miles (÷ 1609.34)
+- Speed: m/s → mph (× 2.23694)
+- Elevation: meters → feet (× 3.28084)
+- Temperature: Celsius → Fahrenheit (× 9/5 + 32)
+- Wind: m/s → mph (× 2.23694)
+
+### Formatting
+
+```python
+# Metric examples
+converter.distance(5280)  # "5.3 km"
+converter.speed(8.33)     # "30.0 km/h"
+converter.elevation(152)  # "152 m"
+
+# Imperial examples
+converter.distance(5280)  # "3.3 mi"
+converter.speed(8.33)     # "18.6 mph"
+converter.elevation(152)  # "499 ft"
+```
+
+---
+
+## 12. Forecast Generator Module (`forecast_generator.py`)
+
+### Purpose
+Generate 7-day weather forecasts for commute planning.
+
+### Key Functions
+
+```python
+class ForecastGenerator:
+    def __init__(self, location: Tuple[float, float])
+    def get_7day_forecast(self) -> List[Dict]
+    def get_commute_windows(self, date: str) -> Dict[str, Dict]
+    def calculate_comfort_score(self, weather: Dict) -> int
+    def generate_recommendations(self, forecast: List[Dict]) -> List[str]
+```
+
+### Forecast Data Structure
+
+```python
+{
+    'date': str,  # YYYY-MM-DD
+    'morning': {  # 7-9 AM
+        'temperature': float,
+        'wind_speed': float,
+        'wind_direction': float,
+        'precipitation': float,
+        'comfort_score': int  # 0-100
+    },
+    'evening': {  # 4-6 PM
+        # Same structure as morning
+    },
+    'summary': str,  # "Good", "Fair", "Poor"
+    'recommendations': List[str]
+}
+```
+
+### Comfort Score Calculation
+
+```python
+score = 100
+# Temperature penalties
+if temp < 0: score -= 30
+elif temp < 5: score -= 20
+elif temp > 30: score -= 20
+elif temp > 35: score -= 30
+
+# Wind penalties
+if wind > 30: score -= 30
+elif wind > 20: score -= 20
+elif wind > 15: score -= 10
+
+# Precipitation penalties
+if precip > 5: score -= 40  # Heavy rain
+elif precip > 1: score -= 20  # Light rain
+elif precip > 0: score -= 10  # Drizzle
+
+return max(0, score)
+```
+
+### Recommendations
+
+Based on comfort scores:
+- **80-100**: "Excellent conditions for cycling"
+- **60-79**: "Good conditions, dress appropriately"
+- **40-59**: "Fair conditions, consider alternatives"
+- **20-39**: "Poor conditions, transit recommended"
+- **0-19**: "Dangerous conditions, avoid cycling"
+
+---
+
+## 13. Test Infrastructure
+
+### Test Organization
+
+```
+tests/
+├── __init__.py
+├── README.md
+├── TEST_DATA_README.md
+├── setup_test_data.py       # Synthetic test data generator
+├── test_config.py           # Configuration tests (8 tests)
+├── test_units.py            # Unit conversion tests (13 tests)
+├── test_data_fetcher.py     # Data fetching tests (7 tests)
+├── test_route_analyzer.py   # Route analysis tests (7 tests)
+└── test_integration.py      # End-to-end tests (8 tests)
+```
+
+### Test Data System
+
+**Separate Cache Files:**
+- Production: `data/cache/activities.json`
+- Test: `data/cache/activities_test.json`
+
+**Test Data Generator:**
+```python
+# tests/setup_test_data.py
+def create_test_activities():
+    """Generate 12 synthetic activities for testing."""
+    # 3 route variants × 2 directions × 2 instances
+    # Realistic polylines, metrics, timestamps
+```
+
+**Usage in Tests:**
+```python
+from src.data_fetcher import StravaDataFetcher
+
+# Always use test cache in tests
+fetcher = StravaDataFetcher(client, config, use_test_cache=True)
+```
+
+### Test Coverage (as of v2.2.0)
+
+- **Overall**: 17% (baseline)
+- **config.py**: 100%
+- **units.py**: 92%
+- **data_fetcher.py**: 45%
+- **route_analyzer.py**: 38%
+
+**Target**: 80% coverage for core modules
+
+### Running Tests
+
+```bash
+# All tests
+./run_tests.sh all
+
+# With coverage
+./run_tests.sh coverage
+
+# Specific test file
+pytest -v tests/test_units.py
+
+# Specific test
+pytest -v tests/test_units.py::TestUnitConverter::test_metric_distance
+```
+
+### Test Status
+
+**Current**: 43/43 tests passing (100% pass rate) ✅
+
+---
+
+## 14. Security & Code Quality
+
+### Security Enhancements (v2.1.0)
+
+**Hash Algorithm:**
+- Replaced MD5 with SHA256 for all cache keys
+- Prevents collision attacks
+- Better integrity verification
+
+**Dependency Management:**
+- Regular security audits with `pip-audit`
+- Automated vulnerability scanning
+- Minimum version requirements in `requirements.txt`
+
+**Exception Handling:**
+- No bare `except:` statements
+- Specific exception types for all handlers
+- Proper logging of all errors
+
+### Code Quality Standards
+
+**Style:**
+- PEP 8 compliant
+- Type hints for function signatures
+- Docstrings for all public methods
+
+**Error Handling:**
+```python
+try:
+    result = risky_operation()
+except ValueError as e:
+    logger.error(f"Invalid value: {e}")
+    raise
+except NetworkError as e:
+    logger.warning(f"Network issue: {e}")
+    return cached_fallback()
+```
+
+**Logging Levels:**
+- `DEBUG`: Detailed diagnostic information
+- `INFO`: General informational messages
+- `WARNING`: Recoverable issues (using fallbacks)
+- `ERROR`: Serious problems requiring attention
+
+---
+
+## 15. Performance Optimizations
+
+### Caching Strategy
+
+**Multi-Level Caching:**
+1. **API Response Cache**: Strava activities (7 days)
+2. **Geocoding Cache**: Street names (permanent)
+3. **Weather Cache**: Current conditions (90 minutes)
+4. **Route Similarity Cache**: Fréchet calculations (permanent)
+5. **Route Groups Cache**: Grouped routes (until config changes)
+
+**Cache Invalidation:**
+- Time-based for weather and activities
+- Config-based for route analysis
+- Manual clear with `--force-reanalysis` flag
+
+### Parallel Processing
+
+**Route Grouping:**
+- Disabled by default (overhead > benefit for typical datasets)
+- Available with `--parallel N` flag (N = 1-8 workers)
+- ~1.5-2x speedup for >100 routes
+
+**When to Use:**
+```bash
+# Small dataset (<50 routes): Sequential is faster
+python main.py --analyze
+
+# Large dataset (>100 routes): Parallel helps
+python main.py --analyze --parallel 4
+```
+
+### Memory Management
+
+**Streaming:**
+- Activities loaded in batches
+- Polylines decoded on-demand
+- Large datasets processed incrementally
+
+**Cleanup:**
+- Explicit cache clearing when needed
+- Temporary data structures freed after use
+- Generator patterns for large iterations
+
+---
+
+## 16. API Rate Limiting
+
+### Strava API
+
+**Limits:**
+- 100 requests per 15 minutes
+- 1,000 requests per day
+
+**Handling:**
+```python
+try:
+    activities = client.get_activities(limit=100)
+except RateLimitExceeded:
+    logger.warning("Rate limit hit, using cached data")
+    activities = load_cached_activities()
+```
+
+### Nominatim (Geocoding)
+
+**Limits:**
+- 1 request per second
+- No daily limit (reasonable use)
+
+**Handling:**
+```python
+def _reverse_geocode_batch(self, points):
+    results = []
+    for point in points:
+        result = self._geocode_with_cache(point)
+        results.append(result)
+        time.sleep(1.0)  # Respect rate limit
+    return results
+```
+
+### Open-Meteo (Weather)
+
+**Limits:**
+- No strict limits
+- Reasonable use expected
+
+**Best Practices:**
+- Cache aggressively (90 minutes)
+- Batch requests when possible
+- Use spatial caching (2km radius)
+
+---
+
+## 17. Deployment & Configuration
+
+### Environment Variables
+
+```bash
+# Required
+STRAVA_CLIENT_ID=your_client_id
+STRAVA_CLIENT_SECRET=your_client_secret
+
+# Optional
+CACHE_DURATION_DAYS=7
+LOG_LEVEL=INFO
+```
+
+### Configuration File
+
+**Location:** `config/config.yaml`
+
+**Key Sections:**
+- `strava`: API credentials
+- `data_fetching`: Cache settings
+- `location_detection`: Clustering parameters
+- `route_filtering`: Distance and type filters
+- `route_analysis`: Similarity thresholds
+- `optimization`: Scoring weights
+- `visualization`: Map settings
+
+### First-Time Setup
+
+```bash
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Configure credentials
+cp .env.example .env
+# Edit .env with your Strava API credentials
+
+# 3. Authenticate
+python main.py --auth
+
+# 4. Fetch and analyze
+python main.py --fetch --analyze
+```
+
+### Maintenance
+
+**Weekly:**
+- Fetch new activities: `python main.py --fetch`
+- Re-run analysis: `python main.py --analyze`
+
+**Monthly:**
+- Clear old caches: `rm cache/*.json`
+- Update dependencies: `pip install --upgrade -r requirements.txt`
+- Run security audit: `pip-audit`
+
+---
+
+## 18. Future Enhancements
+
+### Planned Features
+
+**P1 (High Priority):**
+- Segment-based route naming with connection streets
+- Time-aware next commute recommendations
+- CI/CD integration with GitHub Actions
+
+**P2 (Medium Priority):**
+- Progressive disclosure UI for mobile
+- Map direction indicators
+- Feature discovery & onboarding
+
+**P4 (Future):**
+- Long rides analysis dashboard
+- Weather dashboard with 7-day forecast
+- Traffic pattern analysis
+- Social features (compare with other commuters)
+
+### Technical Debt
+
+- Increase test coverage to 80%
+- Add type hints to all modules
+- Implement comprehensive error recovery
+- Add performance benchmarks
+- Create API documentation
+
+---
+
+*Last Updated: 2026-03-27*
+*Version: 2.2.0*
