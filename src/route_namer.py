@@ -34,18 +34,21 @@ class RouteNamer:
         self.sampling_density = self.config.get('route_naming.sampling_density', 10) if config else 10
         self.min_segment_length_pct = self.config.get('route_naming.min_segment_length_pct', 10) if config else 10
         self.enable_segment_naming = self.config.get('route_naming.enable_segment_naming', True) if config else True
+        self.show_full_path = self.config.get('route_naming.show_full_path', True) if config else True
+        self.max_segments_in_name = self.config.get('route_naming.max_segments_in_name', 3) if config else 3
         
-        # Define equivalent streets (parallel routes that should be treated as the same)
-        # These are streets that run parallel to each other and serve the same route purpose
-        self.equivalent_streets = {
+        # Load equivalent streets from config (parallel routes that should be treated as the same)
+        default_equivalent_streets = {
             'North Simonds Drive': 'Lakefront Trail',
             'South Simonds Drive': 'Lakefront Trail',
             'Simonds Drive': 'Lakefront Trail',
-            # Add more equivalent streets as needed
         }
+        self.equivalent_streets = self.config.get('route_naming.equivalent_streets', default_equivalent_streets) if config else default_equivalent_streets
         
-        # Initialize with 10-second timeout to handle slow Nominatim responses
-        self.geolocator = Nominatim(user_agent="strava_commute_analyzer", timeout=10)
+        # Initialize geocoder with configurable settings
+        geocoder_timeout = self.config.get('route_naming.geocoder_timeout', 10) if config else 10
+        geocoder_user_agent = self.config.get('route_naming.geocoder_user_agent', 'strava_commute_analyzer') if config else 'strava_commute_analyzer'
+        self.geolocator = Nominatim(user_agent=geocoder_user_agent, timeout=geocoder_timeout)
         
         # Set up persistent cache
         self.cache_dir = "cache"

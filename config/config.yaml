@@ -1,6 +1,8 @@
 strava:
   client_id: ${STRAVA_CLIENT_ID}
   client_secret: ${STRAVA_CLIENT_SECRET}
+  oauth_callback_host: "localhost"  # Host for OAuth callback server
+  oauth_callback_port: 8000  # Port for OAuth callback server
 
 data_fetching:
   cache_enabled: true
@@ -40,13 +42,19 @@ route_naming:
   show_full_path: true  # Show start → middle → end format
   max_segments_in_name: 3  # Maximum segments to include in name
   enable_segment_naming: true  # Feature flag to enable/disable segment-based naming
+  geocoder_timeout: 10  # Timeout in seconds for geocoding requests
+  geocoder_user_agent: "strava_commute_analyzer"  # User agent for geocoding service
+  equivalent_streets:  # Parallel streets that should be treated as the same route
+    "North Simonds Drive": "Lakefront Trail"
+    "South Simonds Drive": "Lakefront Trail"
+    "Simonds Drive": "Lakefront Trail"
 
 optimization:
   weights:
-    time: 0.35      # Speed and duration
-    distance: 0.25  # Route length
-    safety: 0.25    # Familiarity and road conditions
-    weather: 0.15   # Wind impact on cycling efficiency
+    time: 0.25      # Speed and duration
+    distance: 0.15  # Route length
+    safety: 0.35    # Familiarity and road conditions
+    weather: 0.25   # Wind impact on cycling efficiency
   weather_enabled: true  # Enable real-time weather analysis
 
 visualization:

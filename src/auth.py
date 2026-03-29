@@ -95,7 +95,9 @@ class StravaAuthenticator:
     
     def __init__(self, client_id: str, client_secret: str,
                  credentials_path: str = "config/credentials.json",
-                 preferred_browser: str = "chrome"):
+                 preferred_browser: str = "chrome",
+                 oauth_callback_host: str = "localhost",
+                 oauth_callback_port: int = 8000):
         """
         Initialize authenticator.
         
@@ -104,11 +106,15 @@ class StravaAuthenticator:
             client_secret: Strava API client secret
             credentials_path: Path to store credentials
             preferred_browser: Preferred browser for OAuth (chrome, firefox, safari, edge, default)
+            oauth_callback_host: Host for OAuth callback server
+            oauth_callback_port: Port for OAuth callback server
         """
         self.client_id = client_id
         self.client_secret = client_secret
         self.credentials_path = Path(credentials_path)
-        self.redirect_uri = "http://localhost:8000/authorized"
+        self.oauth_callback_host = oauth_callback_host
+        self.oauth_callback_port = oauth_callback_port
+        self.redirect_uri = f"http://{oauth_callback_host}:{oauth_callback_port}/authorized"
         self.preferred_browser = preferred_browser.lower()
         
     def get_authorization_url(self) -> str:
@@ -300,8 +306,8 @@ class StravaAuthenticator:
                 pass
         
         # Start server
-        server = HTTPServer(('localhost', 8000), CallbackHandler)
-        logger.info("Waiting for authorization callback on http://localhost:8000...")
+        server = HTTPServer((self.oauth_callback_host, self.oauth_callback_port), CallbackHandler)
+        logger.info(f"Waiting for authorization callback on {self.redirect_uri}...")
         
         # Handle one request
         server.handle_request()
@@ -345,13 +351,17 @@ def get_authenticated_client(config) -> Client:
     Returns:
         Authenticated stravalib Client
     """
-    # Get browser preference from config, default to chrome
+    # Get preferences from config with defaults
     preferred_browser = config.get('preferences.browser', 'chrome')
+    oauth_callback_host = config.get('strava.oauth_callback_host', 'localhost')
+    oauth_callback_port = config.get('strava.oauth_callback_port', 8000)
     
     authenticator = StravaAuthenticator(
         client_id=config.get('strava.client_id'),
         client_secret=config.get('strava.client_secret'),
-        preferred_browser=preferred_browser
+        preferred_browser=preferred_browser,
+        oauth_callback_host=oauth_callback_host,
+        oauth_callback_port=oauth_callback_port
     )
     
     return authenticator.get_authenticated_client()

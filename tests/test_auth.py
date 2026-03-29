@@ -402,7 +402,9 @@ class TestGetAuthenticatedClient:
         mock_auth_class.assert_called_once_with(
             client_id='12345',
             client_secret='test_secret',
-            preferred_browser='firefox'
+            preferred_browser='firefox',
+            oauth_callback_host='localhost',
+            oauth_callback_port=8000
         )
         mock_authenticator.get_authenticated_client.assert_called_once()
     
@@ -423,11 +425,13 @@ class TestGetAuthenticatedClient:
         client = get_authenticated_client(mock_config)
         
         assert client == mock_client
-        # Should default to 'chrome' when preferences.browser not set
+        # Should default to 'chrome' and localhost:8000 when not set
         mock_auth_class.assert_called_once_with(
             client_id='12345',
             client_secret='test_secret',
-            preferred_browser='chrome'
+            preferred_browser='chrome',
+            oauth_callback_host='localhost',
+            oauth_callback_port=8000
         )
         mock_authenticator.get_authenticated_client.assert_called_once()
 
