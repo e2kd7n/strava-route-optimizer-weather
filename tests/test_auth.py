@@ -225,6 +225,68 @@ class TestStravaAuthenticator:
         
         assert tokens == existing_tokens
     
+    @patch('time.time')
+    @patch.object(StravaAuthenticator, 'load_tokens')
+    @patch.object(StravaAuthenticator, 'refresh_access_token')
+    @patch.object(StravaAuthenticator, 'save_tokens')
+    def test_authenticate_with_expired_tokens(
+        self, mock_save, mock_refresh, mock_load, mock_time, authenticator
+    ):
+        """Test authentication refreshes expired tokens (#25)."""
+        mock_time.return_value = 1234567890
+        expired_tokens = {
+            'access_token': 'expired_token',
+            'refresh_token': 'refresh_token',
+            'expires_at': 1234567000  # Expired (890 seconds ago)
+        }
+        refreshed_tokens = {
+            'access_token': 'new_token',
+            'refresh_token': 'new_refresh',
+            'expires_at': 1234571490  # Valid for 1 hour
+        }
+        mock_load.return_value = expired_tokens
+        mock_refresh.return_value = refreshed_tokens
+        
+        tokens = authenticator.authenticate()
+        
+        assert tokens == refreshed_tokens
+        mock_refresh.assert_called_once_with('refresh_token')
+        mock_save.assert_called_once_with(refreshed_tokens)
+    
+    @patch('time.time')
+    @patch('src.auth.webbrowser.open')
+    @patch.object(StravaAuthenticator, '_wait_for_callback')
+    @patch.object(StravaAuthenticator, 'exchange_code_for_token')
+    @patch.object(StravaAuthenticator, 'load_tokens')
+    @patch.object(StravaAuthenticator, 'refresh_access_token')
+    def test_authenticate_refresh_fails_starts_oauth(
+        self, mock_refresh, mock_load, mock_exchange, mock_wait, 
+        mock_browser, mock_time, authenticator
+    ):
+        """Test authentication starts OAuth flow if refresh fails (#25)."""
+        mock_time.return_value = 1234567890
+        expired_tokens = {
+            'access_token': 'expired_token',
+            'refresh_token': 'invalid_refresh',
+            'expires_at': 1234567000
+        }
+        mock_load.return_value = expired_tokens
+        mock_refresh.side_effect = Exception("Invalid refresh token")
+        mock_wait.return_value = "auth_code_123"
+        mock_exchange.return_value = {
+            'access_token': 'new_token',
+            'refresh_token': 'new_refresh',
+            'expires_at': 1234571490
+        }
+        
+        tokens = authenticator.authenticate()
+        
+        assert tokens['access_token'] == 'new_token'
+        mock_refresh.assert_called_once_with('invalid_refresh')
+        mock_browser.assert_called_once()
+        mock_wait.assert_called_once()
+        mock_exchange.assert_called_once_with("auth_code_123")
+    
     @patch('src.auth.HTTPServer')
     def test_wait_for_callback_success(self, mock_server_class, authenticator):
         """Test waiting for OAuth callback successfully."""

@@ -15293,5 +15293,19 @@
     "neighborhood": "Douglas",
     "landmark": null,
     "feature": null
+  },
+  "details_41.8800,-87.6288": {
+    "street": "West Marble Place",
+    "is_major": false,
+    "neighborhood": "Financial District",
+    "landmark": null,
+    "feature": null
+  },
+  "details_41.8819,-87.6278": {
+    "street": "South State Street",
+    "is_major": false,
+    "neighborhood": "Jewelers Row",
+    "landmark": null,
+    "feature": null
   }
 }

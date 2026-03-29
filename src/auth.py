@@ -209,8 +209,22 @@ class StravaAuthenticator:
         tokens = self.load_tokens()
         if tokens:
             logger.info("Found existing tokens")
-            # TODO (#25): Check if token is expired and refresh if needed
-            return tokens
+            # Check if token is expired and refresh if needed
+            import time
+            if tokens['expires_at'] < time.time():
+                logger.info("Access token expired, refreshing...")
+                try:
+                    tokens = self.refresh_access_token(tokens['refresh_token'])
+                    self.save_tokens(tokens)
+                    logger.info("Token refreshed successfully")
+                except Exception as e:
+                    logger.warning(f"Failed to refresh token: {e}")
+                    logger.info("Starting new OAuth flow...")
+                    # Fall through to OAuth flow below
+                    tokens = None
+            
+            if tokens:
+                return tokens
         
         # Start OAuth flow
         logger.info("Starting OAuth authentication flow...")
