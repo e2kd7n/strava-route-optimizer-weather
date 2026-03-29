@@ -10,6 +10,8 @@ from typing import Dict, List, Optional, Tuple
 from datetime import datetime, timedelta, time
 from dataclasses import dataclass
 
+from .weather_fetcher import WindImpactCalculator
+
 logger = logging.getLogger(__name__)
 
 
@@ -66,6 +68,7 @@ class CommuteForecastGenerator:
         self.home_location = home_location
         self.work_location = work_location
         self.unit_system = unit_system
+        self.wind_calculator = WindImpactCalculator()
         
         # Commute time windows (configurable)
         self.morning_window_start = time(7, 0)  # 7:00 AM
@@ -263,6 +266,9 @@ class CommuteForecastGenerator:
         """
         Select optimal route based on wind conditions.
         
+        Uses WindImpactCalculator to analyze headwind/tailwind for each route
+        and selects the one with the least wind resistance.
+        
         Returns: (route_id, route_name)
         """
         routes = self.route_groups.get(direction, [])
@@ -275,14 +281,50 @@ class CommuteForecastGenerator:
             most_frequent = max(routes, key=lambda r: r.get('frequency', 0))
             return most_frequent.get('id'), most_frequent.get('name', 'Primary Route')
         
-        # For stronger winds, consider wind impact
-        # This is a simplified version - in reality, we'd calculate wind components
-        # for each route and select the one with least headwind
+        # For stronger winds, analyze wind impact for each route
+        best_route = None
+        best_score = float('inf')  # Lower is better (less headwind)
         
-        # For now, return the most frequent route
-        # TODO (#70): Implement wind-aware route selection using WindImpactCalculator
-        most_frequent = max(routes, key=lambda r: r.get('frequency', 0))
-        return most_frequent.get('id'), most_frequent.get('name', 'Primary Route')
+        for route in routes:
+            # Get route coordinates
+            coordinates = route.get('coordinates')
+            if not coordinates or len(coordinates) < 2:
+                continue
+            
+            try:
+                # Calculate wind impact for this route
+                wind_impact = self.wind_calculator.analyze_route_wind_impact(
+                    coordinates, wind_speed_kph, wind_direction_deg
+                )
+                
+                # Score based on headwind (positive = bad, negative = good)
+                # Also consider crosswind slightly
+                headwind = wind_impact.get('avg_headwind_kph', 0)
+                crosswind = wind_impact.get('avg_crosswind_kph', 0)
+                
+                # Wind score: headwind is primary factor, crosswind is secondary
+                wind_score = headwind + (crosswind * 0.3)
+                
+                # Adjust score based on route frequency (prefer frequently used routes)
+                frequency = route.get('frequency', 1)
+                frequency_bonus = -2 * (frequency / 10)  # Up to -2 for very frequent routes
+                
+                total_score = wind_score + frequency_bonus
+                
+                if total_score < best_score:
+                    best_score = total_score
+                    best_route = route
+                    
+            except Exception as e:
+                logger.debug(f"Error analyzing wind for route {route.get('id')}: {e}")
+                continue
+        
+        # If wind analysis failed for all routes, fall back to most frequent
+        if best_route is None:
+            most_frequent = max(routes, key=lambda r: r.get('frequency', 0))
+            return most_frequent.get('id'), most_frequent.get('name', 'Primary Route')
+        
+        return best_route.get('id'), best_route.get('name', 'Primary Route')
     
     def _calculate_optimal_departure(self, window_start: time, window_end: time,
                                     precip_prob: float, is_morning: bool) -> time:

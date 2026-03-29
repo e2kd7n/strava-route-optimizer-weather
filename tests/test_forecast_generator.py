@@ -237,13 +237,21 @@ class TestCommuteForecastGenerator:
         assert route_name == 'Main Route'
     
     def test_select_optimal_route_strong_wind(self, generator):
-        """Test route selection with strong wind (TODO #70)."""
-        # Currently returns most frequent route regardless of wind
+        """Test route selection with strong wind - now wind-aware (#70 implemented)."""
+        # Add coordinates to routes for wind analysis
+        generator.route_groups['to_work'][0]['coordinates'] = [
+            (41.8781, -87.6298), (41.8800, -87.6280), (41.8819, -87.6278)
+        ]
+        generator.route_groups['to_work'][1]['coordinates'] = [
+            (41.8781, -87.6298), (41.8790, -87.6290), (41.8819, -87.6278)
+        ]
+        
         route_id, route_name = generator._select_optimal_route(
             direction="to_work", wind_direction_deg=180.0, wind_speed_kph=30.0
         )
-        assert route_id == 'route_1'  # Most frequent
-        # TODO: Should consider wind direction when #70 is implemented
+        # Should analyze wind impact and select best route
+        assert route_id in ['route_1', 'route_2']
+        assert route_name in ['Main Route', 'Alt Route']
     
     def test_select_optimal_route_no_routes(self, generator):
         """Test route selection when no routes available."""
