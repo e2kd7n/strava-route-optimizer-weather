@@ -385,10 +385,11 @@ class TestGetAuthenticatedClient:
     def test_get_authenticated_client_from_config(self, mock_auth_class):
         """Test getting authenticated client from config."""
         mock_config = Mock()
-        mock_config.get.side_effect = lambda key: {
+        mock_config.get.side_effect = lambda key, default=None: {
             'strava.client_id': '12345',
-            'strava.client_secret': 'test_secret'
-        }[key]
+            'strava.client_secret': 'test_secret',
+            'preferences.browser': 'firefox'
+        }.get(key, default)
         
         mock_authenticator = Mock()
         mock_client = Mock(spec=Client)
@@ -400,7 +401,33 @@ class TestGetAuthenticatedClient:
         assert client == mock_client
         mock_auth_class.assert_called_once_with(
             client_id='12345',
-            client_secret='test_secret'
+            client_secret='test_secret',
+            preferred_browser='firefox'
+        )
+        mock_authenticator.get_authenticated_client.assert_called_once()
+    
+    @patch('src.auth.StravaAuthenticator')
+    def test_get_authenticated_client_default_browser(self, mock_auth_class):
+        """Test getting authenticated client with default browser preference."""
+        mock_config = Mock()
+        mock_config.get.side_effect = lambda key, default=None: {
+            'strava.client_id': '12345',
+            'strava.client_secret': 'test_secret'
+        }.get(key, default)
+        
+        mock_authenticator = Mock()
+        mock_client = Mock(spec=Client)
+        mock_authenticator.get_authenticated_client.return_value = mock_client
+        mock_auth_class.return_value = mock_authenticator
+        
+        client = get_authenticated_client(mock_config)
+        
+        assert client == mock_client
+        # Should default to 'chrome' when preferences.browser not set
+        mock_auth_class.assert_called_once_with(
+            client_id='12345',
+            client_secret='test_secret',
+            preferred_browser='chrome'
         )
         mock_authenticator.get_authenticated_client.assert_called_once()
 

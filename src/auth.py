@@ -93,8 +93,9 @@ def validate_strava_credentials(client_id: str, client_secret: str) -> bool:
 class StravaAuthenticator:
     """Handles Strava OAuth authentication and token management."""
     
-    def __init__(self, client_id: str, client_secret: str, 
-                 credentials_path: str = "config/credentials.json"):
+    def __init__(self, client_id: str, client_secret: str,
+                 credentials_path: str = "config/credentials.json",
+                 preferred_browser: str = "chrome"):
         """
         Initialize authenticator.
         
@@ -102,11 +103,13 @@ class StravaAuthenticator:
             client_id: Strava API client ID
             client_secret: Strava API client secret
             credentials_path: Path to store credentials
+            preferred_browser: Preferred browser for OAuth (chrome, firefox, safari, edge, default)
         """
         self.client_id = client_id
         self.client_secret = client_secret
         self.credentials_path = Path(credentials_path)
         self.redirect_uri = "http://localhost:8000/authorized"
+        self.preferred_browser = preferred_browser.lower()
         
     def get_authorization_url(self) -> str:
         """
@@ -230,16 +233,20 @@ class StravaAuthenticator:
         logger.info("Starting OAuth authentication flow...")
         auth_url = self.get_authorization_url()
         
-        # Open browser for authorization (prefer Chrome)
+        # Open browser for authorization
         logger.info(f"Opening browser for authorization: {auth_url}")
-        try:
-            # Try to use Chrome specifically
-            chrome = webbrowser.get('chrome')
-            chrome.open(auth_url)
-        except webbrowser.Error:
-            # Fall back to default browser if Chrome not available
-            logger.warning("Chrome not found, using default browser")
+        if self.preferred_browser == "default":
             webbrowser.open(auth_url)
+        else:
+            try:
+                # Try to use preferred browser
+                browser = webbrowser.get(self.preferred_browser)
+                browser.open(auth_url)
+                logger.debug(f"Opened {self.preferred_browser} browser")
+            except webbrowser.Error:
+                # Fall back to default browser if preferred not available
+                logger.warning(f"{self.preferred_browser} not found, using default browser")
+                webbrowser.open(auth_url)
         
         # Start local server to receive callback
         code = self._wait_for_callback()
@@ -338,9 +345,13 @@ def get_authenticated_client(config) -> Client:
     Returns:
         Authenticated stravalib Client
     """
+    # Get browser preference from config, default to chrome
+    preferred_browser = config.get('preferences.browser', 'chrome')
+    
     authenticator = StravaAuthenticator(
         client_id=config.get('strava.client_id'),
-        client_secret=config.get('strava.client_secret')
+        client_secret=config.get('strava.client_secret'),
+        preferred_browser=preferred_browser
     )
     
     return authenticator.get_authenticated_client()
