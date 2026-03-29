@@ -188,12 +188,12 @@ class TestStravaAuthenticator:
         loaded_tokens = authenticator.load_tokens()
         assert loaded_tokens is None
     
-    @patch('src.auth.webbrowser.open')
+    @patch('src.auth.webbrowser.get')
     @patch.object(StravaAuthenticator, '_wait_for_callback')
     @patch.object(StravaAuthenticator, 'exchange_code_for_token')
     @patch.object(StravaAuthenticator, 'load_tokens')
     def test_authenticate_no_existing_tokens(
-        self, mock_load, mock_exchange, mock_wait, mock_browser, authenticator
+        self, mock_load, mock_exchange, mock_wait, mock_browser_get, authenticator
     ):
         """Test authentication flow when no existing tokens."""
         mock_load.return_value = None
@@ -203,21 +203,27 @@ class TestStravaAuthenticator:
             'refresh_token': 'new_refresh',
             'expires_at': 1234567890
         }
+        # Mock Chrome browser
+        mock_chrome = Mock()
+        mock_browser_get.return_value = mock_chrome
         
         tokens = authenticator.authenticate()
         
         assert tokens['access_token'] == 'new_token'
-        mock_browser.assert_called_once()
+        mock_browser_get.assert_called_once_with('chrome')
+        mock_chrome.open.assert_called_once()
         mock_wait.assert_called_once()
         mock_exchange.assert_called_once_with("auth_code_123")
     
+    @patch('time.time')
     @patch.object(StravaAuthenticator, 'load_tokens')
-    def test_authenticate_with_existing_tokens(self, mock_load, authenticator):
-        """Test authentication returns existing tokens."""
+    def test_authenticate_with_existing_tokens(self, mock_load, mock_time, authenticator):
+        """Test authentication returns existing valid tokens."""
+        mock_time.return_value = 1234567000  # Current time
         existing_tokens = {
             'access_token': 'existing_token',
             'refresh_token': 'existing_refresh',
-            'expires_at': 1234567890
+            'expires_at': 1234567890  # Expires in future (890 seconds)
         }
         mock_load.return_value = existing_tokens
         
@@ -254,14 +260,14 @@ class TestStravaAuthenticator:
         mock_save.assert_called_once_with(refreshed_tokens)
     
     @patch('time.time')
-    @patch('src.auth.webbrowser.open')
+    @patch('src.auth.webbrowser.get')
     @patch.object(StravaAuthenticator, '_wait_for_callback')
     @patch.object(StravaAuthenticator, 'exchange_code_for_token')
     @patch.object(StravaAuthenticator, 'load_tokens')
     @patch.object(StravaAuthenticator, 'refresh_access_token')
     def test_authenticate_refresh_fails_starts_oauth(
-        self, mock_refresh, mock_load, mock_exchange, mock_wait, 
-        mock_browser, mock_time, authenticator
+        self, mock_refresh, mock_load, mock_exchange, mock_wait,
+        mock_browser_get, mock_time, authenticator
     ):
         """Test authentication starts OAuth flow if refresh fails (#25)."""
         mock_time.return_value = 1234567890
@@ -278,12 +284,16 @@ class TestStravaAuthenticator:
             'refresh_token': 'new_refresh',
             'expires_at': 1234571490
         }
+        # Mock Chrome browser
+        mock_chrome = Mock()
+        mock_browser_get.return_value = mock_chrome
         
         tokens = authenticator.authenticate()
         
         assert tokens['access_token'] == 'new_token'
         mock_refresh.assert_called_once_with('invalid_refresh')
-        mock_browser.assert_called_once()
+        mock_browser_get.assert_called_once_with('chrome')
+        mock_chrome.open.assert_called_once()
         mock_wait.assert_called_once()
         mock_exchange.assert_called_once_with("auth_code_123")
     

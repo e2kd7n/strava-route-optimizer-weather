@@ -230,9 +230,16 @@ class StravaAuthenticator:
         logger.info("Starting OAuth authentication flow...")
         auth_url = self.get_authorization_url()
         
-        # Open browser for authorization
+        # Open browser for authorization (prefer Chrome)
         logger.info(f"Opening browser for authorization: {auth_url}")
-        webbrowser.open(auth_url)
+        try:
+            # Try to use Chrome specifically
+            chrome = webbrowser.get('chrome')
+            chrome.open(auth_url)
+        except webbrowser.Error:
+            # Fall back to default browser if Chrome not available
+            logger.warning("Chrome not found, using default browser")
+            webbrowser.open(auth_url)
         
         # Start local server to receive callback
         code = self._wait_for_callback()
