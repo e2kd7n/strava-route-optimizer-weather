@@ -1071,7 +1071,7 @@
                             </thead>
                             <tbody>
                                 {% for route in ranked_routes %}
-                                <tr class="route-row"
+                                <tr class="route-row{% if loop.index > 10 %} page-hidden{% endif %}"
                                     data-route-id="{{ route['group'].id }}"
                                     data-direction="{{ route['group'].direction }}"
                                     data-page="{{ ((loop.index - 1) // 10) + 1 }}"
@@ -2136,118 +2136,8 @@
                 <p class="mb-0 mt-2" style="font-size: 0.95em;">Find the best routes based on wind conditions - prioritizing tailwinds on the return journey</p>
             </div>
             <div class="card-body">
-                <!-- Summary Statistics Cards (Issue #8) -->
-                {% if long_rides_stats %}
-                <div class="row mb-4">
-                    <div class="col-md-3">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <div class="metric-icon" style="font-size: 2rem;">🚴</div>
-                                <h5 class="card-title mt-2">Total Rides</h5>
-                                <p class="card-text display-6">{{ long_rides_stats.total_rides }}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <div class="metric-icon" style="font-size: 2rem;">📏</div>
-                                <h5 class="card-title mt-2">Average Distance</h5>
-                                <p class="card-text display-6">{{ "%.1f"|format(long_rides_stats.avg_distance) }} {{ long_rides_stats.distance_unit }}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <div class="metric-icon" style="font-size: 2rem;">🏆</div>
-                                <h5 class="card-title mt-2">Longest Ride</h5>
-                                <p class="card-text display-6">{{ "%.1f"|format(long_rides_stats.longest_ride) }} {{ long_rides_stats.distance_unit }}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <div class="metric-icon" style="font-size: 2rem;">⛰️</div>
-                                <h5 class="card-title mt-2">Total Elevation</h5>
-                                <p class="card-text display-6">{{ "%.0f"|format(long_rides_stats.total_elevation) }} {{ long_rides_stats.elevation_unit }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Top 10 Longest Rides Table (Issue #6) -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h3>🏆 Top 10 Longest Rides</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Rank</th>
-                                        <th>Route Name</th>
-                                        <th>Distance</th>
-                                        <th>Duration</th>
-                                        <th>Elevation</th>
-                                        <th>Avg Speed</th>
-                                        <th>Date</th>
-                                        <th>Link</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for ride in top_10_rides %}
-                                    <tr>
-                                        <td>{{ loop.index }}</td>
-                                        <td>{{ ride.name }}</td>
-                                        <td>{{ "%.1f"|format(ride.distance) }} {{ long_rides_stats.distance_unit }}</td>
-                                        <td>{{ "%.1f"|format(ride.duration) }} h</td>
-                                        <td>{{ "%.0f"|format(ride.elevation_gain) }} {{ long_rides_stats.elevation_unit }}</td>
-                                        <td>{{ "%.1f"|format(ride.average_speed) }} {{ long_rides_stats.speed_unit }}</td>
-                                        <td>{{ ride.timestamp[:10] }}</td>
-                                        <td>
-                                            <a href="https://strava.com/activities/{{ ride.activity_id }}"
-                                               target="_blank" class="btn btn-sm btn-primary">
-                                                View
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Monthly Statistics Chart (Issue #7) -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h3>📅 Monthly Ride Statistics</h3>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="monthlyStatsChart" height="100"></canvas>
-                    </div>
-                </div>
-
-                <!-- Interactive Map (Issue #9) -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h3>🗺️ All Long Rides</h3>
-                        <div class="mt-2">
-                            <button class="btn btn-sm btn-outline-secondary" onclick="filterMapRoutes('all')">🌍 Show All</button>
-                            <button class="btn btn-sm btn-outline-secondary" onclick="filterMapRoutes('loops')">🔄 Loops Only</button>
-                            <button class="btn btn-sm btn-outline-secondary" onclick="filterMapRoutes('point-to-point')">➡️ Point-to-Point</button>
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        <div id="allLongRidesMap" style="height: 600px;"></div>
-                    </div>
-                </div>
-                {% endif %}
-
                 <!-- Filter Controls Section (Issue #96 - Enhanced validation feedback) -->
+                {% if long_rides_stats %}
                 <div class="row mb-3">
                     <div class="col-md-2">
                         <label for="rideDateTime" class="form-label"><strong>📅 When?</strong></label>
@@ -2398,6 +2288,117 @@
                                 <div id="recommendationsMap" style="height: 700px; width: 100%;"></div>
                             </div>
                         </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Summary Statistics Cards (Issue #8) -->
+                {% if long_rides_stats %}
+                <div class="row mb-4 mt-5">
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <div class="metric-icon" style="font-size: 2rem;">🚴</div>
+                                <h5 class="card-title mt-2">Total Rides</h5>
+                                <p class="card-text display-6">{{ long_rides_stats.total_rides }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <div class="metric-icon" style="font-size: 2rem;">📏</div>
+                                <h5 class="card-title mt-2">Average Distance</h5>
+                                <p class="card-text display-6">{{ "%.1f"|format(long_rides_stats.avg_distance) }} {{ long_rides_stats.distance_unit }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <div class="metric-icon" style="font-size: 2rem;">🏆</div>
+                                <h5 class="card-title mt-2">Longest Ride</h5>
+                                <p class="card-text display-6">{{ "%.1f"|format(long_rides_stats.longest_ride) }} {{ long_rides_stats.distance_unit }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <div class="metric-icon" style="font-size: 2rem;">⛰️</div>
+                                <h5 class="card-title mt-2">Total Elevation</h5>
+                                <p class="card-text display-6">{{ "%.0f"|format(long_rides_stats.total_elevation) }} {{ long_rides_stats.elevation_unit }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top 10 Longest Rides Table (Issue #6) -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3>🏆 Top 10 Longest Rides</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Route Name</th>
+                                        <th>Distance</th>
+                                        <th>Duration</th>
+                                        <th>Elevation</th>
+                                        <th>Avg Speed</th>
+                                        <th>Date</th>
+                                        <th>Link</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ride in top_10_rides %}
+                                    <tr>
+                                        <td>{{ loop.index }}</td>
+                                        <td>{{ ride.name }}</td>
+                                        <td>{{ "%.1f"|format(ride.distance) }} {{ long_rides_stats.distance_unit }}</td>
+                                        <td>{{ "%.1f"|format(ride.duration) }} h</td>
+                                        <td>{{ "%.0f"|format(ride.elevation_gain) }} {{ long_rides_stats.elevation_unit }}</td>
+                                        <td>{{ "%.1f"|format(ride.average_speed) }} {{ long_rides_stats.speed_unit }}</td>
+                                        <td>{{ ride.timestamp[:10] }}</td>
+                                        <td>
+                                            <a href="https://strava.com/activities/{{ ride.activity_id }}"
+                                               target="_blank" class="btn btn-sm btn-primary">
+                                                View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Statistics Chart (Issue #7) -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3>📅 Monthly Ride Statistics</h3>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="monthlyStatsChart" height="100"></canvas>
+                    </div>
+                </div>
+
+                <!-- Interactive Map (Issue #9) -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3>🗺️ All Long Rides</h3>
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="filterMapRoutes('all')">🌍 Show All</button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="filterMapRoutes('loops')">🔄 Loops Only</button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="filterMapRoutes('point-to-point')">➡️ Point-to-Point</button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="allLongRidesMap" style="height: 600px;"></div>
                     </div>
                 </div>
                 {% endif %}

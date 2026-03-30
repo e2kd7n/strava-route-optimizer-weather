@@ -455,10 +455,10 @@ class ReportGenerator:
                     'name': ride.name,
                     'distance': self.units.distance_value(ride.distance_km * 1000),  # Convert km to meters first
                     'distance_unit': self.units.distance_unit(),
-                    'duration_hours': ride.duration_hours,
-                    'elevation': self.units.elevation_value(ride.elevation_gain),
+                    'duration': ride.duration_hours,  # Template expects 'duration'
+                    'elevation_gain': self.units.elevation_value(ride.elevation_gain),  # Template expects 'elevation_gain'
                     'elevation_unit': self.units.elevation_unit(),
-                    'speed': self.units.speed_value(ride.average_speed),
+                    'average_speed': self.units.speed_value(ride.average_speed),  # Template expects 'average_speed'
                     'speed_unit': self.units.speed_unit(),
                     'timestamp': ride.timestamp,
                     'is_loop': ride.is_loop
