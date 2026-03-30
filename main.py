@@ -412,10 +412,48 @@ def _analyze_long_rides(all_activities, commute_activities, config):
     _, long_ride_activities = long_ride_analyzer.classify_activities(commute_activities)
     logger.info(f"Found {len(long_ride_activities)} long ride activities")
     
-    # Extract long rides
+    # Group and consolidate rides by name
     if long_ride_activities:
-        long_rides = long_ride_analyzer.extract_long_rides(long_ride_activities)
-        logger.info(f"Extracted {len(long_rides)} long rides for analysis")
+        # Group rides by their Strava activity names
+        name_groups, unnamed_rides = long_ride_analyzer.group_rides_by_name(long_ride_activities)
+        
+        # Optional: Consolidate similar named groups (disabled by default)
+        # This uses route similarity to merge groups with different names but similar routes
+        # Only enable if you want very similar routes (e.g., same route with trailing spaces) consolidated
+        enable_similarity_consolidation = config.get('long_rides.consolidate_similar_routes', False)
+        if enable_similarity_consolidation:
+            # Use strict threshold (0.05 km = 50m) to only merge nearly identical routes
+            similarity_threshold = config.get('long_rides.similarity_threshold_km', 0.05)
+            name_groups = long_ride_analyzer.consolidate_similar_named_groups(
+                name_groups,
+                similarity_threshold=similarity_threshold
+            )
+        
+        # Consolidate named groups (this properly sets uses count)
+        long_rides = long_ride_analyzer.consolidate_named_groups(name_groups)
+        logger.info(f"Consolidated into {len(long_rides)} unique named routes")
+        
+        # Try to match unnamed rides to existing groups (disabled by default for performance)
+        # This is expensive (O(n*m) route comparisons) and rarely needed
+        match_unnamed = config.get('long_rides.match_unnamed_rides', False)
+        if unnamed_rides:
+            if match_unnamed:
+                logger.info(f"Matching {len(unnamed_rides)} unnamed rides to existing groups...")
+                updated_groups, still_unnamed = long_ride_analyzer.match_unnamed_rides_to_groups(
+                    unnamed_rides, name_groups
+                )
+                
+                # Re-consolidate with matched rides
+                long_rides = long_ride_analyzer.consolidate_named_groups(updated_groups)
+                unnamed_rides = still_unnamed
+            
+            # Generate fallback names for remaining unnamed rides
+            if unnamed_rides:
+                fallback_groups = long_ride_analyzer.generate_fallback_names(unnamed_rides)
+                fallback_rides = long_ride_analyzer.consolidate_named_groups(fallback_groups)
+                long_rides.extend(fallback_rides)
+        
+        logger.info(f"Total unique routes for analysis: {len(long_rides)}")
         
         # Show statistics
         if long_rides:
@@ -424,6 +462,12 @@ def _analyze_long_rides(all_activities, commute_activities, config):
             logger.info(f"  Average distance: {sum(distances)/len(distances):.1f} km")
             loop_count = sum(1 for r in long_rides if r.is_loop)
             logger.info(f"  Loop rides: {loop_count} ({loop_count/len(long_rides)*100:.1f}%)")
+            
+            # Show usage statistics
+            uses_counts = [r.uses for r in long_rides]
+            logger.info(f"  Routes with multiple uses: {sum(1 for u in uses_counts if u > 1)}")
+            if max(uses_counts) > 1:
+                logger.info(f"  Most used route: {max(uses_counts)} times")
     
     return long_rides, long_ride_analyzer
 

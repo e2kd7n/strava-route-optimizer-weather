@@ -123,7 +123,10 @@ class LongRidesAPI:
                         'is_loop': ride.is_loop,
                         'start_location': ride.start_location,
                         'distance_to_location': ride.distance_to_location,
-                        'coordinates': ride.coordinates
+                        'coordinates': ride.coordinates,
+                        'uses': ride.uses,
+                        'activity_ids': ride.activity_ids or [ride.activity_id],
+                        'activity_dates': ride.activity_dates or [ride.timestamp[:10] if ride.timestamp else "Unknown"]
                     })
                 
                 return jsonify({

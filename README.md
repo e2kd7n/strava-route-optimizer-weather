@@ -311,10 +311,10 @@ Adjust how routes are scored:
 ```yaml
 optimization:
   weights:
-    time: 0.35      # 35% weight on speed
-    distance: 0.25  # 25% weight on distance
-    safety: 0.25    # 25% weight on safety
-    weather: 0.15   # 15% weight on wind conditions
+    time: 0.25      # Speed and duration
+    distance: 0.10  # Route length
+    safety: 0.35    # Familiarity and road conditions
+    weather: 0.30   # Wind impact on cycling efficiency
   weather_enabled: true  # Enable real-time weather analysis
 ```
 

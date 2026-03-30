@@ -8,6 +8,8 @@ import logging
 from typing import List, Tuple, Dict, Any, Optional
 from dataclasses import dataclass
 from datetime import datetime
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from functools import partial
 
 import numpy as np
 from geopy.distance import geodesic
@@ -39,6 +41,8 @@ class LongRide:
     is_loop: bool  # True if start and end are close
     type: str  # Activity type (Ride, GravelRide, VirtualRide, etc.)
     uses: int = 1  # Number of times this route has been ridden
+    activity_ids: List[int] = None  # List of all activity IDs that make up this route
+    activity_dates: List[str] = None  # List of dates for each activity
     
     @property
     def distance_km(self) -> float:
@@ -158,7 +162,7 @@ class LongRideAnalyzer:
                 unnamed_rides.append(activity)
                 continue
             
-            # Normalize the name (strip whitespace, lowercase for comparison)
+            # Normalize the name (strip whitespace)
             normalized_name = activity.name.strip()
             
             if normalized_name not in name_groups:
@@ -175,6 +179,96 @@ class LongRideAnalyzer:
             logger.info(f"  '{name}': {len(activities)} rides")
         
         return name_groups, unnamed_rides
+    
+    def consolidate_similar_named_groups(self, name_groups: Dict[str, List[Activity]],
+                                        similarity_threshold: float = 0.20) -> Dict[str, List[Activity]]:
+        """
+        Consolidate named groups that have similar routes despite different names.
+        This helps group route variations like "Old School" vs "Old School / Lake Bluff return".
+        
+        Args:
+            name_groups: Dictionary mapping activity names to lists of activities
+            similarity_threshold: Maximum Fréchet distance (km) to consider routes similar
+            
+        Returns:
+            Updated name_groups dictionary with similar routes consolidated
+        """
+        if len(name_groups) <= 1:
+            return name_groups
+        
+        # Get representative routes for each group
+        group_representatives = {}
+        for name, activities in name_groups.items():
+            rep = sorted(activities, key=lambda a: a.start_date, reverse=True)[0]
+            if rep.polyline:
+                try:
+                    coords = polyline.decode(rep.polyline)
+                    group_representatives[name] = np.array(coords)
+                except (ValueError, AttributeError) as e:
+                    logger.debug(f"Failed to decode polyline for group '{name}': {e}")
+                    continue
+        
+        # Find groups to merge
+        merged_groups = {}
+        processed = set()
+        
+        group_names = list(group_representatives.keys())
+        for i, name1 in enumerate(group_names):
+            if name1 in processed:
+                continue
+            
+            # Start a new merged group with this name as the primary
+            merged_activities = list(name_groups[name1])
+            processed.add(name1)
+            
+            # Check all other groups for similarity
+            for name2 in group_names[i+1:]:
+                if name2 in processed:
+                    continue
+                
+                try:
+                    # Calculate route similarity
+                    coords1 = group_representatives[name1]
+                    coords2 = group_representatives[name2]
+                    
+                    frechet_distance = frechet_dist(coords1, coords2)
+                    hausdorff_dist = max(
+                        directed_hausdorff(coords1, coords2)[0],
+                        directed_hausdorff(coords2, coords1)[0]
+                    )
+                    combined_distance = (frechet_distance + hausdorff_dist) / 2
+                    
+                    # If routes are similar, merge them
+                    if combined_distance < similarity_threshold:
+                        merged_activities.extend(name_groups[name2])
+                        processed.add(name2)
+                        logger.info(f"Consolidating '{name2}' into '{name1}' (similarity: {combined_distance:.3f})")
+                        
+                except (ValueError, IndexError, TypeError) as e:
+                    logger.debug(f"Failed to calculate similarity between '{name1}' and '{name2}': {e}")
+                    continue
+            
+            # Use the most common name or shortest name as the group name
+            if len(merged_activities) > len(name_groups[name1]):
+                # Find the most common name among merged activities
+                name_counts = {}
+                for act in merged_activities:
+                    name_counts[act.name] = name_counts.get(act.name, 0) + 1
+                primary_name = max(name_counts.items(), key=lambda x: (x[1], -len(x[0])))[0]
+            else:
+                primary_name = name1
+            
+            merged_groups[primary_name] = merged_activities
+        
+        # Add any groups that weren't processed (no polyline data)
+        for name in name_groups:
+            if name not in processed:
+                merged_groups[name] = name_groups[name]
+        
+        if len(merged_groups) < len(name_groups):
+            logger.info(f"Consolidated {len(name_groups)} named groups into {len(merged_groups)} groups using route similarity")
+        
+        return merged_groups
     
     def consolidate_named_groups(self, name_groups: Dict[str, List[Activity]]) -> List[LongRide]:
         """
@@ -213,6 +307,10 @@ class LongRideAnalyzer:
                 else:
                     is_loop = False
                 
+                # Collect all activity IDs and dates
+                activity_ids = [act.id for act in sorted_activities]
+                activity_dates = [act.start_date[:10] if act.start_date else "Unknown" for act in sorted_activities]
+                
                 long_ride = LongRide(
                     activity_id=representative.id,
                     name=route_name,  # Use the consistent route name
@@ -226,7 +324,9 @@ class LongRideAnalyzer:
                     end_location=representative.end_latlng or (0.0, 0.0),
                     is_loop=is_loop,
                     type=representative.sport_type if representative.sport_type else representative.type,
-                    uses=len(activities)  # Number of times this route has been ridden
+                    uses=len(activities),  # Number of times this route has been ridden
+                    activity_ids=activity_ids,  # All activity IDs
+                    activity_dates=activity_dates  # All activity dates
                 )
                 
                 consolidated_rides.append(long_ride)
@@ -239,9 +339,57 @@ class LongRideAnalyzer:
         logger.info(f"Consolidated {sum(len(acts) for acts in name_groups.values())} activities into {len(consolidated_rides)} unique named routes")
         
         return consolidated_rides
-    def match_unnamed_rides_to_groups(self, unnamed_rides: List[Activity], 
+    @staticmethod
+    def _compare_route_to_groups(activity_data: Tuple[int, str, List],
+                                 group_representatives: Dict[str, np.ndarray],
+                                 similarity_threshold: float) -> Tuple[int, Optional[str], float]:
+        """
+        Helper function for parallel route comparison.
+        
+        Args:
+            activity_data: Tuple of (activity_id, polyline, group_representatives)
+            group_representatives: Dict of group names to representative coordinates
+            similarity_threshold: Maximum distance to consider routes similar
+            
+        Returns:
+            Tuple of (activity_id, best_match_name, best_distance)
+        """
+        activity_id, activity_polyline, _ = activity_data
+        
+        try:
+            route_coords = np.array(polyline.decode(activity_polyline))
+            
+            best_match = None
+            best_distance = float('inf')
+            
+            for group_name, rep_coords in group_representatives.items():
+                try:
+                    frechet_distance = frechet_dist(route_coords, rep_coords)
+                    hausdorff_dist = max(
+                        directed_hausdorff(route_coords, rep_coords)[0],
+                        directed_hausdorff(rep_coords, route_coords)[0]
+                    )
+                    combined_distance = (frechet_distance + hausdorff_dist) / 2
+                    
+                    if combined_distance < best_distance:
+                        best_distance = combined_distance
+                        best_match = group_name
+                except (ValueError, IndexError, TypeError):
+                    continue
+            
+            if best_match and best_distance < similarity_threshold:
+                return (activity_id, best_match, best_distance)
+            else:
+                return (activity_id, None, best_distance)
+                
+        except Exception:
+            return (activity_id, None, float('inf'))
+    
+    def match_unnamed_rides_to_groups(self, unnamed_rides: List[Activity],
                                      named_groups: Dict[str, List[Activity]],
-                                     similarity_threshold: float = 0.15) -> Tuple[Dict[str, List[Activity]], List[Activity]]:
+                                     similarity_threshold: float = 0.15,
+                                     use_parallel: bool = True,
+                                     max_workers: int = None) -> Tuple[Dict[str, List[Activity]], List[Activity]]:
         """
         Match unnamed/generic rides to existing named groups using route similarity.
         Uses Fréchet distance to validate if routes are similar enough to be grouped together.
@@ -250,17 +398,18 @@ class LongRideAnalyzer:
             unnamed_rides: List of activities with generic/no names
             named_groups: Dictionary of existing named route groups
             similarity_threshold: Maximum Fréchet distance (km) to consider routes similar
+            use_parallel: Whether to use parallel processing (default: True)
+            max_workers: Maximum number of worker processes (default: intelligent 2-6 based on workload)
             
         Returns:
             Tuple of (updated_named_groups, still_unnamed_rides)
         """
-        still_unnamed = []
-        matched_count = 0
+        if not unnamed_rides:
+            return named_groups, []
         
         # Get representative routes for each named group
         group_representatives = {}
         for name, activities in named_groups.items():
-            # Use most recent activity as representative
             rep = sorted(activities, key=lambda a: a.start_date, reverse=True)[0]
             if rep.polyline:
                 try:
@@ -270,53 +419,77 @@ class LongRideAnalyzer:
                     logger.debug(f"Failed to decode polyline for group '{name}': {e}")
                     continue
         
-        # Try to match each unnamed ride
-        for activity in unnamed_rides:
-            if not activity.polyline:
-                still_unnamed.append(activity)
-                continue
+        # Create activity lookup
+        activity_lookup = {act.id: act for act in unnamed_rides}
+        
+        # Prepare data for parallel processing
+        activities_data = [
+            (act.id, act.polyline, group_representatives)
+            for act in unnamed_rides if act.polyline
+        ]
+        
+        matches = {}
+        still_unnamed = []
+        
+        # Determine optimal worker count if not specified
+        if max_workers is None and use_parallel:
+            import os
+            cpu_count = os.cpu_count() or 2
+            workload_size = len(activities_data)
             
-            try:
-                # Decode route
-                route_coords = np.array(polyline.decode(activity.polyline))
+            # Intelligent worker selection based on workload
+            if workload_size < 20:
+                # Small workload: 2 workers (minimum parallelism)
+                optimal_workers = 2
+            elif workload_size < 100:
+                # Medium workload: 4 workers (good balance)
+                optimal_workers = min(4, cpu_count)
+            else:
+                # Large workload: up to 6 workers (maximum efficiency)
+                optimal_workers = min(6, cpu_count)
+            
+            max_workers = optimal_workers
+            logger.info(f"Using {max_workers} workers for {workload_size} comparisons")
+        
+        if use_parallel and len(activities_data) >= 10:
+            # Use parallel processing (threshold: 10 items minimum)
+            logger.info(f"Using parallel processing to match {len(activities_data)} unnamed rides...")
+            
+            compare_func = partial(
+                self._compare_route_to_groups,
+                group_representatives=group_representatives,
+                similarity_threshold=similarity_threshold
+            )
+            
+            with ProcessPoolExecutor(max_workers=max_workers) as executor:
+                futures = {executor.submit(compare_func, data): data[0] for data in activities_data}
                 
-                # Find best matching group
-                best_match = None
-                best_distance = float('inf')
-                
-                for group_name, rep_coords in group_representatives.items():
-                    # Calculate Fréchet distance
-                    try:
-                        frechet_distance = frechet_dist(route_coords, rep_coords)
-                        
-                        # Also calculate Hausdorff as secondary check
-                        hausdorff_dist = max(
-                            directed_hausdorff(route_coords, rep_coords)[0],
-                            directed_hausdorff(rep_coords, route_coords)[0]
-                        )
-                        
-                        # Use average of both distances
-                        combined_distance = (frechet_distance + hausdorff_dist) / 2
-                        
-                        if combined_distance < best_distance:
-                            best_distance = combined_distance
-                            best_match = group_name
-                    except (ValueError, IndexError, TypeError) as e:
-                        logger.debug(f"Failed to calculate similarity for group '{group_name}': {e}")
-                        continue
-                
-                # If we found a good match, add to that group
-                if best_match and best_distance < similarity_threshold:
-                    named_groups[best_match].append(activity)
-                    matched_count += 1
-                    logger.debug(f"Matched unnamed ride {activity.id} to '{best_match}' (distance: {best_distance:.3f})")
-                else:
-                    still_unnamed.append(activity)
-                    
-            except Exception as e:
-                logger.warning(f"Failed to match unnamed ride {activity.id}: {e}")
+                for future in as_completed(futures):
+                    activity_id, best_match, distance = future.result()
+                    if best_match:
+                        matches[activity_id] = (best_match, distance)
+        else:
+            # Use sequential processing for small datasets (<10 items)
+            for activity_id, activity_polyline, _ in activities_data:
+                result = self._compare_route_to_groups(
+                    (activity_id, activity_polyline, None),
+                    group_representatives,
+                    similarity_threshold
+                )
+                _, best_match, distance = result
+                if best_match:
+                    matches[activity_id] = (best_match, distance)
+        
+        # Apply matches
+        matched_count = 0
+        for activity in unnamed_rides:
+            if activity.id in matches:
+                group_name, distance = matches[activity.id]
+                named_groups[group_name].append(activity)
+                matched_count += 1
+                logger.debug(f"Matched unnamed ride {activity.id} to '{group_name}' (distance: {distance:.3f})")
+            else:
                 still_unnamed.append(activity)
-                continue
         
         logger.info(f"Matched {matched_count} unnamed rides to existing groups")
         logger.info(f"Remaining unnamed rides: {len(still_unnamed)}")
