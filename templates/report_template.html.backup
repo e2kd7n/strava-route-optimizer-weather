@@ -234,224 +234,6 @@
         }
         .activity-item:hover { background-color: #f8f9fa; }
         
-        /* Performance-Optimized Animations */
-        /* Use transform and opacity for GPU acceleration */
-        
-        /* Fade in animation */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        /* Slide in from left */
-        @keyframes slideInLeft {
-            from {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        
-        /* Slide in from right */
-        @keyframes slideInRight {
-            from {
-                opacity: 0;
-                transform: translateX(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        
-        /* Scale in animation */
-        @keyframes scaleIn {
-            from {
-                opacity: 0;
-                transform: scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-        
-        /* Pulse animation for loading states */
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.5;
-            }
-        }
-        
-        /* Apply animations with will-change hints for GPU acceleration */
-        .card {
-            animation: fadeIn 0.3s ease-out;
-            will-change: opacity, transform;
-        }
-        
-        .card:nth-child(1) { animation-delay: 0s; }
-        .card:nth-child(2) { animation-delay: 0.05s; }
-        .card:nth-child(3) { animation-delay: 0.1s; }
-        .card:nth-child(4) { animation-delay: 0.15s; }
-        .card:nth-child(5) { animation-delay: 0.2s; }
-        
-        /* Remove will-change after animation completes */
-        .card.animation-complete {
-            will-change: auto;
-        }
-        
-        /* Route row animations */
-        .route-row {
-            will-change: background-color, transform;
-        }
-        
-        /* Next commute card animations */
-        .next-commute-card {
-            animation: slideInLeft 0.3s ease-out;
-            will-change: transform, box-shadow;
-        }
-        
-        .next-commute-card:nth-child(1) { animation-delay: 0s; }
-        .next-commute-card:nth-child(2) { animation-delay: 0.1s; }
-        .next-commute-card:nth-child(3) { animation-delay: 0.2s; }
-        
-        /* Modal animations */
-        .modal-backdrop {
-            animation: fadeIn 0.2s ease-out;
-        }
-        
-        .modal {
-            animation: scaleIn 0.3s ease-out;
-            will-change: transform, opacity;
-        }
-        
-        /* Tab content animations */
-        .tab-pane {
-            animation: fadeIn 0.3s ease-out;
-        }
-        
-        /* Button press animation */
-        .btn:active {
-            transform: scale(0.98);
-            transition: transform 0.1s ease;
-        }
-        
-        /* Loading spinner optimization */
-        .loading-spinner {
-            will-change: transform;
-        }
-        
-        /* Smooth transitions for interactive elements */
-        .route-row,
-        .next-commute-card,
-        .btn,
-        .nav-link,
-        .form-control {
-            transition-property: background-color, border-color, box-shadow, transform;
-            transition-duration: 0.2s;
-            transition-timing-function: ease;
-        }
-        
-        /* Optimize hover effects */
-        .route-row:hover,
-        .next-commute-card:hover,
-        .activity-item:hover {
-            will-change: background-color, transform;
-        }
-        
-        /* Remove will-change when not hovering */
-        .route-row:not(:hover),
-        .next-commute-card:not(:hover),
-        .activity-item:not(:hover) {
-            will-change: auto;
-        }
-        
-        /* Reduced motion support for accessibility */
-        @media (prefers-reduced-motion: reduce) {
-            *,
-            *::before,
-            *::after {
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
-                scroll-behavior: auto !important;
-            }
-            
-            /* Keep essential animations but make them instant */
-            .loading-spinner {
-                animation: none;
-                border-top-color: #667eea;
-            }
-            
-            /* Remove transform animations */
-            .card,
-            .next-commute-card,
-            .modal,
-            .tab-pane {
-                animation: none;
-            }
-            
-            /* Remove hover transforms */
-            .route-row:hover,
-            .next-commute-card:hover,
-            .btn:active {
-                transform: none;
-            }
-        }
-        
-        /* Performance hints for browsers */
-        .map-container,
-        .next-commute-map-container,
-        #allLongRidesMap,
-        #longRideDetailMap {
-            /* Hint that these elements will be transformed/animated */
-            will-change: contents;
-            /* Use GPU compositing for maps */
-            transform: translateZ(0);
-            backface-visibility: hidden;
-        }
-        
-        /* Optimize chart containers */
-        canvas {
-            will-change: contents;
-            transform: translateZ(0);
-        }
-        
-        /* Stagger animations for lists */
-        .route-row {
-            animation: fadeIn 0.2s ease-out;
-            animation-fill-mode: backwards;
-        }
-        
-        .route-row:nth-child(1) { animation-delay: 0s; }
-        .route-row:nth-child(2) { animation-delay: 0.02s; }
-        .route-row:nth-child(3) { animation-delay: 0.04s; }
-        .route-row:nth-child(4) { animation-delay: 0.06s; }
-        .route-row:nth-child(5) { animation-delay: 0.08s; }
-        .route-row:nth-child(6) { animation-delay: 0.1s; }
-        .route-row:nth-child(7) { animation-delay: 0.12s; }
-        .route-row:nth-child(8) { animation-delay: 0.14s; }
-        .route-row:nth-child(9) { animation-delay: 0.16s; }
-        .route-row:nth-child(10) { animation-delay: 0.18s; }
-        
-        /* Success/Error message animations */
-        .success-message.show,
-        .error-message.show {
-            animation: slideInRight 0.3s ease-out;
-        }
-        
         /* Next Commute Recommendations Styles */
         .next-commute-container {
             display: flex;
@@ -1211,22 +993,27 @@
     <script>
         // Unified filter system with boolean AND logic
         (function() {
+            console.log('🔧 FILTER SYSTEM: Initializing...');
             
             // Filter state
             let currentDirection = 'all';
             let showPlusRoutes = true;
             
             const allRouteRows = document.querySelectorAll('.route-row');
+            console.log('🔍 FILTER SYSTEM: Found', allRouteRows.length, 'route rows');
             
             // Select ONLY direction filter buttons, not plus routes buttons
             const directionButtons = document.querySelectorAll('.direction-filter .btn-group button[data-direction]');
+            console.log('🔍 FILTER SYSTEM: Found', directionButtons.length, 'direction filter buttons');
             
             const showPlusBtn = document.getElementById('show-plus-routes');
             const hidePlusBtn = document.getElementById('hide-plus-routes');
+            console.log('🔍 FILTER SYSTEM: Show Plus button:', !!showPlusBtn, '| Hide Plus button:', !!hidePlusBtn);
             
             // Log first row sample for debugging
             if (allRouteRows.length > 0) {
                 const firstRow = allRouteRows[0];
+                console.log('📋 FIRST ROW SAMPLE:', {
                     direction: firstRow.getAttribute('data-direction'),
                     isPlus: firstRow.getAttribute('data-is-plus'),
                     classes: firstRow.className
@@ -1235,6 +1022,9 @@
             
             // Unified filter function - applies both filters with AND logic
             function applyFilters() {
+                console.log('=== APPLY FILTERS START ===');
+                console.log('Current direction:', currentDirection);
+                console.log('Show plus routes:', showPlusRoutes);
                 
                 let visibleCount = 0;
                 let plusRouteCount = 0;
@@ -1256,6 +1046,7 @@
                     
                     // Log first few rows for debugging
                     if (index < 3) {
+                        console.log(`Row ${index}: direction=${rowDirection}, isPlus=${isPlus}, matchesDir=${matchesDirection}, matchesPlus=${matchesPlusFilter}`);
                     }
                     
                     // Always update both classes independently
@@ -1277,6 +1068,11 @@
                     }
                 });
                 
+                console.log('Total routes:', allRouteRows.length);
+                console.log('Plus routes:', plusRouteCount, 'Non-plus:', nonPlusRouteCount);
+                console.log('Direction matches:', directionMatchCount);
+                console.log('Final visible count:', visibleCount);
+                console.log('=== APPLY FILTERS END ===');
                 
                 // Update pagination counts
                 if (window.paginationController) {
@@ -1294,12 +1090,16 @@
                         }
                     }
                 } catch (err) {
+                    console.error('Error calling map filterRoutes:', err);
                 }
             }
             
             // Direction filter setup
+            console.log('🔧 FILTER SYSTEM: Setting up direction button listeners...');
             directionButtons.forEach((button, index) => {
+                console.log(`   Button ${index}:`, button.getAttribute('data-direction'));
                 button.addEventListener('click', function(e) {
+                    console.log('🖱️  DIRECTION BUTTON CLICKED!', e.currentTarget.getAttribute('data-direction'));
                     e.preventDefault();
                     e.stopPropagation();
                     
@@ -1312,30 +1112,37 @@
                     
                     // Update direction
                     currentDirection = clickedButton.getAttribute('data-direction');
+                    console.log('   New direction filter:', currentDirection);
                     
                     // Apply unified filters
                     applyFilters();
                     
                     // Reset pagination
                     if (window.paginationController) {
+                        console.log('   Resetting pagination to page 1');
                         window.paginationController.resetToFirstPage();
                     } else {
+                        console.error('   ❌ Pagination controller not available!');
                     }
                     
                     return false;
                 });
             });
+            console.log('✅ FILTER SYSTEM: Direction button listeners attached');
             
             // Plus route filter setup
+            console.log('🔧 FILTER SYSTEM: Setting up Plus Routes button listeners...');
             if (showPlusBtn && hidePlusBtn) {
                 // Set initial button state
                 showPlusBtn.classList.add('active');
                 
                 showPlusBtn.addEventListener('click', function(e) {
+                    console.log('🖱️  SHOW PLUS ROUTES CLICKED!');
                     e.preventDefault();
                     e.stopPropagation();
                     
                     showPlusRoutes = true;
+                    console.log('   Show plus routes:', showPlusRoutes);
                     showPlusBtn.classList.add('active');
                     hidePlusBtn.classList.remove('active');
                     
@@ -1344,18 +1151,22 @@
                     
                     // Reset pagination
                     if (window.paginationController) {
+                        console.log('   Resetting pagination to page 1');
                         window.paginationController.resetToFirstPage();
                     } else {
+                        console.error('   ❌ Pagination controller not available!');
                     }
                     
                     return false;
                 });
                 
                 hidePlusBtn.addEventListener('click', function(e) {
+                    console.log('🖱️  HIDE PLUS ROUTES CLICKED!');
                     e.preventDefault();
                     e.stopPropagation();
                     
                     showPlusRoutes = false;
+                    console.log('   Show plus routes:', showPlusRoutes);
                     hidePlusBtn.classList.add('active');
                     showPlusBtn.classList.remove('active');
                     
@@ -1364,13 +1175,17 @@
                     
                     // Reset pagination
                     if (window.paginationController) {
+                        console.log('   Resetting pagination to page 1');
                         window.paginationController.resetToFirstPage();
                     } else {
+                        console.error('   ❌ Pagination controller not available!');
                     }
                     
                     return false;
                 });
+                console.log('✅ FILTER SYSTEM: Plus Routes button listeners attached');
             } else {
+                console.warn('⚠️  FILTER SYSTEM: Plus Routes buttons not found!');
             }
             
             // Expose filter state globally
@@ -1404,9 +1219,11 @@
             }
             
             function showPage(page, shouldScroll = false) {
+                console.log('📄 PAGINATION: showPage called with page:', page);
                 const visibleRoutes = getVisibleRoutes();
                 const totalRoutes = visibleRoutes.length;
                 const totalPages = Math.ceil(totalRoutes / ROUTES_PER_PAGE);
+                console.log('📄 PAGINATION: Visible routes:', totalRoutes, 'Total pages:', totalPages);
                 
                 currentPage = Math.min(page, Math.max(1, totalPages));
                 
@@ -1418,6 +1235,7 @@
                 // Show rows for current page (only visible ones)
                 const startIndex = (currentPage - 1) * ROUTES_PER_PAGE;
                 const endIndex = Math.min(startIndex + ROUTES_PER_PAGE, totalRoutes);
+                console.log('📄 PAGINATION: Showing rows', startIndex + 1, 'to', endIndex);
                 
                 for (let i = startIndex; i < endIndex; i++) {
                     visibleRoutes[i].classList.remove('page-hidden');
@@ -1437,6 +1255,7 @@
                 const routeLabel = document.getElementById('routeLabel');
                 routeLabel.textContent = totalRoutes === 1 ? 'route' : 'routes';
                 
+                console.log('📄 PAGINATION: Updated counts - page:', currentPage, 'of', totalPages, 'total routes:', totalRoutes);
                 
                 // Only scroll if explicitly requested (e.g., pagination button clicks)
                 if (shouldScroll) {
@@ -1483,6 +1302,7 @@
             let currentSortDirection = 'asc';
             
             function sortTable(column) {
+                console.log('🔄 Sorting table by:', column);
                 
                 const table = document.getElementById('routesTable');
                 const tbody = table.querySelector('tbody');
@@ -1559,6 +1379,7 @@
                     window.paginationController.showPage(1);
                 }
                 
+                console.log('✅ Table sorted by', column, currentSortDirection);
             }
             
             function parseDuration(durationStr) {
@@ -1579,6 +1400,7 @@
             // MATCHED ROUTES MODAL
             // ============================================================================
             function showMatchedRoutes(routeId, routeName, routes) {
+                console.log('📋 Showing matched routes for:', routeName);
                 
                 // Create modal backdrop
                 const backdrop = document.createElement('div');
@@ -1642,6 +1464,7 @@
                 backdrop.appendChild(modal);
                 document.body.appendChild(backdrop);
                 
+                console.log('✅ Modal displayed with', routes ? routes.length : 0, 'activities');
             }
             
             function closeModal() {
@@ -1678,21 +1501,29 @@
         // race condition during the group code review!
         // ============================================================================
         (function initializeApp() {
+            console.log('🚀 Initializing Strava Commute Analyzer...');
             
             // Verify both systems are loaded
             if (!window.routeFilters) {
+                console.error('❌ Filter system not loaded!');
                 return;
             }
             if (!window.paginationController) {
+                console.error('❌ Pagination system not loaded!');
                 return;
             }
             
+            console.log('✅ All systems loaded successfully');
             
             // Initialize in correct order: pagination first, then filters
+            console.log('📄 Initializing pagination system...');
             window.paginationController.showPage(1);
             
+            console.log('🔍 Applying initial filters...');
             window.routeFilters.applyFilters();
             
+            console.log('✅ Application ready! Filters and pagination are now active.');
+            console.log('💡 Tip: Open browser DevTools to see filter activity when you click buttons.');
         })();
         
         // Route name click to open Strava
@@ -1723,11 +1554,14 @@
         
         // Interactive route highlighting functionality
         (function() {
+            console.log('Route interaction script loaded');
+            console.log('Found route rows:', document.querySelectorAll('.route-row').length);
             
             let selectedRouteId = null;
             const selectedRoutes = new Set(); // Track multiple selected routes
             const routeRows = document.querySelectorAll('.route-row');
             
+            console.log('Setting up', routeRows.length, 'route row listeners');
             
             // Function to highlight route on map
             function highlightRoute(routeId, persist = false) {
@@ -1783,6 +1617,7 @@
                         }
                     });
                 } catch (e) {
+                    console.log('Could not access map elements:', e);
                 }
             }
             
@@ -1813,6 +1648,7 @@
                         }
                     });
                 } catch (e) {
+                    console.log('Could not reset map elements:', e);
                 }
             }
             
@@ -1882,18 +1718,25 @@
                         highlightAllSelectedRoutes();
                         
                         // Zoom map to selected route - need to access iframe's contentWindow
+                        console.log('Table row clicked, routeId:', routeId);
                         try {
                             const mapIframe = document.querySelector('iframe');
                             if (mapIframe && mapIframe.contentWindow) {
                                 const iframeWindow = mapIframe.contentWindow;
+                                console.log('Found iframe, checking for zoomToRouteById...');
+                                console.log('iframe.contentWindow.zoomToRouteById exists?', typeof iframeWindow.zoomToRouteById);
                                 
                                 if (typeof iframeWindow.zoomToRouteById === 'function') {
+                                    console.log('Calling iframe.contentWindow.zoomToRouteById with:', routeId);
                                     iframeWindow.zoomToRouteById(routeId);
                                 } else {
+                                    console.error('zoomToRouteById not found in iframe contentWindow');
                                 }
                             } else {
+                                console.error('Map iframe not found or no contentWindow');
                             }
                         } catch (err) {
+                            console.error('Error accessing iframe:', err);
                         }
                         
                         // Show comparison button if multiple routes selected
@@ -1941,6 +1784,7 @@
                         }
                     });
                 } catch (e) {
+                    console.log('Could not access map elements:', e);
                 }
             }
             
@@ -2072,6 +1916,7 @@
                             }
                         });
                     } catch (e) {
+                        console.log('Map not fully loaded yet');
                     }
                 }
             }, 1000);
@@ -2079,6 +1924,7 @@
         
         // Attach click handlers to uses-count spans
         (function() {
+            console.log('Setting up uses-count click handlers...');
             document.querySelectorAll('.uses-count').forEach(span => {
                 span.addEventListener('click', function(e) {
                     e.stopPropagation(); // Prevent row click
@@ -2087,17 +1933,21 @@
                     const routeName = this.getAttribute('data-route-name');
                     const routesJson = this.getAttribute('data-routes');
                     
+                    console.log('Uses-count clicked:', routeName);
                     
                     try {
                         const routes = JSON.parse(routesJson);
                         if (typeof window.showMatchedRoutes === 'function') {
                             window.showMatchedRoutes(routeId, routeName, routes);
                         } else {
+                            console.error('showMatchedRoutes function not found');
                         }
                     } catch (error) {
+                        console.error('Error parsing routes data:', error);
                     }
                 });
             });
+            console.log('✅ Uses-count handlers attached');
         })();
         
         // Refresh report functionality
@@ -2247,26 +2097,21 @@
                 </div>
                 {% endif %}
 
-                <!-- Filter Controls Section (Issue #96 - Enhanced validation feedback) -->
+                <!-- Filter Controls Section -->
                 <div class="row mb-3">
                     <div class="col-md-2">
                         <label for="rideDateTime" class="form-label"><strong>📅 When?</strong></label>
-                        <input type="datetime-local" class="form-control" id="rideDateTime" required>
-                        <div class="invalid-feedback">Please select a date and time</div>
-                        <div class="valid-feedback">✓ Date set</div>
+                        <input type="datetime-local" class="form-control" id="rideDateTime">
                         <small class="text-muted">Wind conditions</small>
                     </div>
                     <div class="col-md-3">
                         <label for="startLocation" class="form-label"><strong>📍 Location & Radius</strong></label>
                         <div class="input-group mb-1">
-                            <input type="text" class="form-control form-control-sm" id="startLocation" placeholder="City/ZIP" value="Chicago, IL" required minlength="2">
+                            <input type="text" class="form-control form-control-sm" id="startLocation" placeholder="City/ZIP" value="Chicago, IL">
                             <button class="btn btn-outline-secondary btn-sm" type="button" onclick="geocodeLocation()" title="Search">
                                 🔍
                             </button>
-                            <div class="invalid-feedback">Please enter a location</div>
-                            <div class="valid-feedback">✓ Location set</div>
                         </div>
-                        <div id="geocodeStatus" class="mb-1"></div>
                         <div class="input-group">
                             <input type="range" class="form-range" id="radiusSlider" min="5" max="50" value="15" step="5" oninput="document.getElementById('radiusValue').textContent = this.value">
                             <span class="input-group-text" style="font-size: 0.8rem;"><span id="radiusValue">15</span> mi</span>
@@ -2281,7 +2126,6 @@
                             <input type="number" class="form-control form-control-sm" id="maxDistance" placeholder="Max" min="0" step="5">
                             <span class="input-group-text">{{ long_rides_stats.get('distance_unit', 'mi') if long_rides_stats else 'mi' }}</span>
                         </div>
-                        <div class="invalid-feedback">Max must be greater than min</div>
                         <small class="text-muted">Range</small>
                     </div>
                     <div class="col-md-2">
@@ -2292,7 +2136,6 @@
                             <input type="number" class="form-control form-control-sm" id="maxTime" placeholder="Max" min="0" step="0.5">
                             <span class="input-group-text">hrs</span>
                         </div>
-                        <div class="invalid-feedback">Max must be greater than min</div>
                         <small class="text-muted">Duration</small>
                     </div>
                     <div class="col-md-2">
@@ -2737,191 +2580,63 @@
             {% endfor %}
         ];
         // Initialize Monthly Statistics Chart (Issue #7)
-        // Optimized for responsiveness (Issue #97)
         {% if monthly_stats %}
-        let monthlyStatsChart = null;
-        
-        function initializeMonthlyStatsChart() {
-            const ctx = document.getElementById('monthlyStatsChart');
-            if (!ctx || monthlyStatsChart) return;
-            
-            const isMobile = window.innerWidth < 768;
-            
-            monthlyStatsChart = new Chart(ctx.getContext('2d'), {
-                type: 'bar',
-                data: {
-                    labels: {{ monthly_stats.labels|tojson }},
-                    datasets: [{
-                        label: 'Number of Rides',
-                        data: {{ monthly_stats.counts|tojson }},
-                        backgroundColor: 'rgba(102, 126, 234, 0.5)',
-                        borderColor: 'rgba(102, 126, 234, 1)',
-                        borderWidth: 1,
-                        yAxisID: 'y'
-                    }, {
-                        label: 'Total Distance ({{ long_rides_stats.distance_unit }})',
-                        data: {{ monthly_stats.distances|tojson }},
-                        backgroundColor: 'rgba(118, 75, 162, 0.5)',
-                        borderColor: 'rgba(118, 75, 162, 1)',
-                        borderWidth: 1,
-                        yAxisID: 'y1'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: !isMobile, // Allow flexible height on mobile
-                    aspectRatio: isMobile ? 1 : 2, // Taller on mobile
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    },
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: isMobile ? 'bottom' : 'top',
-                            labels: {
-                                boxWidth: isMobile ? 12 : 40,
-                                font: {
-                                    size: isMobile ? 10 : 12
-                                }
-                            }
-                        },
-                        tooltip: {
-                            enabled: true,
-                            mode: 'index',
-                            intersect: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            position: 'left',
-                            title: {
-                                display: !isMobile,
-                                text: 'Number of Rides',
-                                font: { size: isMobile ? 10 : 12 }
-                            },
-                            ticks: {
-                                font: { size: isMobile ? 9 : 11 }
-                            }
-                        },
-                        y1: {
-                            beginAtZero: true,
-                            position: 'right',
-                            title: {
-                                display: !isMobile,
-                                text: 'Distance ({{ long_rides_stats.distance_unit }})',
-                                font: { size: isMobile ? 10 : 12 }
-                            },
-                            grid: { drawOnChartArea: false },
-                            ticks: {
-                                font: { size: isMobile ? 9 : 11 }
-                            }
-                        },
-                        x: {
-                            ticks: {
-                                font: { size: isMobile ? 9 : 11 },
-                                maxRotation: isMobile ? 45 : 0,
-                                minRotation: isMobile ? 45 : 0
-                            }
-                        }
-                    },
-                    // Reduce animation on mobile for performance
-                    animation: {
-                        duration: isMobile ? 500 : 1000
-                    }
-                }
-            });
-        }
-        
-        // Lazy load chart when tab is visible
         document.addEventListener('DOMContentLoaded', function() {
-            const longRidesTab = document.querySelector('button[data-bs-target="#long-rides"]');
-            if (longRidesTab) {
-                longRidesTab.addEventListener('shown.bs.tab', function() {
-                    initializeMonthlyStatsChart();
+            const ctx = document.getElementById('monthlyStatsChart');
+            if (ctx) {
+                new Chart(ctx.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: {{ monthly_stats.labels|tojson }},
+                        datasets: [{
+                            label: 'Number of Rides',
+                            data: {{ monthly_stats.counts|tojson }},
+                            backgroundColor: 'rgba(102, 126, 234, 0.5)',
+                            borderColor: 'rgba(102, 126, 234, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'y'
+                        }, {
+                            label: 'Total Distance ({{ long_rides_stats.distance_unit }})',
+                            data: {{ monthly_stats.distances|tojson }},
+                            backgroundColor: 'rgba(118, 75, 162, 0.5)',
+                            borderColor: 'rgba(118, 75, 162, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'y1'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                position: 'left',
+                                title: { display: true, text: 'Number of Rides' }
+                            },
+                            y1: {
+                                beginAtZero: true,
+                                position: 'right',
+                                title: { display: true, text: 'Distance ({{ long_rides_stats.distance_unit }})' },
+                                grid: { drawOnChartArea: false }
+                            }
+                        }
+                    }
                 });
             }
-            
-            // Also initialize if already on long rides tab
-            const longRidesPane = document.getElementById('long-rides');
-            if (longRidesPane && longRidesPane.classList.contains('active')) {
-                initializeMonthlyStatsChart();
-            }
-        });
-        
-        // Handle window resize for responsiveness
-        let resizeTimeout;
-        window.addEventListener('resize', function() {
-            if (!monthlyStatsChart) return;
-            
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(function() {
-                const isMobile = window.innerWidth < 768;
-                
-                // Update chart options for new screen size
-                monthlyStatsChart.options.maintainAspectRatio = !isMobile;
-                monthlyStatsChart.options.aspectRatio = isMobile ? 1 : 2;
-                monthlyStatsChart.options.plugins.legend.position = isMobile ? 'bottom' : 'top';
-                monthlyStatsChart.options.plugins.legend.labels.boxWidth = isMobile ? 12 : 40;
-                monthlyStatsChart.options.plugins.legend.labels.font.size = isMobile ? 10 : 12;
-                monthlyStatsChart.options.scales.x.ticks.maxRotation = isMobile ? 45 : 0;
-                monthlyStatsChart.options.scales.x.ticks.minRotation = isMobile ? 45 : 0;
-                
-                monthlyStatsChart.update('none'); // Update without animation
-            }, 250); // Debounce resize events
         });
         {% endif %}
 
         // Initialize All Long Rides Map (Issue #9)
-        // Optimized for mobile performance (Issue #95)
         let allLongRidesMap = null;
         let allLongRidesPolylines = {};
-        let allLongRidesMapInitialized = false;
         
         {% if long_rides_geojson %}
-        // Detect mobile device
-        const isMobileDevice = window.innerWidth < 768;
-        
-        // Simplify coordinates for mobile performance
-        function simplifyCoordinates(coords, tolerance = 0.001) {
-            if (!isMobileDevice || coords.length < 100) return coords;
-            
-            // Douglas-Peucker simplification (basic implementation)
-            const simplified = [];
-            const step = Math.ceil(coords.length / 50); // Max 50 points on mobile
-            for (let i = 0; i < coords.length; i += step) {
-                simplified.push(coords[i]);
-            }
-            // Always include last point
-            if (simplified[simplified.length - 1] !== coords[coords.length - 1]) {
-                simplified.push(coords[coords.length - 1]);
-            }
-            return simplified;
-        }
-        
-        // Lazy initialization - only when tab is visible
-        function initializeAllLongRidesMap() {
-            if (allLongRidesMapInitialized) return;
-            allLongRidesMapInitialized = true;
-            
-            // Use canvas renderer for better mobile performance
-            const renderer = isMobileDevice ? L.canvas() : L.svg();
-            
+        document.addEventListener('DOMContentLoaded', function() {
             // Initialize map
-            allLongRidesMap = L.map('allLongRidesMap', {
-                renderer: renderer,
-                preferCanvas: isMobileDevice,
-                // Reduce animation on mobile
-                zoomAnimation: !isMobileDevice,
-                fadeAnimation: !isMobileDevice,
-                markerZoomAnimation: !isMobileDevice
-            }).setView([{{ long_rides_geojson[0].coordinates[0][0] }}, {{ long_rides_geojson[0].coordinates[0][1] }}], 10);
+            allLongRidesMap = L.map('allLongRidesMap').setView([{{ long_rides_geojson[0].coordinates[0][0] }}, {{ long_rides_geojson[0].coordinates[0][1] }}], 10);
             
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                attribution: '© OpenStreetMap contributors © CARTO',
-                // Reduce tile loading on mobile
-                maxZoom: isMobileDevice ? 15 : 18
+                attribution: '© OpenStreetMap contributors © CARTO'
             }).addTo(allLongRidesMap);
             
             // Color scale function based on distance
@@ -2935,21 +2650,13 @@
             
             // Add all routes to map
             const routes = {{ long_rides_geojson|tojson }};
-            
-            // Limit routes on mobile for performance
-            const routesToShow = isMobileDevice ? routes.slice(0, 20) : routes;
-            
-            routesToShow.forEach(route => {
+            routes.forEach(route => {
                 const color = getColorByDistance(route.distance_km);
                 
-                // Simplify coordinates on mobile
-                const coords = simplifyCoordinates(route.coordinates);
-                
-                const polyline = L.polyline(coords, {
+                const polyline = L.polyline(route.coordinates, {
                     color: color,
-                    weight: isMobileDevice ? 2 : 3,
-                    opacity: 0.6,
-                    smoothFactor: isMobileDevice ? 2 : 1
+                    weight: 3,
+                    opacity: 0.6
                 }).addTo(allLongRidesMap);
                 
                 // Popup with details
@@ -2961,15 +2668,13 @@
                     <a href="https://strava.com/activities/${route.activity_id}" target="_blank">View on Strava</a>
                 `);
                 
-                // Hover effect (desktop only for performance)
-                if (!isMobileDevice) {
-                    polyline.on('mouseover', function() {
-                        this.setStyle({ weight: 5, opacity: 1 });
-                    });
-                    polyline.on('mouseout', function() {
-                        this.setStyle({ weight: 3, opacity: 0.6 });
-                    });
-                }
+                // Hover effect
+                polyline.on('mouseover', function() {
+                    this.setStyle({ weight: 5, opacity: 1 });
+                });
+                polyline.on('mouseout', function() {
+                    this.setStyle({ weight: 3, opacity: 0.6 });
+                });
                 
                 // Store polyline with metadata
                 allLongRidesPolylines[route.activity_id] = {
@@ -2978,37 +2683,9 @@
                 };
             });
             
-            // Show message if routes were limited on mobile
-            if (isMobileDevice && routes.length > 20) {
-                const info = L.control({ position: 'topright' });
-                info.onAdd = function() {
-                    const div = L.DomUtil.create('div', 'alert alert-info p-2 m-0');
-                    div.style.fontSize = '12px';
-                    div.innerHTML = `Showing 20 of ${routes.length} routes for performance`;
-                    return div;
-                };
-                info.addTo(allLongRidesMap);
-            }
-            
             // Fit bounds to show all routes
-            const bounds = L.latLngBounds(routesToShow.flatMap(r => simplifyCoordinates(r.coordinates)));
-            allLongRidesMap.fitBounds(bounds, { padding: [20, 20] });
-        }
-        
-        // Initialize map when Long Rides tab is shown
-        document.addEventListener('DOMContentLoaded', function() {
-            const longRidesTab = document.querySelector('button[data-bs-target="#long-rides"]');
-            if (longRidesTab) {
-                longRidesTab.addEventListener('shown.bs.tab', function() {
-                    initializeAllLongRidesMap();
-                    // Invalidate size after tab is shown
-                    setTimeout(() => {
-                        if (allLongRidesMap) {
-                            allLongRidesMap.invalidateSize();
-                        }
-                    }, 100);
-                });
-            }
+            const bounds = L.latLngBounds(routes.flatMap(r => r.coordinates));
+            allLongRidesMap.fitBounds(bounds);
         });
         {% endif %}
         
@@ -3081,146 +2758,22 @@
                     statusDiv.innerHTML = '<small class="text-danger">❌ Location not found. Try a different search term.</small>';
                 }
             } catch (error) {
+                console.error('Geocoding error:', error);
                 statusDiv.innerHTML = '<small class="text-danger">❌ Error searching location. Please try again.</small>';
             }
         }
         
-        // Issue #96 - Form validation with visual feedback
-        function validateForm() {
-            let isValid = true;
-            
-            // Validate date/time
-            const dateTimeInput = document.getElementById('rideDateTime');
-            if (!dateTimeInput.value) {
-                dateTimeInput.classList.add('is-invalid');
-                dateTimeInput.classList.remove('is-valid');
-                isValid = false;
-            } else {
-                dateTimeInput.classList.add('is-valid');
-                dateTimeInput.classList.remove('is-invalid');
-            }
-            
-            // Validate location
-            const locationInput = document.getElementById('startLocation');
-            if (!locationInput.value || locationInput.value.trim().length < 2) {
-                locationInput.classList.add('is-invalid');
-                locationInput.classList.remove('is-valid');
-                isValid = false;
-            } else {
-                locationInput.classList.add('is-valid');
-                locationInput.classList.remove('is-invalid');
-            }
-            
-            // Validate distance range
-            const minDist = parseFloat(document.getElementById('minDistance').value) || 0;
-            const maxDist = parseFloat(document.getElementById('maxDistance').value) || Infinity;
-            const minDistInput = document.getElementById('minDistance');
-            const maxDistInput = document.getElementById('maxDistance');
-            
-            if (maxDist < minDist && maxDist > 0) {
-                minDistInput.classList.add('is-invalid');
-                maxDistInput.classList.add('is-invalid');
-                isValid = false;
-            } else {
-                minDistInput.classList.remove('is-invalid');
-                maxDistInput.classList.remove('is-invalid');
-            }
-            
-            // Validate time range
-            const minTime = parseFloat(document.getElementById('minTime').value) || 0;
-            const maxTime = parseFloat(document.getElementById('maxTime').value) || Infinity;
-            const minTimeInput = document.getElementById('minTime');
-            const maxTimeInput = document.getElementById('maxTime');
-            
-            if (maxTime < minTime && maxTime > 0) {
-                minTimeInput.classList.add('is-invalid');
-                maxTimeInput.classList.add('is-invalid');
-                isValid = false;
-            } else {
-                minTimeInput.classList.remove('is-invalid');
-                maxTimeInput.classList.remove('is-invalid');
-            }
-            
-            return isValid;
-        }
-        
-        // Add real-time validation on input
-        document.addEventListener('DOMContentLoaded', function() {
-            // Date/time validation
-            const dateTimeInput = document.getElementById('rideDateTime');
-            if (dateTimeInput) {
-                dateTimeInput.addEventListener('change', function() {
-                    if (this.value) {
-                        this.classList.add('is-valid');
-                        this.classList.remove('is-invalid');
-                    }
-                });
-            }
-            
-            // Location validation
-            const locationInput = document.getElementById('startLocation');
-            if (locationInput) {
-                locationInput.addEventListener('input', function() {
-                    if (this.value.trim().length >= 2) {
-                        this.classList.add('is-valid');
-                        this.classList.remove('is-invalid');
-                    } else {
-                        this.classList.remove('is-valid');
-                    }
-                });
-            }
-            
-            // Distance range validation
-            const minDistInput = document.getElementById('minDistance');
-            const maxDistInput = document.getElementById('maxDistance');
-            if (minDistInput && maxDistInput) {
-                const validateDistanceRange = () => {
-                    const min = parseFloat(minDistInput.value) || 0;
-                    const max = parseFloat(maxDistInput.value) || Infinity;
-                    if (max < min && max > 0) {
-                        minDistInput.classList.add('is-invalid');
-                        maxDistInput.classList.add('is-invalid');
-                    } else {
-                        minDistInput.classList.remove('is-invalid');
-                        maxDistInput.classList.remove('is-invalid');
-                    }
-                };
-                minDistInput.addEventListener('input', validateDistanceRange);
-                maxDistInput.addEventListener('input', validateDistanceRange);
-            }
-            
-            // Time range validation
-            const minTimeInput = document.getElementById('minTime');
-            const maxTimeInput = document.getElementById('maxTime');
-            if (minTimeInput && maxTimeInput) {
-                const validateTimeRange = () => {
-                    const min = parseFloat(minTimeInput.value) || 0;
-                    const max = parseFloat(maxTimeInput.value) || Infinity;
-                    if (max < min && max > 0) {
-                        minTimeInput.classList.add('is-invalid');
-                        maxTimeInput.classList.add('is-invalid');
-                    } else {
-                        minTimeInput.classList.remove('is-invalid');
-                        maxTimeInput.classList.remove('is-invalid');
-                    }
-                };
-                minTimeInput.addEventListener('input', validateTimeRange);
-                maxTimeInput.addEventListener('input', validateTimeRange);
-            }
-        });
-        
         function loadAndAnalyzeRoutes() {
-            // Validate form first
-            if (!validateForm()) {
-                showError('Please fix the validation errors before submitting', 'longrides');
-                return;
-            }
-            
             const dateTime = document.getElementById('rideDateTime').value;
             const location = document.getElementById('startLocation').value;
             
+            if (!dateTime || !location) {
+                alert('Please enter both date/time and location');
+                return;
+            }
+            
             if (cachedRoutes.length === 0) {
-                showError('No long ride data available. Please ensure you have non-commute rides in your Strava data.', 'longrides');
+                alert('No long ride data available. Please ensure you have non-commute rides in your Strava data.');
                 return;
             }
             
@@ -3510,11 +3063,15 @@
         };
         
         function initializeNextCommuteMap() {
+            console.log('🗺️ Initializing Next Commute Map...');
             const mapElement = document.getElementById('nextCommuteMap');
+            console.log('Map element found:', mapElement);
             if (!mapElement) {
+                console.error('❌ Next commute map element not found!');
                 return;
             }
             if (nextCommuteMap) {
+                console.log('⚠️ Map already initialized');
                 return;
             }
             
@@ -3587,6 +3144,7 @@
             const bounds = L.latLngBounds(allCoords);
             nextCommuteMap.fitBounds(bounds, { padding: [50, 50] });
             
+            console.log('✅ Next Commute Map initialized successfully!');
         }
         
         function addDirectionArrows(polyline, route) {
@@ -3767,6 +3325,7 @@
                         lon: parseFloat(data[0].lon),
                         name: data[0].display_name
                     };
+                    console.log('📍 Geocoded location:', referenceLocation);
                     alert(`Location found: ${referenceLocation.name}`);
                     // Re-filter with new location
                     filterAndDisplayRides();
@@ -3774,12 +3333,14 @@
                     alert('Location not found. Please try a different search term.');
                 }
             } catch (error) {
+                console.error('Geocoding error:', error);
                 alert('Error geocoding location. Using default location.');
             }
         }
         
         // Sort table by column
         function sortTable(column) {
+            console.log(`Sorting by ${column}`);
             
             // Toggle sort direction if clicking same column
             if (currentSortColumn === column) {
@@ -3849,12 +3410,14 @@
                 // Map already initialized, just resize it
                 setTimeout(function() {
                     recommendationsMap.invalidateSize();
+                    console.log('✅ Recommendations map resized');
                 }, 100);
                 return;
             }
             
             const mapElement = document.getElementById('recommendationsMap');
             if (mapElement) {
+                console.log('🗺️ Initializing recommendations map...');
                 recommendationsMap = L.map('recommendationsMap').setView([{{ home.lat }}, {{ home.lon }}], 11);
                 
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -3862,6 +3425,7 @@
                     maxZoom: 19
                 }).addTo(recommendationsMap);
                 
+                console.log('✅ Recommendations map initialized');
                 
                 // Initialize with all rides after map is ready
                 filterAndDisplayRides();
@@ -3870,14 +3434,19 @@
         
         // Main filter and display function
         function filterAndDisplayRides() {
+            console.log('🔍 filterAndDisplayRides() called');
+            console.log('Map exists:', !!recommendationsMap);
+            console.log('Total rides available:', allRides.length);
             
             // Ensure map is initialized first
             if (!recommendationsMap) {
+                console.log('⚠️ Map not initialized, initializing now...');
                 initializeRecommendationsMap();
                 // The initialization function will call filterAndDisplayRides() again
                 return;
             }
             
+            console.log('✅ Map is ready, proceeding with filtering...');
             
             // Get filter values
             const minDist = parseFloat(document.getElementById('minDistance').value) || 0;
@@ -3887,6 +3456,9 @@
             const surfaceType = document.getElementById('surfaceType').value;
             const maxRadius = parseFloat(document.getElementById('radiusSlider').value) || 15;
             
+            console.log('Filter values:', { minDist, maxDist, minTime, maxTime, surfaceType, maxRadius });
+            console.log('Reference location:', referenceLocation);
+            console.log('📊 Starting filtering process...');
             
             // Filter rides
             filteredRides = allRides.filter(ride => {
@@ -3914,29 +3486,39 @@
                     matchesLocation = distanceFromRef <= maxRadius;
                     
                     if (!matchesLocation) {
+                        console.log(`❌ Excluding "${ride.name}": ${distanceFromRef.toFixed(1)} mi from ${referenceLocation.name} (max: ${maxRadius} mi)`);
                     }
                 }
                 
                 return matchesDistance && matchesTime && matchesSurface && matchesLocation;
             });
             
+            console.log('✅ Filtering complete. Filtered rides:', filteredRides.length);
             
             // Limit to max 30 rides
             filteredRides = filteredRides.slice(0, maxRides);
+            console.log('📊 After limiting to max 30:', filteredRides.length);
             
             // Reset to page 1
             currentPage = 1;
             
             // Update display
+            console.log('🔄 Calling updateTable()...');
             updateTable();
+            console.log('🗺️ Calling updateMap()...');
             updateMap();
+            console.log('📄 Calling updatePagination()...');
             updatePagination();
+            console.log('✅ All updates complete!');
         }
         
         // Update table with current page
         function updateTable() {
+            console.log('📋 updateTable() called');
             const tbody = document.getElementById('ridesTableBody');
+            console.log('Table body element:', tbody);
             if (!tbody) {
+                console.error('❌ Table body element not found!');
                 return;
             }
             tbody.innerHTML = '';
@@ -3944,6 +3526,8 @@
             const start = (currentPage - 1) * ridesPerPage;
             const end = Math.min(start + ridesPerPage, filteredRides.length);
             const pageRides = filteredRides.slice(start, end);
+            console.log(`📊 Displaying rides ${start + 1}-${end} of ${filteredRides.length}`);
+            console.log('Page rides:', pageRides.length);
             
             pageRides.forEach((ride, index) => {
                 const globalIndex = start + index + 1;
@@ -3968,14 +3552,18 @@
         
         // Update map with all filtered rides
         function updateMap() {
+            console.log('🗺️ updateMap() called');
             if (!recommendationsMap) {
+                console.error('❌ Map not initialized!');
                 return;
             }
             
+            console.log('Clearing existing layers:', mapLayers.length);
             // Clear existing layers
             mapLayers.forEach(layer => recommendationsMap.removeLayer(layer));
             mapLayers = [];
             
+            console.log('Adding filtered rides to map:', filteredRides.length);
             // Add all filtered rides to map
             filteredRides.forEach(ride => {
                 const color = getColorByDistance(ride.distance_km);
@@ -4014,13 +3602,17 @@
         
         // Update pagination controls
         function updatePagination() {
+            console.log('📄 updatePagination() called');
             const pagination = document.getElementById('pagination');
+            console.log('Pagination element:', pagination);
             if (!pagination) {
+                console.error('❌ Pagination element not found!');
                 return;
             }
             pagination.innerHTML = '';
             
             const totalPages = Math.ceil(filteredRides.length / ridesPerPage);
+            console.log('Total pages:', totalPages);
             
             // Previous button
             const prevLi = document.createElement('li');
@@ -4131,21 +3723,25 @@
             if (longRidesTab && longRidesPane) {
                 // Fix: Manually ensure tab pane becomes visible when clicked
                 longRidesTab.addEventListener('click', function (event) {
+                    console.log('🚵 Long Rides tab clicked, ensuring visibility...');
                     
                     // Force add show class if Bootstrap doesn't (fixes opacity: 0 issue)
                     setTimeout(function() {
                         if (!longRidesPane.classList.contains('show')) {
+                            console.log('⚠️ Adding missing "show" class to Long Rides tab');
                             longRidesPane.classList.add('show');
                         }
                         
                         // Scroll to the Long Rides pane content after it's visible
                         setTimeout(function() {
                             longRidesPane.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            console.log('📜 Scrolled to Long Rides content');
                         }, 150);
                     }, 50);
                 });
                 
                 longRidesTab.addEventListener('shown.bs.tab', function (event) {
+                    console.log('🚵 Long Rides tab shown, initializing maps...');
                     
                     // Ensure show class is present (backup)
                     if (!longRidesPane.classList.contains('show')) {
@@ -4158,76 +3754,9 @@
             }
         });
         
-        // Issue #98 - Animation Performance Optimizations
-        // Clean up will-change hints after animations complete
-        document.addEventListener('DOMContentLoaded', function() {
-            // Remove will-change from cards after animation completes
-            const cards = document.querySelectorAll('.card');
-            cards.forEach((card, index) => {
-                // Wait for animation to complete (300ms + delay)
-                setTimeout(() => {
-                    card.classList.add('animation-complete');
-                }, 300 + (index * 50) + 100);
-            });
-            
-            // Remove will-change from next commute cards after animation
-            const commuteCards = document.querySelectorAll('.next-commute-card');
-            commuteCards.forEach((card, index) => {
-                setTimeout(() => {
-                    card.style.willChange = 'auto';
-                }, 300 + (index * 100) + 100);
-            });
-            
-            // Remove will-change from route rows after initial render
-            setTimeout(() => {
-                const routeRows = document.querySelectorAll('.route-row');
-                routeRows.forEach(row => {
-                    row.style.willChange = 'auto';
-                });
-            }, 500);
-            
-            // Optimize hover effects - only add will-change on hover
-            const interactiveElements = document.querySelectorAll('.route-row, .next-commute-card, .activity-item');
-            interactiveElements.forEach(element => {
-                element.addEventListener('mouseenter', function() {
-                    this.style.willChange = 'background-color, transform';
-                });
-                
-                element.addEventListener('mouseleave', function() {
-                    // Remove will-change after transition completes
-                    setTimeout(() => {
-                        this.style.willChange = 'auto';
-                    }, 200);
-                });
-            });
-            
-            // Detect reduced motion preference
-            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            if (prefersReducedMotion) {
-                // Add class to body for CSS to handle
-                document.body.classList.add('reduced-motion');
-            }
-            
-            // Monitor performance and adjust animations if needed
-            if ('PerformanceObserver' in window) {
-                try {
-                    const observer = new PerformanceObserver((list) => {
-                        for (const entry of list.getEntries()) {
-                            // If long tasks detected (>50ms), reduce animations
-                            if (entry.duration > 50) {
-                                document.body.classList.add('performance-mode');
-                            }
-                        }
-                    });
-                    observer.observe({ entryTypes: ['longtask'] });
-                } catch (e) {
-                    // PerformanceObserver not fully supported, ignore
-                }
-            }
-        });
-        
         // Set default date/time and initialize
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOMContentLoaded fired');
             const now = new Date();
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             const dateTimeInput = document.getElementById('rideDateTime');
@@ -4237,8 +3766,10 @@
             
             {% if next_commutes %}
             // Initialize next commute map
+            console.log('🗺️ About to call initializeNextCommuteMap()');
             initializeNextCommuteMap();
             {% else %}
+            console.log('⚠️ next_commutes not available, skipping map initialization');
             {% endif %}
             
             const locationInput = document.getElementById('startLocation');

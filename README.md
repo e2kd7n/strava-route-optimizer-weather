@@ -41,30 +41,103 @@ If you encounter this project hosted elsewhere without proper attribution or wit
 
 ## Prerequisites
 
-- Python 3.8 or higher
-- A Strava account with cycling activities
-- Strava API credentials (free to obtain)
+- **Python 3.8 or higher** - [Download Python](https://www.python.org/downloads/)
+- **pip** (Python package installer) - Usually included with Python
+- **Git** (optional, for cloning) - [Download Git](https://git-scm.com/downloads)
+- A **Strava account** with cycling activities
+- **Strava API credentials** (free to obtain - instructions below)
+
+### Checking Your Python Installation
+
+Before starting, verify Python is installed:
+
+```bash
+# Check Python version (should be 3.8 or higher)
+python3 --version
+
+# Or on Windows:
+python --version
+
+# Check pip is installed
+pip --version
+```
+
+If Python is not installed, download it from [python.org](https://www.python.org/downloads/) and follow the installation instructions for your operating system.
 
 ## Installation
 
-### 1. Clone or Download
+### 1. Clone or Download the Repository
 
+**Option A: Using Git (Recommended)**
 ```bash
-cd ~/commute
+git clone https://github.com/yourusername/ride-optimizer.git
+cd ride-optimizer
 ```
+
+**Option B: Download ZIP**
+1. Download the repository as a ZIP file from GitHub
+2. Extract it to a folder (e.g., `~/ride-optimizer` or `C:\Users\YourName\ride-optimizer`)
+3. Open a terminal/command prompt and navigate to that folder:
+   ```bash
+   cd ~/ride-optimizer  # macOS/Linux
+   cd C:\Users\YourName\ride-optimizer  # Windows
+   ```
 
 ### 2. Create Virtual Environment
 
+A virtual environment keeps this project's dependencies separate from other Python projects.
+
+**macOS/Linux:**
 ```bash
 python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate
 ```
 
+**Windows (Command Prompt):**
+```bash
+python -m venv venv
+venv\Scripts\activate
+```
+
+**Windows (PowerShell):**
+```bash
+python -m venv venv
+venv\Scripts\Activate.ps1
+```
+
+You should see `(venv)` appear at the start of your command prompt, indicating the virtual environment is active.
+
 ### 3. Install Dependencies
+
+With the virtual environment activated, install all required packages:
 
 ```bash
 pip install -r requirements.txt
 ```
+
+This will install all necessary Python packages including:
+- `stravalib` - Strava API client
+- `folium` - Interactive maps
+- `pandas` - Data analysis
+- `scikit-learn` - Machine learning algorithms
+- `geopy` - Geocoding
+- And other dependencies
+
+**Troubleshooting Installation:**
+- If you get permission errors, make sure your virtual environment is activated
+- On macOS/Linux, you may need to install system dependencies first:
+  ```bash
+  # macOS (using Homebrew)
+  brew install python3
+  
+  # Ubuntu/Debian
+  sudo apt-get update
+  sudo apt-get install python3 python3-pip python3-venv
+  ```
+- On Windows, if you get SSL errors, try:
+  ```bash
+  pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org -r requirements.txt
+  ```
 
 ### 4. Get Strava API Credentials (REQUIRED)
 
@@ -482,6 +555,36 @@ A: Run monthly or after accumulating 10+ new commute activities.
 A: Yes, use the `--start` and `--end` flags to analyze specific date ranges.
 
 ## Version History
+
+### v2.4.0 (2026-03-30)
+**Long Rides Feature & Polish**
+
+- 🚵 **NEW: Long Rides Analysis** - Comprehensive analysis of non-commute rides
+  - Statistics dashboard with total rides, average distance, longest ride, elevation gain
+  - Top 10 longest rides table with Strava links
+  - Monthly breakdown chart showing ride count and distance trends
+  - Interactive map visualizing all long rides (>15km) with color-coded routes
+  - Route filtering (loops vs. point-to-point)
+  - Detailed metrics for each ride (speed, elevation, duration, route type)
+- 📱 **Mobile Optimizations** - Enhanced mobile performance
+  - Lazy loading for maps and charts
+  - Canvas renderer for mobile maps
+  - Coordinate simplification on mobile devices
+  - Reduced animations and hover effects on touch devices
+- ✅ **Form Validation** - Real-time validation with visual feedback
+  - Bootstrap validation classes with colored borders
+  - Range validation for distance and time inputs
+  - Invalid/valid feedback messages
+- 🎨 **Animation Performance** - GPU-accelerated animations
+  - Smooth fade-in, slide-in, and scale-in animations
+  - Automatic cleanup of will-change hints
+  - Reduced motion support for accessibility
+  - Performance monitoring and adaptive animations
+- 📚 **Documentation** - Enhanced setup instructions for new users
+  - Detailed Python installation verification
+  - Step-by-step virtual environment setup
+  - Troubleshooting for common installation issues
+  - Platform-specific instructions (macOS/Linux/Windows)
 
 ### v2.3.0 (2026-03-27)
 **Segment-Based Route Naming & Security Enhancements**

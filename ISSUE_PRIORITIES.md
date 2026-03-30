@@ -1,6 +1,6 @@
 # Issue Prioritization
 
-**Last Updated:** 2026-03-29 16:57 UTC
+**Last Updated:** 2026-03-30 02:23 UTC
 
 This file reflects the current state of GitHub issues by priority. Issues are managed via GitHub labels (P0-critical, P1-high, P2-medium, P3-low, P4-future).
 
@@ -11,45 +11,45 @@ Issues that make the application unusable or cause data loss.
 
 **None** ✅
 
-## 🔴 P1 - HIGH (Current Sprint)
+## 🔴 P1 - HIGH (v2.5.0 Sprint)
 Issues that significantly impact core functionality or user experience.
 
-### Active P1 Issues
+### Active P1 Issues (v2.5.0)
 
-- #57 - 🎯 EPIC: Long Rides Analysis & Recommendations (consolidates #6, #7, #8, #9)
-  - **Phase 1: Navigation Redesign (Week 1, Days 1-2)**
-    - #78 - Simplify Navigation from 4 Tabs to 2 Tabs (4h)
-    - #79 - Add "How It Works" Modal (2h)
-    - #80 - Integrate Weather Forecast into Commute Tab (2h)
-  - **Phase 2-3: Statistics & Map (Week 1, Days 3-5 + Week 2, Days 1-2)**
-    - #6 - Add top 10 longest rides table with Strava links
-    - #7 - Add monthly ride statistics breakdown
-    - #8 - Add average speed and elevation gain metrics
-    - #9 - Add interactive map showing all long ride routes
-  - **Phase 4: Backend API Layer (Week 2, Days 3-5)**
-    - #81 - Create Flask API Server for Long Rides (6h)
-    - #82 - Implement Recommendations API Endpoint (4h)
-    - #83 - Implement Geocoding API Endpoint (2h)
-    - #84 - Implement Weather API Endpoint (2h)
-  - **Phase 5: Interactive Recommendations (Week 3)**
-    - #85 - Create Interactive Recommendation Input Form (4h)
-    - #86 - Implement Frontend API Integration (4h)
-    - #87 - Create Recommendation Results Display Component (4h)
-    - #88 - Integrate Map with Recommendation System (4h)
-  - **Phase 6: Backend Improvements (Week 4)**
-    - #89 - Add Data Persistence Layer for API (4h)
-    - #90 - Implement Input Validation with Marshmallow (3h)
-    - #91 - Add Rate Limiting to API Endpoints (2h)
-  - **Phase 7: Frontend Polish (Week 5)**
-    - #92 - Add Loading States with Skeleton Loaders (3h)
-    - #93 - Implement Comprehensive Error States (3h)
-    - #94 - Implement Accessibility Improvements (4h)
-  - **Testing & Documentation**
-    - #99 - Create Comprehensive Unit Tests for All Core Modules (8-10h) - Supersedes #41
-    - #100 - Create Comprehensive Integration Tests for All Workflows (8-10h) - Supersedes #42
-    - #101 - Update Documentation for Long Rides Feature (3h)
-- #54 - Weather Dashboard Implementation (Epic)
-- #47 - Add Side-by-Side Route Comparison Feature
+**Testing & Quality Assurance** (Deferred from v2.4.0)
+- #99 - Create Comprehensive Unit Tests for All Core Modules (8-10h)
+  - Target: 80% code coverage (currently 30%)
+  - Modules: long_ride_analyzer, auth_secure, carbon_calculator, traffic_analyzer, next_commute_recommender, visualizer, route_analyzer, weather_fetcher, report_generator, api/long_rides_api
+  - Supersedes #41
+  
+- #100 - Create Comprehensive Integration Tests for All Workflows (8-10h)
+  - Long Rides workflow
+  - Route comparison workflow
+  - Weather dashboard data flow
+  - Commute analysis with all features
+  - Supersedes #42
+
+- #101 - Update Documentation for Long Rides Feature (3h)
+  - Update README.md with v2.4.0 features
+  - Document Long Rides API endpoints
+  - Create user guide updates
+  - Add screenshots and examples
+
+**Major Features** (Deferred from v2.4.0)
+- #47 - Add Side-by-Side Route Comparison Feature (12-16h)
+  - Implementation plan: `/plans/v2.5.0/ROUTE_COMPARISON_IMPLEMENTATION_PLAN.md`
+  - Select 2-3 routes for comparison
+  - Side-by-side metrics display
+  - Interactive map visualization
+  - Decision support with recommendations
+  
+- #54 - Weather Dashboard Implementation (Epic) (16-20h)
+  - Implementation plan: `/plans/v2.5.0/WEATHER_DASHBOARD_IMPLEMENTATION_PLAN.md`
+  - Current conditions widget
+  - 24-hour hourly forecast
+  - 7-day daily forecast
+  - Weather alerts and recommendations
+  - Ride suitability scoring
 
 
 ## 🟡 P2 - MEDIUM (Next Sprint)
@@ -65,11 +65,13 @@ Important improvements that enhance functionality but don't block core workflows
   - #67 - Mobile Navigation Patterns
   - #68 - Visual Hierarchy & Polish
 
-### P2 Issues from Long Rides Feature (Phase 7 - Polish)
+### P2 Issues from Long Rides Feature (Polish & Optimization)
 - #95 - Optimize Mobile Map Performance (3h)
 - #96 - Add Form Validation Feedback (2h)
 - #97 - Optimize Chart Responsiveness (2h)
 - #98 - Add Animation Performance Optimizations (2h)
+
+
 
 
 
@@ -140,41 +142,58 @@ Issues without priority labels that need to be triaged.
 
 ## Summary Statistics
 
-- **Total Open Issues:** 28
+- **Total Open Issues:** 14
 - **P0 (Critical):** 0 ✅
-- **P1 (High):** 23 (includes 18 new Long Rides issues)
-- **P2 (Medium):** 6 (includes 4 new Long Rides polish issues)
+- **P1 (High):** 5 (v2.5.0 sprint)
+- **P2 (Medium):** 10 (includes 4 Long Rides polish issues)
 - **P3 (Low):** 1
 - **P4 (Future):** 0
-- **Unprioritized:** 0
-- **Recently Closed:** 14 issues (see "Recently Completed" section below)
+- **Unprioritized:** 8
+- **Recently Closed:** 18 issues from v2.4.0 Long Rides Epic (see "Recently Completed" section below)
 
-### v2.4.0 Long Rides Feature Breakdown
-- **Total New Issues:** 24 (#78-#101)
-- **P1-high:** 18 issues (core functionality, API, testing, docs)
-- **P2-medium:** 4 issues (polish and optimization)
-- **P3-low:** 2 issues (deferred to v2.5.0/v2.6.0)
-- **Estimated Total Effort:** 88-98 hours (5-6 weeks at 16-18 hours/week)
-  - Note: Testing effort increased from 8h to 16-20h to cover all core modules and workflows
+### v2.4.0 Completion Summary
+- **Long Rides Epic (#57):** ✅ COMPLETED (18/21 issues)
+  - Core functionality: 100% complete
+  - Backend improvements (#89, #90, #91): Deferred to v2.6.0+ (not needed for static reports)
+  - All user-facing features production-ready
+- **Code Cleanup:** ✅ COMPLETED
+  - Removed 115 console.log statements (8KB saved)
+  - Created technical debt documentation
+- **Status:** Ready for release
+
+### v2.5.0 Sprint Planning
+- **Total P1 Issues:** 5
+- **Estimated Total Effort:** 48-60 hours (6-8 weeks at 8-10 hours/week)
+- **Focus Areas:**
+  1. Testing & Quality (16-20h)
+  2. Route Comparison Feature (12-16h)
+  3. Weather Dashboard (16-20h)
+  4. Documentation (3h)
+- **Release Plan:** `/plans/v2.5.0/README.md`
 
 **Note:** Completed issues are documented in release notes (RELEASE_NOTES.md) and version-specific plans (plans/v2.x.0/).
 
-## Recommended Next Actions
+## Recommended Next Actions (v2.5.0)
 
-Focus on P1 issues for next sprint:
+Focus on P1 issues in this order:
 
-1. **#99** - Create Comprehensive Unit Tests for All Core Modules (P1-high, 8-10h)
-   - Covers: Long Rides API, route analyzer, data fetcher, optimizer, weather fetcher, location finder
-   - Target: 80% overall code coverage
-   - Supersedes #41
+1. **Testing Infrastructure First** (Weeks 1-2)
+   - #99 - Comprehensive unit tests (8-10h)
+   - #100 - Integration tests (8-10h)
+   - #101 - Documentation updates (3h)
+   - Rationale: Establish quality foundation before adding features
 
-2. **#100** - Create Comprehensive Integration Tests for All Workflows (P1-high, 8-10h)
-   - Covers: Long Rides flow, commute analysis, route matching, weather integration
-   - Includes edge cases and error scenarios
-   - Supersedes #42
+2. **Route Comparison Feature** (Weeks 3-4)
+   - #47 - Side-by-side route comparison (12-16h)
+   - See implementation plan: `/plans/v2.5.0/ROUTE_COMPARISON_IMPLEMENTATION_PLAN.md`
+
+3. **Weather Dashboard** (Weeks 5-7)
+   - #54 - Weather dashboard (16-20h)
+   - See implementation plan: `/plans/v2.5.0/WEATHER_DASHBOARD_IMPLEMENTATION_PLAN.md`
 
 ### Additional Actions (Not Issues)
 - **CI/CD Integration** - Set up GitHub Actions with expanded test suite
+- **Performance Monitoring** - Establish baseline metrics
 
 ---
 
