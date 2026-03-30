@@ -21,8 +21,8 @@ Transform the desktop application into a **multi-tenant web platform** enabling 
 
 ### Business Model
 - **Free:** Basic analysis, view community routes
-- **Premium ($5/mo):** Advanced analytics, unlimited contributions
-- **Pro ($15/mo):** API access, bulk exports
+- **Premium ($x/mo):** Advanced analytics, unlimited contributions
+- **Pro ($xx/mo):** API access, bulk exports
 
 ---
 

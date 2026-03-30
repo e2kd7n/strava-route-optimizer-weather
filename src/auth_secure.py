@@ -132,28 +132,67 @@ class SecureTokenStorage:
     
     def __init__(self, credentials_path: str):
         """
-        Initialize secure token storage.
+        Initialize secure token storage with persistent encryption key.
         
         Args:
             credentials_path: Path to store encrypted credentials
         """
         self.credentials_path = Path(credentials_path)
+        self.key_file = Path('config/.token_encryption_key')
         
-        # Get or generate encryption key
-        key = os.getenv('TOKEN_ENCRYPTION_KEY')
-        if not key:
-            # Generate new key
-            key = Fernet.generate_key()
+        # Get or generate encryption key with persistence
+        key = self._get_or_create_key()
+        self.cipher = Fernet(key if isinstance(key, bytes) else key.encode())
+    
+    def _get_or_create_key(self) -> bytes:
+        """
+        Get existing encryption key or create new one with file persistence.
+        
+        Returns:
+            Encryption key bytes
+        """
+        # Check environment variable first (highest priority)
+        env_key = os.getenv('TOKEN_ENCRYPTION_KEY')
+        if env_key:
+            logger.info("✓ Using TOKEN_ENCRYPTION_KEY from environment")
+            return env_key.encode()
+        
+        # Check for existing key file
+        if self.key_file.exists():
+            try:
+                key = self.key_file.read_bytes()
+                logger.info("✓ Loaded existing token encryption key")
+                return key
+            except Exception as e:
+                logger.warning(f"Failed to load encryption key: {e}")
+        
+        # Generate new key and persist it
+        key = Fernet.generate_key()
+        
+        try:
+            # Create directory with restrictive permissions
+            self.key_file.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+            
+            # Write key with secure permissions
+            self.key_file.write_bytes(key)
+            os.chmod(self.key_file, 0o600)
+            
             logger.warning("=" * 70)
             logger.warning("GENERATED NEW TOKEN ENCRYPTION KEY")
             logger.warning("=" * 70)
-            logger.warning("A new encryption key has been generated for token storage.")
-            logger.warning("To persist this key across sessions, add to your .env file:")
+            logger.warning(f"Key saved to: {self.key_file}")
+            logger.warning("For portability across systems, add to your .env file:")
             logger.warning(f"TOKEN_ENCRYPTION_KEY={key.decode()}")
             logger.warning("=" * 70)
-            log_security_event('ENCRYPTION_KEY_GENERATED', {'timestamp': datetime.now(timezone.utc).isoformat()})
+            log_security_event('ENCRYPTION_KEY_GENERATED', {
+                'key_file': str(self.key_file),
+                'timestamp': datetime.now(timezone.utc).isoformat()
+            })
+        except Exception as e:
+            logger.error(f"Failed to save encryption key: {e}")
+            logger.warning("Key will not persist across sessions!")
         
-        self.cipher = Fernet(key if isinstance(key, bytes) else key.encode())
+        return key
     
     def save_tokens(self, tokens: Dict[str, Any]) -> None:
         """
@@ -508,6 +547,9 @@ class SecureStravaAuthenticator:
         
         Returns:
             Authorization code from callback
+            
+        Raises:
+            TimeoutError: If callback not received within timeout period
         """
         code_container: Dict[str, Optional[str]] = {'code': None, 'state': None}
         
@@ -515,15 +557,19 @@ class SecureStravaAuthenticator:
         RateLimitedCallbackHandler.expected_state = self.state
         RateLimitedCallbackHandler.code_container = code_container
         
-        # Start server
+        # Start server with timeout
         server = HTTPServer(('localhost', 8000), RateLimitedCallbackHandler)
+        server.timeout = 300  # 5 minutes timeout
+        
         logger.info("Waiting for authorization callback on http://localhost:8000...")
+        logger.info("Timeout: 5 minutes")
         log_security_event('CALLBACK_SERVER_STARTED', {
             'port': 8000,
+            'timeout_seconds': 300,
             'timestamp': datetime.now(timezone.utc).isoformat()
         })
         
-        # Handle one request
+        # Handle one request with timeout
         server.handle_request()
         server.server_close()
         

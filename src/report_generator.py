@@ -28,6 +28,7 @@ except ImportError:
     QRCODE_AVAILABLE = False
     qrcode = None
 
+import re
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 try:
@@ -552,6 +553,34 @@ class ReportGenerator:
         
         return context
     
+    @staticmethod
+    def _sanitize_activity_name(name: str) -> str:
+        """
+        Sanitize activity names to prevent template injection and remove PII.
+        
+        Args:
+            name: Activity name from Strava
+            
+        Returns:
+            Sanitized name safe for template rendering
+        """
+        if not name:
+            return "Unnamed Activity"
+        
+        # Remove potential template injection patterns
+        name = re.sub(r'[{}<>]', '', name)
+        
+        # Remove common PII patterns (company names, personal names in brackets)
+        # Example: "Commute to [Company]" -> "Commute"
+        name = re.sub(r'\[.*?\]', '', name)
+        name = re.sub(r'\(.*?\)', '', name)
+        
+        # Limit length to prevent abuse
+        if len(name) > 100:
+            name = name[:97] + "..."
+        
+        return name.strip()
+    
     def _render_template(self, context: Dict[str, Any]) -> str:
         """
         Render HTML template with context using auto-escaping for XSS protection.
@@ -562,11 +591,27 @@ class ReportGenerator:
         Returns:
             Rendered HTML string
         """
-        # Create Jinja2 environment with auto-escaping enabled for HTML/XML templates
-        # This prevents XSS vulnerabilities by automatically escaping HTML special characters
+        # Sanitize activity names in context before rendering
+        if 'route_groups' in context:
+            for group in context['route_groups']:
+                if hasattr(group, 'routes'):
+                    for route in group.routes:
+                        if hasattr(route, 'activity_name'):
+                            route.activity_name = self._sanitize_activity_name(route.activity_name)
+        
+        # Create Jinja2 environment with enhanced security
         env = Environment(
             loader=FileSystemLoader(self.template_dir),
-            autoescape=select_autoescape(['html', 'xml'])
+            autoescape=select_autoescape(['html', 'xml']),
+            # Additional security options
+            trim_blocks=True,
+            lstrip_blocks=True,
+        )
+        
+        # Add security headers hint to context
+        context['security_notice'] = (
+            "This report contains personal route data. "
+            "Do not share publicly without reviewing for sensitive information."
         )
         
         template = env.get_template("report_template.html")

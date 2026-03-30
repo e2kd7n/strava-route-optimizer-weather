@@ -1,5 +1,7 @@
 .env
 config/credentials.json
+config/.token_encryption_key
+config/.cache_encryption_key
 /data/cache/
 /output/
 venv/
