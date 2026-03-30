@@ -2045,11 +2045,21 @@
                                         <thead class="sticky-top bg-light">
                                             <tr>
                                                 <th>#</th>
-                                                <th>Name</th>
-                                                <th>Distance</th>
-                                                <th>Time</th>
-                                                <th>Elevation</th>
-                                                <th>Uses</th>
+                                                <th style="cursor: pointer;" onclick="sortTable('name')" title="Click to sort">
+                                                    Name <span id="sort-name"></span>
+                                                </th>
+                                                <th style="cursor: pointer;" onclick="sortTable('distance')" title="Click to sort">
+                                                    Distance <span id="sort-distance"></span>
+                                                </th>
+                                                <th style="cursor: pointer;" onclick="sortTable('time')" title="Click to sort">
+                                                    Time <span id="sort-time"></span>
+                                                </th>
+                                                <th style="cursor: pointer;" onclick="sortTable('elevation')" title="Click to sort">
+                                                    Elevation <span id="sort-elevation"></span>
+                                                </th>
+                                                <th style="cursor: pointer;" onclick="sortTable('uses')" title="Click to sort">
+                                                    Uses <span id="sort-uses"></span>
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody id="ridesTableBody">
@@ -2785,6 +2795,10 @@
         let selectedRideId = null;
         let referenceLocation = { lat: {{ home.lat }}, lon: {{ home.lon }}, name: "Home" }; // Default to home location
         
+        // Sorting state
+        let currentSortColumn = null;
+        let currentSortDirection = 'asc'; // 'asc' or 'desc'
+        
         // Haversine distance calculation (returns distance in miles)
         function calculateDistance(lat1, lon1, lat2, lon2) {
             const R = 3959; // Earth's radius in miles
@@ -2826,6 +2840,72 @@
                 console.error('Geocoding error:', error);
                 alert('Error geocoding location. Using default location.');
             }
+        }
+        
+        // Sort table by column
+        function sortTable(column) {
+            console.log(`Sorting by ${column}`);
+            
+            // Toggle sort direction if clicking same column
+            if (currentSortColumn === column) {
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = column;
+                currentSortDirection = 'asc';
+            }
+            
+            // Clear all sort indicators
+            ['name', 'distance', 'time', 'elevation', 'uses'].forEach(col => {
+                const indicator = document.getElementById(`sort-${col}`);
+                if (indicator) indicator.textContent = '';
+            });
+            
+            // Set current sort indicator
+            const indicator = document.getElementById(`sort-${column}`);
+            if (indicator) {
+                indicator.textContent = currentSortDirection === 'asc' ? ' ▲' : ' ▼';
+            }
+            
+            // Sort the filtered rides array
+            filteredRides.sort((a, b) => {
+                let aVal, bVal;
+                
+                switch(column) {
+                    case 'name':
+                        aVal = a.name.toLowerCase();
+                        bVal = b.name.toLowerCase();
+                        break;
+                    case 'distance':
+                        aVal = a.distance;
+                        bVal = b.distance;
+                        break;
+                    case 'time':
+                        aVal = a.duration_hours;
+                        bVal = b.duration_hours;
+                        break;
+                    case 'elevation':
+                        aVal = a.elevation;
+                        bVal = b.elevation;
+                        break;
+                    case 'uses':
+                        aVal = a.uses || 1;
+                        bVal = b.uses || 1;
+                        break;
+                    default:
+                        return 0;
+                }
+                
+                if (currentSortDirection === 'asc') {
+                    return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                } else {
+                    return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+                }
+            });
+            
+            // Reset to first page and update display
+            currentPage = 1;
+            updateTable();
+            updatePagination();
         }
         
         // Initialize map when Long Rides tab is shown (not on page load, since it's hidden)
